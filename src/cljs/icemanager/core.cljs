@@ -22,6 +22,7 @@
 修复了多个按钮在移动端的 UI 展示问题。
 特性参与人员现在可以有多个，优化了人员展示和数据存储逻辑。
 优化了交互逻辑，提供参与人员 JSON 输入合法性校验和反馈，特性修改接口调用成功和失败的弹窗。
+提供了 API 调用的日志监控，提供服务统计接口和统计页面。
 ")
 
 (defn nav-link [uri title page]
@@ -53,6 +54,8 @@
    [:section.section>div.container>div.content
     {:style {:margin-bottom "200px"}}
     [:p.title "由 Corkine Ma 开发"]
+    (let [usage @(rf/subscribe [:usage])]
+      [:p {:style {:margin-top :-20px}} (str "本服务已服务 " (:pv usage) " 人，共计 " (:uv usage) " 次")])
     [:pre log]
     [:pre "Powered by clojure & clojureScript。
 Build with shadow-cljs, cljs-ajax, reagent, re-frame, react, bulma, http-kit, muuntaja, swagger, ring, mount, conman, cprop, cheshire, selmer, google closure compiler。
@@ -105,7 +108,8 @@ All Open Source Software, no evil."]
                                              :start      (fn [{{:keys [rs-id]} :path}]
                                                            (rf/dispatch [:fetch-feature rs-id]))}]}]
      ["/about" {:name :about
-                :view #'about-page}]]))
+                :view #'about-page
+                :controllers [{:start (fn [_] (rf/dispatch [:fetch-usage]))}]}]]))
 
 (defn start-router! []
   (rfe/start!

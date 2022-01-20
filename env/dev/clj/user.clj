@@ -40,6 +40,10 @@
   (binding [*ns* (the-ns 'icemanager.db.core)]
     (conman/bind-connection icemanager.db.core/*db* "sql/queries.sql")))
 
+(defn bind []
+  (binding [*ns* (the-ns 'icemanager.db.core)]
+    (conman/bind-connection icemanager.db.core/*db* "sql/queries.sql")))
+
 (defn reset-db
   "Resets database."
   []

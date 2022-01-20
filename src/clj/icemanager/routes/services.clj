@@ -11,7 +11,9 @@
     [ring.util.response :as hr]
     [icemanager.feature :as feature]
     [ring.util.http-response :refer :all]
-    [clojure.java.io :as io]))
+    [clojure.java.io :as io]
+    [icemanager.auth :as auth]
+    [icemanager.db.core :as db]))
 
 (defn service-routes []
   ["/api"
@@ -33,12 +35,13 @@
                  ;; coercing request parameters
                  coercion/coerce-request-middleware
                  ;; multipart
-                 multipart/multipart-middleware]}
+                 multipart/multipart-middleware
+                 auth/wrap-logged]}
 
    ;; swagger documentation
    ["" {:no-doc  true
-        :swagger {:info {:title       "my-api"
-                         :description "https://cljdoc.org/d/metosin/reitit"}}}
+        :swagger {:info {:title       "iceManager-api"
+                         :description "https://mazhangjing.com"}}}
 
     ["/swagger.json"
      {:get (swagger/create-swagger-handler)}]
@@ -71,7 +74,8 @@
 
    ["/feature"
     ["/:rs-id-lower"
-     {:get  {:summary    "获取特性特性信息"
+     {:auth/logged true
+      :get  {:summary    "获取特性特性信息"
              :parameters {:path {:rs-id-lower string?}}
              :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
                            (hr/response (feature/feature-by-rs-id rs-id-lower)))}
@@ -83,9 +87,13 @@
                            #_(hr/not-found "Not Found")
                            (hr/response (feature/update-feature rs-id-lower body)))}}]]
    ["/features"
-    {:get {:summary "获取所有特性"
+    {:auth/logged true
+     :get {:summary "获取所有特性"
            :handler (fn [_]
                       (hr/response (feature/all-features)))}}]
+   ["/usage"
+    {:get {:handler (fn [_]
+                      (hr/response (db/api-served-count)))}}]
    ["/files"
     {:swagger {:tags ["files"]}}
 

@@ -68,3 +68,21 @@
   :update-feature-error
   (fn [db _]
     (:update-feature-error db)))
+
+(rf/reg-event-fx
+  :fetch-usage
+  (fn [_ _]
+    {:http-xhrio {:method          :get
+                  :uri             "/api/usage"
+                  :response-format (ajax/json-response-format {:keywords? true})
+                  :on-success      [:set-usage]}}))
+
+(rf/reg-event-db
+  :set-usage
+  (fn [db [_ feature]]
+    (assoc db :usage feature)))
+
+(rf/reg-sub
+  :usage
+  (fn [db _]
+    (:usage db)))

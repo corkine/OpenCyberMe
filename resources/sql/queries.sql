@@ -31,3 +31,30 @@ set rs_id       = :rs_id,
     update_at   = :update_at
 where id = :id
 returning *;
+-- :name recent-logs :? :*
+select *
+from logs
+order by record_ts desc
+limit 100;
+-- :name logs-between :? :*
+select *
+from logs
+where record_ts <= :end && logs.record_ts >= :start
+order by record_ts desc;
+-- :name api-logs :? :*
+select *
+from logs
+where api ~* :api
+order by record_ts desc;
+-- :name add-log
+insert into logs(api, info)
+values (:api, :info);
+-- :name find-log :? :1
+select *
+from logs
+where id = :id;
+-- :name api-served-count :? :1
+with addr(p) as (select info ->> 'remote-addr' from logs),
+     p_addr as (select distinct * from addr)
+    (select (select count(*) from p_addr) as pv,
+            (select count(*) from addr)   as uv);

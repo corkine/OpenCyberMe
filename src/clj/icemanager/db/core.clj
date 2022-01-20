@@ -20,6 +20,9 @@
 
 (conman/bind-connection *db* "sql/queries.sql")
 
+(defn bind []
+  (conman/bind-connection *db* "sql/queries.sql"))
+
 (defn pgobj->clj [^org.postgresql.util.PGobject pgobj]
   (let [type (.getType pgobj)
         value (.getValue pgobj)]

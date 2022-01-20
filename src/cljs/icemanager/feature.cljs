@@ -68,7 +68,11 @@
      {:on-click #(rf/dispatch [:common/navigate! :feature
                                {:rs-id (string/lower-case rs_id)}])
       :style    {:cursor :pointer}}
-     [:span {:style {:margin-right :10px}} title]
+     [:span  title]
+     [:span [:a {:href "" :style {:font-size :8px
+                                  :margin-left :5px
+                                  :margin-right :10px
+                                  :vertical-align :80%}} [:i.material-icons "share"]]]
      [:span.tags.has-addons
       {:style {:display        :inline-block
                :vertical-align :-10%}}
