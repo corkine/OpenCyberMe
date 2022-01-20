@@ -4,6 +4,58 @@
       <meta charset="UTF-8"/>
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>ICE 特性（文档和接口）管理器</title>
+    <style type="text/css">
+      .dui-tips {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+      }
+
+      .dui-tips[data-tooltip]:after,
+      .dui-tips[data-tooltip]:before {
+        visibility: hidden;
+        position: absolute;
+        top: 50%;
+        left: 100%;
+        transition: all .3s;
+      }
+
+      .dui-tips[data-tooltip]:after {
+
+        content: attr(data-tooltip);
+        transform: translate(-5px, -50%);
+        white-space: pre;
+        padding: 5px 10px;
+        background-color: rgba(0, 0, 0, 0);
+        color: rgba(255, 255, 255, 0);
+      }
+
+      .dui-tips[data-tooltip]:before {
+        content: '';
+        height: 0;
+        width: 0;
+        transform: translate(-10px, -50%);
+        border-width: 5px 5px 5px 0;
+        border-style: solid;
+        border-color: transparent rgba(0, 0, 0, 0) transparent transparent;
+      }
+      .dui-tips:hover:after,.dui-tips:hover:before {
+        transition: all .3s;
+        visibility: visible;
+
+      }
+      .dui-tips:hover:after {
+        color: rgba(255, 255, 255, 1);
+        background-color: rgba(0, 0, 0, 0.8);
+        transform: translate(5px, -50%);
+        z-index: 100;
+      }
+
+      .dui-tips:hover:before {
+        border-color: transparent rgba(0, 0, 0, 0.8) transparent transparent;
+        transform: translate(0px, -50%);
+      }
+    </style>
   </head>
   <body>
     

@@ -15,9 +15,9 @@
 
 (defn service-routes []
   ["/api"
-   {:coercion spec-coercion/coercion
-    :muuntaja formats/instance
-    :swagger {:id ::api}
+   {:coercion   spec-coercion/coercion
+    :muuntaja   formats/instance
+    :swagger    {:id ::api}
     :middleware [;; query-params & form-params
                  parameters/parameters-middleware
                  ;; content-negotiation
@@ -36,8 +36,8 @@
                  multipart/multipart-middleware]}
 
    ;; swagger documentation
-   ["" {:no-doc true
-        :swagger {:info {:title "my-api"
+   ["" {:no-doc  true
+        :swagger {:info {:title       "my-api"
                          :description "https://cljdoc.org/d/metosin/reitit"}}}
 
     ["/swagger.json"
@@ -45,55 +45,65 @@
 
     ["/api-docs/*"
      {:get (swagger-ui/create-swagger-ui-handler
-             {:url "/api/swagger.json"
+             {:url    "/api/swagger.json"
               :config {:validator-url nil}})}]]
 
    ["/ping"
     {:get (constantly (ok {:message "pong"}))}]
-   
+
 
    ["/math"
     {:swagger {:tags ["math"]}}
 
     ["/plus"
-     {:get {:summary "plus with spec query parameters"
-            :parameters {:query {:x int?, :y int?}}
-            :responses {200 {:body {:total pos-int?}}}
-            :handler (fn [{{{:keys [x y]} :query} :parameters}]
-                       {:status 200
-                        :body {:total (+ x y)}})}
-      :post {:summary "plus with spec body parameters"
+     {:get  {:summary    "plus with spec query parameters"
+             :parameters {:query {:x int?, :y int?}}
+             :responses  {200 {:body {:total pos-int?}}}
+             :handler    (fn [{{{:keys [x y]} :query} :parameters}]
+                           {:status 200
+                            :body   {:total (+ x y)}})}
+      :post {:summary    "plus with spec body parameters"
              :parameters {:body {:x int?, :y int?}}
-             :responses {200 {:body {:total pos-int?}}}
-             :handler (fn [{{{:keys [x y]} :body} :parameters}]
-                        {:status 200
-                         :body {:total (+ x y)}})}}]]
+             :responses  {200 {:body {:total pos-int?}}}
+             :handler    (fn [{{{:keys [x y]} :body} :parameters}]
+                           {:status 200
+                            :body   {:total (+ x y)}})}}]]
 
    ["/feature"
-    ["/all"
-     {:get {:summary "获取所有特性"
-            :responses {200 {:body any?}}
-            :handler (fn [_]
-                       (hr/response (feature/all-features)))}}]]
-
+    ["/:rs-id-lower"
+     {:get  {:summary    "获取特性特性信息"
+             :parameters {:path {:rs-id-lower string?}}
+             :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
+                           (hr/response (feature/feature-by-rs-id rs-id-lower)))}
+      :post {:summary    "特性更新"
+             :parameters {:path {:rs-id-lower string?}
+                          :body map?}
+             :handler    (fn [{{body :body
+                                {:keys [rs-id-lower]}   :path} :parameters}]
+                           #_(hr/not-found "Not Found")
+                           (hr/response (feature/update-feature rs-id-lower body)))}}]]
+   ["/features"
+    {:get {:summary "获取所有特性"
+           :handler (fn [_]
+                      (hr/response (feature/all-features)))}}]
    ["/files"
     {:swagger {:tags ["files"]}}
 
     ["/upload"
-     {:post {:summary "upload a file"
+     {:post {:summary    "upload a file"
              :parameters {:multipart {:file multipart/temp-file-part}}
-             :responses {200 {:body {:name string?, :size int?}}}
-             :handler (fn [{{{:keys [file]} :multipart} :parameters}]
-                        {:status 200
-                         :body {:name (:filename file)
-                                :size (:size file)}})}}]
+             :responses  {200 {:body {:name string?, :size int?}}}
+             :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
+                           {:status 200
+                            :body   {:name (:filename file)
+                                     :size (:size file)}})}}]
 
     ["/download"
      {:get {:summary "downloads a file"
             :swagger {:produces ["image/png"]}
             :handler (fn [_]
-                       {:status 200
+                       {:status  200
                         :headers {"Content-Type" "image/png"}
-                        :body (-> "public/img/warning_clojure.png"
-                                  (io/resource)
-                                  (io/input-stream))})}}]]])
+                        :body    (-> "public/img/warning_clojure.png"
+                                     (io/resource)
+                                     (io/input-stream))})}}]]])

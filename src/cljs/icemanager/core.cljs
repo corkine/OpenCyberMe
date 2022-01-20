@@ -12,8 +12,17 @@
     [reitit.core :as reitit]
     [reitit.frontend.easy :as rfe]
     [clojure.string :as string]
+    [icemanager.feature :as feature]
     [icemanager.request :as req])
   (:import goog.History))
+
+(def log "[2022-01-19]
+搭建 luminus 项目，完成前端、后端和数据库框架
+[2022-01-20]
+修复了多个按钮在移动端的 UI 展示问题。
+特性参与人员现在可以有多个，优化了人员展示和数据存储逻辑。
+优化了交互逻辑，提供参与人员 JSON 输入合法性校验和反馈，特性修改接口调用成功和失败的弹窗。
+")
 
 (defn nav-link [uri title page]
   [:a.navbar-item
@@ -35,7 +44,7 @@
                 {:class (when @expanded? :is-active)}
                 [:div.navbar-start
                  [nav-link "#/" "主页" :home]
-                 [nav-link "#/feature" "特性" :feature]
+                 #_[nav-link "#/feature" "特性" :feature]
                  [nav-link "#/about" "关于" :about]]]]))
 
 (defn about-page []
@@ -44,21 +53,14 @@
    [:section.section>div.container>div.content
     {:style {:margin-bottom "200px"}}
     [:p.title "由 Corkine Ma 开发"]
-    [:p.subtitle "Powered By clojure, luminus, posgreSQL"]
+    [:pre log]
+    [:pre "Powered by clojure & clojureScript。
+Build with shadow-cljs, cljs-ajax, reagent, re-frame, react, bulma, http-kit, muuntaja, swagger, ring, mount, conman, cprop, cheshire, selmer, google closure compiler。
+Managed by lein, maven and npm.
+Data stored with postgreSQL.
+Developed with firefox and IDEA.
+All Open Source Software, no evil."]
     [:img {:src "/img/warning_clojure.png"}]]])
-
-(defn feature-page []
-  [:<>
-   [:div.hero.is-success.is-small
-    [:div.hero-body
-     [:p.title "特性：配置时光机"]
-     [:p "RS 编号: TIMEMACHINE"]
-     [:p "引入版本：ICE 5.0"]
-     [:p "当前状态：正在开发"]
-     [:p "维护人员："
-      [:a {:href "mailto:mazhangjing@inspur.com"} "马章竞"]]]]
-   [:section.section>div.container>div.content
-    [:p "特性页面"]]])
 
 (defn home-page []
   [:<>
@@ -67,58 +69,21 @@
      [:p.title "ICE 特性列表"]
      [:p "当前正在开发的 ICE 特性列表"]]]
    [:section.section>div.container>div.content {:style {:margin-top "-20px"}}
-    (for [{:keys [id rs_id title version description update_at info]} @(rf/subscribe [:get-features])]
-      ^{:key id}
-      [:div.box.columns.mt-5
-       [:div.column
-        [:p.title title
-         [:span.tags.has-addons
-          {:style {:display        :inline-block
-                   :margin-left    :10px
-                   :vertical-align :-10%}}
-          [:span.tag.is-link rs_id]
-          [:span.tag.is-dark version]]]
-        (let [{{:keys [name email]} :developer
-               status               :status} info]
-          [:<>
-           [:p (str "当前状态：" status)
-            [:span {:style {:display        :inline-block
-                            :margin-left    :10px
-                            :vertical-align :6%}}
-             (if (-> info :designRes)
-               [:a.ml-1 {:href (:designRes info)}
-                [:span.tag.is-rounded "设计图"]])
-             (if (-> info :uiRes)
-               [:a.ml-1 {:href (:uiRes info)}
-                [:span.tag.is-rounded "UI 渲染图"]])]]
-           [:p "维护人员："
-            [:a {:href (str "mailto:" email)} name]]])
-        [:p "最后更新：" update_at]
-        [:button.button
-         [:i.material-icons {:style {:margin-top   :4px
-                                     :margin-right :3px
-                                     :margin-left  :-7px}} "description"]
-         [:span "TR 文档"]]
-        [:button.button.ml-3
-         [:i.material-icons {:style {:margin-top   :4px
-                                     :margin-right :3px
-                                     :margin-left  :-7px}} "picture_as_pdf"]
-         [:span "导出 PDF"]]
-        [:button.button.ml-3
-         [:i.material-icons {:style {:margin-top   :4px
-                                     :margin-right :3px
-                                     :margin-left  :-7px}} "public"]
-         [:span "Swagger 接口"]]
-        ]
-       [:div.tile.notification.column
-        [:div.card-content
-         [:div.content (if (clojure.string/blank? description)
-                         "尚无介绍.." description)]]]])]])
+    (for [data @(rf/subscribe [:get-features])]
+      ^{:key (:id data)}
+      [feature/feature-card data {:with-footer      true
+                                  :with-description true}])]])
 
-#_(defn home-page []
-    [:section.section>div.container>div.content
-     (when-let [docs @(rf/subscribe [:docs])]
-       [:div {:dangerouslySetInnerHTML {:__html (md->html docs)}}])])
+(defn feature-page []
+  (let [feature-data @(rf/subscribe [:current-feature])]
+    [:<>
+     [:div.hero.is-success.is-small
+      {:style {:padding-left   :30px
+               :padding-bottom :30px}}
+      [feature/feature-card feature-data {:with-footer      false
+                                          :with-description true}]]
+     [:section.section>div.container>div.content
+      [feature/feature-form feature-data]]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]
@@ -131,14 +96,14 @@
 
 (def router
   (reitit/router
-    [#_["/" {:name        :home
-             :view        #'home-page
-             :controllers [{:start (fn [_] (rf/dispatch [:page/init-home]))}]}]
-     ["/" {:name        :home
+    [["/" {:name        :home
            :view        #'home-page
            :controllers [{:start (fn [_] (rf/dispatch [:fetch-features]))}]}]
-     ["/feature" {:name :feature
-                  :view #'feature-page}]
+     ["/feature/:rs-id/edit" {:name        :feature
+                              :view        #'feature-page
+                              :controllers [{:parameters {:path [:rs-id]}
+                                             :start      (fn [{{:keys [rs-id]} :path}]
+                                                           (rf/dispatch [:fetch-feature rs-id]))}]}]
      ["/about" {:name :about
                 :view #'about-page}]]))
 
