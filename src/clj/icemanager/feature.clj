@@ -19,16 +19,13 @@
   (db/get-feature-by-rs-id {:rs_id rs-id-lower}))
 
 (defn update-feature [id feature-map]
-  (let [new-data {
-                  :rs_id       (:rs-id feature-map)
-                  :title       (:title feature-map)
-                  :description (:description feature-map)
-                  :version     (:version feature-map)
-                  :info        {:status    (:status feature-map)
-                                :developer (:developer feature-map)
-                                :designRes (:designRes feature-map)
-                                :uiRes     (:uiRes feature-map)}
-                  :update_at   (LocalDateTime/now)}]
+  (let [select-data (select-keys feature-map
+                                 [:rs_id
+                                  :title
+                                  :description
+                                  :version
+                                  :info])
+        new-data (assoc select-data :update-at (LocalDateTime/now))]
     (jdbc/with-transaction
       [t db/*db*]
       (let [old-data (db/get-feature-by-id t {:id id})

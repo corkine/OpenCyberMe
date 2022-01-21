@@ -86,3 +86,56 @@
   :usage
   (fn [db _]
     (:usage db)))
+
+(rf/reg-event-fx
+  :send-wishlist
+  (fn [_ [_ data]]
+    {:http-xhrio {:method :post
+                  :params data
+                  :uri (str "/api/wishlist")
+                  :format (ajax/json-request-format)
+                  :response-format (ajax/json-response-format {:keywords? true})
+                  :on-failure [:set-send-wishlist-error]
+                  :on-success [:set-send-wishlist-success]}}))
+
+(rf/reg-event-db
+  :set-send-wishlist-success
+  (fn [db [_ result]]
+    (assoc db :wishlist-server-back {:status :success
+                                     :content "请求已记录，感谢您的反馈。"})))
+
+(rf/reg-event-db
+  :set-send-wishlist-error
+  (fn [db [_ error]]
+    (assoc db :wishlist-server-back {:status :fail
+                                     :content error})))
+
+(rf/reg-event-db
+  :clean-wishlist-server-back
+  (fn [db _]
+    (dissoc db :wishlist-server-back)))
+
+(rf/reg-sub
+  :wishlist-server-back
+  (fn [db _]
+    (:wishlist-server-back db)))
+
+(rf/reg-event-fx
+  :fetch-wishlist
+  (fn [_ _]
+    {:http-xhrio {:method          :get
+                  :uri             "/api/wishlist"
+                  :response-format (ajax/json-response-format {:keywords? true})
+                  :on-success      [:set-wishlist]}}))
+
+(rf/reg-event-db
+  :set-wishlist
+  (fn [db [_ wishlist]]
+    (assoc db :wishlist wishlist)))
+
+(rf/reg-sub
+  :wishlist
+  (fn [db _]
+    (:wishlist db)))
+
+

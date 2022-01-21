@@ -94,6 +94,13 @@
    ["/usage"
     {:get {:handler (fn [_]
                       (hr/response (db/api-served-count)))}}]
+   ["/wishlist"
+    {:auth/logged true
+     :post {:parameters {:body any?}
+            :handler (fn [{{body :body} :parameters}]
+                       (hr/response (db/insert-wishlist body)))}
+     :get {:handler (fn [_]
+                      (hr/response (db/find-all-wish)))}}]
    ["/files"
     {:swagger {:tags ["files"]}}
 

@@ -58,3 +58,11 @@ with addr(p) as (select info ->> 'remote-addr' from logs),
      p_addr as (select distinct * from addr)
     (select (select count(*) from p_addr) as pv,
             (select count(*) from addr)   as uv);
+-- :name insert-wishlist :! :1
+insert into wishlist(client, kind, advice) values
+(:client,:kind,:advice) returning *;
+-- :name find-all-wish :? :*
+select * from wishlist
+where kind = '愿望'
+order by add_time desc
+limit 50;
