@@ -50,7 +50,8 @@
     (for [data @(rf/subscribe [:get-features])]
       ^{:key (:id data)}
       [feature/feature-card data {:with-footer      true
-                                  :with-description true}])]])
+                                  :with-description true
+                                  :with-edit true}])]])
 
 (defn feature-page []
   (let [feature-data @(rf/subscribe [:current-feature])]

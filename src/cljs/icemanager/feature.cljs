@@ -76,7 +76,7 @@
       name])])
 
 (defn feature-card [{:keys [id rs_id title version description update_at info]}
-                    {:keys [with-footer with-description with-big-pic]}]
+                    {:keys [with-footer with-description with-big-pic with-edit]}]
   [(if with-footer :div.box.columns.mt-5
                    :div.columns.mt-5)
    [:div.column {:style {:z-index :2}}
@@ -84,9 +84,9 @@
      [:span {:on-click #(rf/dispatch [:common/navigate! :feature-view
                                       {:rs-id (string/lower-case rs_id)}])
              :style    {:cursor       :pointer
-                        :margin-right (if-not with-footer :10px :0px)}}
+                        :margin-right (if-not with-edit :10px :0px)}}
       title]
-     (when with-footer
+     (when with-edit
        [:span [:a {:on-click #(rf/dispatch [:common/navigate! :feature
                                             {:rs-id (string/lower-case rs_id)}])
                    :style    {:cursor         :pointer
@@ -137,8 +137,8 @@
                 :position  :absolute
                 :top       :16px
                 :right     :-120px
-                :z-index :0
-                :opacity :0.2
+                :z-index   :0
+                :opacity   :0.2
                 }} "camera"]])])
 
 (defn reformat-review-user-to-array [row]
@@ -278,7 +278,7 @@
       (if (empty? implement-keys) {:readonly ""})]
      [common-field [(get implement-keys implement-index) :content]
       "步骤内容" "在此输入方案分解的具体实施计划"
-      {:type :textarea
+      {:type     :textarea
        :readonly (if (empty? implement-keys) "" nil)}]]))
 
 (defn review-form [fields common-field]
@@ -329,7 +329,7 @@
       (if (empty? review-keys) {:readonly ""})]
      [common-field [(get review-keys review-index) :content]
       "内容" "在此输入此次评审的主要内容"
-      {:type :textarea
+      {:type     :textarea
        :readonly (if (empty? review-keys) "" nil)}]]))
 
 (defn feature-form [db-data]
@@ -416,8 +416,9 @@
     {:style {:padding-left   :30px
              :padding-bottom :30px}}
     [feature-card feature-data {:with-footer      false
-                                        :with-description false
-                                        :with-big-pic true}]]
+                                :with-description false
+                                :with-big-pic     true
+                                :with-edit true}]]
    [:section.section>div.container>div.content
     (let [{:keys [description version rs_id info]} feature-data
           {:keys [uiRes designRes status developer implement review]} info]
@@ -450,8 +451,8 @@
         (for [[index {:keys [title content]}] (map-indexed vector implement)]
           ^{:key title}
           [:<>
-           [:h5  " # " title " " [:span.tag.is-light {:style {:vertical-align :10%}}
-                                  (str "RS." rs_id ".00" (inc index))]]
+           [:h5 " # " title " " [:span.tag.is-light {:style {:vertical-align :10%}}
+                                 (str "RS." rs_id ".00" (inc index))]]
            [:p content]])]
        [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "评审记录"]
        [:div.ml-2
