@@ -41,5 +41,22 @@
     [t db/*db*]
     (let [usage (db/api-served-count t)
           api-usage (db/last-10-edit t)
-          _ (println "usage " usage ", api: " api-usage)]
+          ;_ (println "usage " usage ", api: " api-usage)
+          ]
       (merge usage {:usage api-usage}))))
+
+(defn add-feature [data]
+  (try
+    (let [merged-data (assoc data :info {:status (:status data)}
+                                  :description (or (:description data) ""))]
+      {:message "添加特性成功。"
+       :data (db/insert-feature merged-data)})
+    (catch Exception e
+      {:message (str "添加特性失败： "  e)})))
+
+(defn delete-feature [data]
+  (try
+    {:message "删除特性成功。"
+     :data (db/delete-feature data)}
+    (catch Exception e
+      {:message (str "删除特性失败： " e)})))

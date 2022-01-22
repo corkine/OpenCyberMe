@@ -1,18 +1,25 @@
 -- :name all-features :? :*
 select *
 from features
+where info ->> 'delete' is null
 order by update_at desc;
 -- :name get-feature-by-rs-id :? :1
 select *
 from features
-where rs_id ~* :rs_id;
+where rs_id ~* :rs_id and info ->> 'delete' is null;
 -- :name get-feature-by-id :? :1
 select *
 from features
-where id = :id;
--- :name insert-feature
+where id = :id and info ->> 'delete' is null;
+-- :name insert-feature :! :1
 insert into features(rs_id, title, description, version, info)
-values (:rs_id, :title, :description, :version, :info);
+values (:rs_id, :title, :description, :version, :info)
+returning *;
+-- :name delete-feature :! :1
+update features
+set info = info || '{"delete":true}'::jsonb,
+    rs_id = substr(gen_random_uuid()::text,0,14)
+where id = :id;
 -- :name update-info
 update features
 set info = info || :info
@@ -59,15 +66,20 @@ with addr(p) as (select info ->> 'remote-addr' from logs),
     (select (select count(*) from p_addr) as pv,
             (select count(*) from addr)   as uv);
 -- :name last-10-edit :? :*
-select info->>'remote-addr' as from, 'post' as method, api, record_ts as time from logs
+select info ->> 'remote-addr' as from, 'post' as method, api, record_ts as time
+from logs
 where info ->> 'request-method' = 'post'
 order by record_ts desc
 limit 10;
 -- :name insert-wishlist :! :1
-insert into wishlist(client, kind, advice) values
-(:client,:kind,:advice) returning *;
+insert into wishlist(client, kind, advice)
+values (:client, :kind, :advice)
+returning *;
 -- :name find-all-wish :? :*
-select * from wishlist
+select *
+from wishlist
 where kind = '愿望'
 order by add_time desc
 limit 50;
+
+

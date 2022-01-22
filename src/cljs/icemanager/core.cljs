@@ -13,9 +13,22 @@
     [reitit.frontend.easy :as rfe]
     [clojure.string :as string]
     [icemanager.feature :as feature]
+    [icemanager.modals :as modals]
     [icemanager.about :refer [log about-page]]
+    [icemanager.feature-new :as feature-new]
+    [icemanager.feature-view :as feature-view]
+    [icemanager.feature-edit :as feature-edit]
     [icemanager.request :as req])
   (:import goog.History))
+
+(defn top-point []
+  (r/create-class
+    {:component-did-mount
+     (fn [this]
+       (.scrollTo js/window 0 0)
+       #_(when true (.scrollIntoView (rdom/dom-node this) true)))
+     :reagent-render
+     (fn [_] [:div ""])}))
 
 (defn nav-link [uri title page]
   [:a.navbar-item
@@ -37,11 +50,13 @@
                 {:class (when @expanded? :is-active)}
                 [:div.navbar-start
                  [nav-link "#/" "主页" :home]
-                 #_[nav-link "#/feature" "特性" :feature]
-                 [nav-link "#/about" "关于" :about]]]]))
+                 [nav-link "#/about" "关于" :about]]
+                [:div.navbar-end
+                 [:div.navbar-item [feature-new/new-feature-btn]]]]]))
 
 (defn home-page []
   [:<>
+   [top-point]
    [:div.hero.is-warning.is-small
     [:div.hero-body
      [:p.title "ICE 特性列表"]
@@ -51,7 +66,7 @@
       ^{:key (:id data)}
       [feature/feature-card data {:with-footer      true
                                   :with-description true
-                                  :with-edit true}])]])
+                                  :with-edit        true}])]])
 
 (defn feature-page []
   (let [feature-data @(rf/subscribe [:current-feature])]
@@ -62,11 +77,11 @@
       [feature/feature-card feature-data {:with-footer      false
                                           :with-description true}]]
      [:section.section>div.container>div.content
-      [feature/feature-form feature-data]]]))
+      [feature-edit/feature-form feature-data]]]))
 
 (defn feature-view-page []
   (let [feature-data @(rf/subscribe [:current-feature])]
-    [feature/feature-view-content feature-data]))
+    [feature-view/feature-view-content feature-data]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]

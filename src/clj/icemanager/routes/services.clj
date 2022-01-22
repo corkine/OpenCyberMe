@@ -12,6 +12,7 @@
     [icemanager.feature :as feature]
     [ring.util.http-response :refer :all]
     [clojure.java.io :as io]
+    [clojure.tools.logging :as log]
     [icemanager.auth :as auth]
     [icemanager.db.core :as db]))
 
@@ -73,6 +74,13 @@
                             :body   {:total (+ x y)}})}}]]
 
    ["/feature"
+    [""
+     {:auth/logged true
+      :post        {:summary    "添加特性"
+                    :parameters {:body any?}
+                    :handler    (fn [{{body :body} :parameters}]
+                                  #_(log/info "body: " body)
+                                  (hr/response (feature/add-feature body)))}}]
     ["/:rs-id-lower"
      {:auth/logged true
       :get  {:summary    "获取特性特性信息"
@@ -85,7 +93,13 @@
              :handler    (fn [{{body :body
                                 {:keys [rs-id-lower]}   :path} :parameters}]
                            #_(hr/not-found "Not Found")
-                           (hr/response (feature/update-feature rs-id-lower body)))}}]]
+                           (hr/response (feature/update-feature rs-id-lower body)))}}]
+    ["/:id/delete"
+     {:auth/logged true
+      :post {:summary "删除特性"
+             :parameters {:path {:id string?}}
+             :handler (fn [{{data :path} :parameters}]
+                        (hr/response (feature/delete-feature data)))}}]]
    ["/features"
     {:auth/logged true
      :get {:summary "获取所有特性"

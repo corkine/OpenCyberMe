@@ -1,21 +1,19 @@
-# icemanager
+# ICE Manager
 
-generated using Luminus version "3.91"
-
-FIXME
+ICE 特性（文档和评审）管理器，使用 clojure 和 clojurescript 搭建。
 
 ## Prerequisites
 
-You will need [Leiningen][1] 2.0 or above installed.
+使用 [Leiningen][1] 构建，依赖 postgreSQL 数据库。
 
 [1]: https://github.com/technomancy/leiningen
 
 ## Running
+    
+    //backend
+    lein repl
 
-To start a web server for the application, run:
+    //frontend
+    lein shadow watch app
 
-    lein run 
-
-## License
-
-Copyright © 2022 FIXME
+Copyright © 2022 Corkine Ma & Inspur Cisco Networking Technology Co.Ltd, Wuhan, China.
