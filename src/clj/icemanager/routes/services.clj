@@ -93,7 +93,7 @@
                       (hr/response (feature/all-features)))}}]
    ["/usage"
     {:get {:handler (fn [_]
-                      (hr/response (db/api-served-count)))}}]
+                      (hr/response (feature/fetch-usage)))}}]
    ["/wishlist"
     {:auth/logged true
      :post {:parameters {:body any?}

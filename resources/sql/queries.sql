@@ -58,6 +58,11 @@ with addr(p) as (select info ->> 'remote-addr' from logs),
      p_addr as (select distinct * from addr)
     (select (select count(*) from p_addr) as pv,
             (select count(*) from addr)   as uv);
+-- :name last-10-edit :? :*
+select info->>'remote-addr' as from, 'post' as method, api, record_ts as time from logs
+where info ->> 'request-method' = 'post'
+order by record_ts desc
+limit 10;
 -- :name insert-wishlist :! :1
 insert into wishlist(client, kind, advice) values
 (:client,:kind,:advice) returning *;

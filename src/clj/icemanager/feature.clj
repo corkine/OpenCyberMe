@@ -35,3 +35,11 @@
                     ", from req: " new-data
                     ", merged: " m-data)
         (db/update-feature t m-data)))))
+
+(defn fetch-usage []
+  (jdbc/with-transaction
+    [t db/*db*]
+    (let [usage (db/api-served-count t)
+          api-usage (db/last-10-edit t)
+          _ (println "usage " usage ", api: " api-usage)]
+      (merge usage {:usage api-usage}))))
