@@ -84,10 +84,10 @@
       [feature-edit/feature-form feature-data]]]))
 
 (defn feature-view-page []
-  (let [feature-data @(rf/subscribe [:current-feature])]
+  (let [feature-data @(rf/subscribe [:current-feature])
+        go @(rf/subscribe [:view-go])]
     [:<>
-     [top-point]
-     [feature-view/feature-view-content feature-data]]))
+     [feature-view/feature-view-content feature-data go]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]
@@ -113,9 +113,13 @@
                                                            (rf/dispatch [:fetch-feature rs-id]))}]}]
      ["/feature/:rs-id/" {:name        :feature-view
                           :view        #'feature-view-page
-                          :controllers [{:parameters {:path [:rs-id]}
-                                         :start      (fn [{{:keys [rs-id]} :path}]
-                                                       (rf/dispatch [:fetch-feature rs-id]))}]}]
+                          :controllers [{:parameters {:path  [:rs-id]
+                                                      :query [:go]}
+                                         :start      (fn [{{:keys [rs-id]} :path
+                                                           {:keys [go]}    :query}]
+                                                       (rf/dispatch [:set-view-go go])
+                                                       (rf/dispatch [:fetch-feature rs-id]))
+                                         :stop       (fn [_] (rf/dispatch [:clean-view-go]))}]}]
      ["/about" {:name        :about
                 :view        #'about-page
                 :controllers [{:start (fn [_]

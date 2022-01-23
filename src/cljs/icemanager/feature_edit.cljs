@@ -480,8 +480,10 @@
         {:type :textarea}]
        [common-field :version "引入版本" "输入 ICE 4.3 或者 ICE 5.0"
         {:type :select :selects f/ice-versions}]
-       [common-field [:info :uiRes] "UI 渲染图 URL" "输入 UI 渲染图所在文件夹"]
        [common-field [:info :designRes] "设计图 URL" "输入设计图 xxx.svg 所在的位置"]
+       [common-field [:info :uiRes] "UI 渲染图 URL" "输入 UI 渲染图所在文件夹"]
+       [common-field [:info :apiRes] "外部测试环境 URL"
+        "本特性的外部 SwaggerUI/PostMan/ApiMan 测试环境 URL"]
        [common-field [:info :status] "当前状态" "正在开发，开发完毕 或者尚未开始"
         {:type :select :selects f/ice-status}]
        [developer-form fields common-field]

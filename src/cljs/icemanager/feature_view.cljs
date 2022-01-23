@@ -1,7 +1,25 @@
 (ns icemanager.feature-view
   (:require [icemanager.feature :as feature]
             [clojure.string :as string]
-            [goog.string :as gstring]))
+            [goog.string :as gstring]
+            [reagent.core :as r]
+            [reagent.dom :as rdom]))
+
+(defn feature-head [title go]
+  (r/create-class
+    {:component-did-mount
+     (fn [this]
+       (when (= go title) (.scrollIntoView (rdom/dom-node this) true)))
+     :reagent-render
+     (fn [_] [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 title])}))
+
+(defn feature-top [go]
+  (r/create-class
+    {:component-did-mount
+     (fn [this]
+       (when (= go nil) (.scrollTo js/window 0 0)))
+     :reagent-render
+     (fn [_] [:p ""])}))
 
 (defn format-req-resp [in]
   (map (fn [{:keys [name type example description]}]
@@ -11,8 +29,9 @@
                          (if (string/blank? description) "" (str ";; "description))))
        in))
 
-(defn feature-view-content [feature-data]
+(defn feature-view-content [feature-data go]
   [:<>
+   [feature-top]
    [:div.hero.is-success.is-small
     {:style {:padding-left   :30px
              :padding-bottom :30px}}
@@ -22,7 +41,8 @@
                                         :with-edit        true}]]
    [:section.section>div.container>div.content
     (let [{:keys [description version rs_id info]} feature-data
-          {:keys [uiRes designRes status developer implement review api]} info]
+          {:keys [uiRes designRes status developer implement review api
+                  apiRes]} info]
       [:<>
        [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3
         {:style {:margin-top :-15px}} "特性简介"]
@@ -47,7 +67,16 @@
                                         :margin-right   :3px}} "call_made"]
             "点此显示预览界面"]]
           [:div "暂无相关文件"])]
-       [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "API 接口"]
+       [feature-head "API 测试环境" go]
+       [:div.ml-2
+        (if-not (string/blank? apiRes)
+          [:<>
+           [:a {:href apiRes :target :_black}
+            [:i.material-icons {:style {:vertical-align :-20%
+                                        :margin-right   :3px}} "call_made"]
+            "点此打开外部 API 测试环境"]]
+          [:div "暂无本特性的外部接口测试环境"])]
+       [feature-head "API 接口" go]
        [:div.ml-2
         (for [[index {:keys [name note path method request response]}]
               (map-indexed vector api)]

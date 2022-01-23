@@ -261,3 +261,17 @@
   :del-feature-server-back
   (fn [db _]
     (:del-feature-server-back db)))
+
+(rf/reg-event-db
+  :set-view-go
+  (fn [db [_ go]]
+    (assoc db :view-go go)))
+
+(rf/reg-sub
+  :view-go
+  (fn [db _] (:view-go db)))
+
+(rf/reg-event-db
+  :clean-view-go
+  (fn [db _]
+    (dissoc db :view-go)))

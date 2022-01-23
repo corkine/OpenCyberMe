@@ -31,7 +31,7 @@
     (catch js/Error. e
       {:error (str "不合法的 JSON 字符串，" e) :data nil})))
 
-(defn feature-bottom-button [rs-id]
+(defn feature-bottom-button [rs-id apiRes]
   (let [lower-id (string/lower-case rs-id)]
     [:div
      {:style {:display         :flex
@@ -50,15 +50,28 @@
       [:i.material-icons {:style {:vertical-align :-20%
                                   :padding-right  :5px
                                   :margin-left    :-5px}}
-       "picture_as_pdf"]
-      [:span "导出 PDF"]]
-     [:a.button.mr-2.mt-1.mb-1
-      {:href (str "/" lower-id ".api")}
-      [:i.material-icons {:style {:vertical-align :-20%
-                                  :padding-right  :5px
-                                  :margin-left    :-5px}}
-       "public"]
-      [:span "Swagger 接口"]]]))
+       "description" #_"picture_as_pdf"]
+      [:span "评审文档"]]
+     (if apiRes
+       [:a.button.mr-2.mt-1.mb-1
+        {:href apiRes :target :_black}
+        [:i.material-icons {:style {:vertical-align :-20%
+                                    :padding-right  :5px
+                                    :margin-left    :-5px}}
+         "call_made"]
+        [:span "API 测试环境"]]
+       [:a.button.mr-2.mt-1.mb-1
+        {:on-click
+         (fn [_] (reitit.frontend.easy/push-state
+                   :feature-view {:rs-id (string/lower-case rs-id)}
+                   {:go "API 接口"})
+           #_(rf/dispatch [:common/navigate! :feature-view
+                          {:rs-id (string/lower-case rs-id)}]))}
+        [:i.material-icons {:style {:vertical-align :-20%
+                                    :padding-right  :5px
+                                    :margin-left    :-5px}}
+         "public"]
+        [:span "API 接口"]])]))
 
 (defn developer-card [dev-list {:keys [href-link]}]
   [:<>
@@ -131,7 +144,7 @@
                     (if (vector? dev-list) dev-list [dev-list])
                     {:href-link (if with-footer "#545454" "white")}]]])
     [:p "最后更新：" update_at]
-    (when with-footer [feature-bottom-button rs_id])]
+    (when with-footer [feature-bottom-button rs_id (get info :apiRes)])]
    (when with-description
      [:div.tile.notification.column
       (when (not with-footer)
