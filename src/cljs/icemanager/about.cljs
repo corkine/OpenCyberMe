@@ -5,8 +5,10 @@
             [goog.string :as gstring]
             [clojure.string :as string]))
 
+(def version "alpha 0.1.3")
 
-(def log "[2022-01-19]
+(def log (str "now: " version "
+[2022-01-19]
 搭建 luminus 项目，完成前端、后端和数据库框架
 [2022-01-20]
 修复了多个按钮在移动端的 UI 展示问题。
@@ -25,6 +27,7 @@
 [2022-01-23]
 为 'API 接口调用' 可视化功能提供更好的展示格式。
 实现了按照 '版本'，'状态'，'开发者' 从前端对特性进行过滤，且允许通过 URL 访问特性过滤条件列表。
+解决了一个在 webkit 内核浏览器上由于 <select> 标签 on-click 导致无法过滤特性的 BUG。
 
 ================================================
 愿望清单：
@@ -40,7 +43,7 @@
 - 实现根据项目筛选特性的能力：ICE 4.3 or ICE 5.0（已实现）
 - 整合 devKit，根据数据自动生成 TR 文档，评审文档
 - 根据特性的 API 接口自动生成 Swagger 文档（推迟，暂无必要）
-")
+"))
 
 (defn about-page []
   [:div.hero.is-danger.is-fullheight-with-navbar
