@@ -10,7 +10,7 @@ ICE 特性（文档和评审）管理器，使用 clojure 和 clojurescript 搭�
 
 ## Features
 
-- 使用 cljs 提供 “格式化 ICE 特性数据” 的前端交互接口。
+- 使用 cljs 提供 “格式化 ICE 特性数据” 的前端交互接口：功能丰富，实用与美观并重。
 - 使用 clojure 基于 “格式化 ICE 特性数据” 生成丰富的展示：HTML 文档，DOCX 文档，PDF 文档，TR 和评审文档等。
 
 ## Running

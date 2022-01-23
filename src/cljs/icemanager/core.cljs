@@ -57,12 +57,60 @@
 (defn home-page []
   [:<>
    [top-point]
-   [:div.hero.is-warning.is-small
-    [:div.hero-body
-     [:p.title "ICE 特性列表"]
-     [:p "当前正在开发的 ICE 特性列表"]]]
-   [:section.section>div.container>div.content {:style {:margin-top "-20px"}}
-    (for [data @(rf/subscribe [:get-features])]
+   (let [versions @(rf/subscribe [:all-version])
+         developers @(rf/subscribe [:all-developer])
+         statuses @(rf/subscribe [:all-status])
+         select @(rf/subscribe [:filter])]
+     [:div.hero.is-warning.is-small
+      [:div.hero-body
+       [:p.title "ICE 特性列表"]
+       [:div.columns
+        [:div.column.is-6
+         [:p "纳入系统管理的 ICE 特性列表"]]
+        [:div.column.is-6.has-text-right.has-text-left-mobile
+         {:style {:margin-top "-8px"}}
+         [:div.select.is-small.is-warning.mr-2.mt-1>select
+          {:on-click (fn [e]
+                       (let [sel-o (-> e .-target .-value)
+                             mg (if (= sel-o "所有版本")
+                                  (dissoc select :version)
+                                  (assoc select :version sel-o))]
+                         (rf/dispatch [:set-filter mg])
+                         (reitit.frontend.easy/replace-state :home nil mg)))
+           :value (or (:version select) "")
+           :on-change (fn [_])}
+          [:option "所有版本"]
+          (for [version versions]
+            ^{:key version}
+            [:option {:value version} version])]
+         [:div.select.is-small.is-warning.mr-2.mt-1>select
+          {:on-click (fn [e] (let [sel-o (-> e .-target .-value)
+                                   mg (if (= sel-o "任意状态")
+                                        (dissoc select :status)
+                                        (assoc select :status sel-o))]
+                               (rf/dispatch [:set-filter mg])
+                               (reitit.frontend.easy/replace-state :home nil mg)))
+           :value (or (:status select) "")
+           :on-change (fn [_])}
+          [:option "任意状态"]
+          (for [status statuses]
+            ^{:key status}
+            [:option {:value status} status])]
+         [:div.select.is-small.is-warning.mr-2.mt-1>select
+          {:on-click (fn [e] (let [sel-o (-> e .-target .-value)
+                                   mg (if (= sel-o "任意人员")
+                                        (dissoc select :contains)
+                                        (assoc select :contains sel-o))]
+                               (rf/dispatch [:set-filter mg])
+                               (reitit.frontend.easy/replace-state :home nil mg)))
+           :value (or (:contains select) "")
+           :on-change (fn [_])}
+          [:option "任意人员"]
+          (for [developer developers]
+            ^{:key developer}
+            [:option {:value developer} (str "包含:" developer)])]]]]])
+   [:section.section>div.container>div.content {:style {:margin-top "-40px"}}
+    (for [data @(rf/subscribe [:get-filtered-features])]
       ^{:key (:id data)}
       [feature/feature-card data {:with-footer      true
                                   :with-description true
@@ -81,7 +129,9 @@
 
 (defn feature-view-page []
   (let [feature-data @(rf/subscribe [:current-feature])]
-    [feature-view/feature-view-content feature-data]))
+    [:<>
+     [top-point]
+     [feature-view/feature-view-content feature-data]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]
@@ -96,7 +146,10 @@
   (reitit/router
     [["/" {:name        :home
            :view        #'home-page
-           :controllers [{:start (fn [_] (rf/dispatch [:fetch-features]))}]}]
+           :controllers [{:parameters {:query [:status :contains :version]}
+                          :start (fn [{{:keys [status contains version] :as query} :query}]
+                                   (rf/dispatch [:set-filter query])
+                                   (rf/dispatch [:fetch-features]))}]}]
      ["/feature/:rs-id/edit" {:name        :feature
                               :view        #'feature-page
                               :controllers [{:parameters {:path [:rs-id]}

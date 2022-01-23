@@ -3,7 +3,8 @@
     [re-frame.core :as rf]
     [ajax.core :as ajax]
     [reitit.frontend.easy :as rfe]
-    [reitit.frontend.controllers :as rfc]))
+    [reitit.frontend.controllers :as rfc]
+    [clojure.string :as string]))
 
 ;;;;;;;;;;;;;; fetch feature and features, update feature ;;;;;;;;;;;
 
@@ -24,6 +25,48 @@
   :get-features
   (fn [db _]
     (:features db)))
+
+(rf/reg-event-db
+  :set-filter
+  (fn [db [_ data]]
+    (assoc db :filter data)))
+
+(rf/reg-sub
+  :filter
+  (fn [db _] (:filter db)))
+
+(rf/reg-sub
+  :get-filtered-features
+  (fn [db _]
+    (let [{:keys [version status contains]} (:filter db)]
+      (vec (filter (fn [f] (let [ver (:version f)
+                                 sta (-> f :info :status)
+                                 all-dev (-> f :info :developer)
+                                 all-dev (if (vector? all-dev) all-dev [all-dev])
+                                 dev (set (map :name all-dev))]
+                             (and (or (= version nil) (= version ver))
+                                  (or (= status nil) (= status sta))
+                                  (or (= contains nil) (contains? dev contains)))))
+                   (:features db))))))
+
+(rf/reg-sub
+  :all-version
+  (fn [db _]
+    (set (map #(get % :version) (get db :features [])))))
+
+(rf/reg-sub
+  :all-status
+  (fn [db _]
+    (set (map #(get-in % [:info :status]) (get db :features [])))))
+
+(rf/reg-sub
+  :all-developer
+  (fn [db _]
+    (set (remove nil?
+                 (flatten
+                   (map (fn [{{:keys [developer]} :info}]
+                          (map #(get % :name) developer))
+                        (get db :features [])))))))
 
 (rf/reg-event-fx
   :fetch-feature

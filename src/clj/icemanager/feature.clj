@@ -40,9 +40,7 @@
   (jdbc/with-transaction
     [t db/*db*]
     (let [usage (db/api-served-count t)
-          api-usage (db/last-10-edit t)
-          ;_ (println "usage " usage ", api: " api-usage)
-          ]
+          api-usage (db/last-10-edit t)]
       (merge usage {:usage api-usage}))))
 
 (defn add-feature [data]

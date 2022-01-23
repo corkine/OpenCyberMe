@@ -148,10 +148,10 @@
             [:a
              {:on-click (fn [_] (swap! fields assoc form-index-kw index))}
              [:<>
-              [:i.material-icons {:style {:font-size   :1.3em :margin-top :4px
+              [:i.material-icons {:style {:font-size   :1.3em
                                           :margin-left :-2px :margin-right :5px}}
                "fiber_smart_record"]
-              (or (:name data) "键值对")]
+              (or (:name data) "键")]
              [:i.material-icons {:style    {:font-size :1em :margin-left :0.5em}
                                  :on-click (fn [_]
                                              (swap! fields dissoc param-key)

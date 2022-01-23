@@ -2,6 +2,7 @@
   (:require [re-frame.core :as rf]
             [reagent.core :as r]
             [icemanager.modals :as modals]
+            [goog.string :as gstring]
             [clojure.string :as string]))
 
 
@@ -21,6 +22,9 @@
 提供了可视化 'API 接口调用' 最近变更统计功能。
 提供 '新建特性' 和 '删除特性' 功能。
 提供特性的 'API 接口' 编辑和展示功能。
+[2022-01-23]
+为 'API 接口调用' 可视化功能提供更好的展示格式。
+实现了按照 '版本'，'状态'，'开发者' 从前端对特性进行过滤，且允许通过 URL 访问特性过滤条件列表。
 
 ================================================
 愿望清单：
@@ -33,7 +37,7 @@
 - 提供移除特性的能力（已实现）
 - 实现新建 ICE 特性的能力（已实现）
 - 实现特性 API 接口编辑功能（已实现）
-- 实现根据项目筛选特性的能力：ICE 4.3 or ICE 5.0
+- 实现根据项目筛选特性的能力：ICE 4.3 or ICE 5.0（已实现）
 - 整合 devKit，根据数据自动生成 TR 文档，评审文档
 - 根据特性的 API 接口自动生成 Swagger 文档（推迟，暂无必要）
 ")
@@ -54,7 +58,10 @@
                                                     " / 来自：" (:client line) "")) wish-list))
                   "\n\n================================================\n最近 10 次 API 更改：\n"
                   (string/join "\n"
-                               (map #(str (:from %) " " (:method %) " " (:api %) " " (:time %)) (:usage usage))))]
+                               (map #(gstring/format "%-15s %-4s %-20s %-s"
+                                                     (:from %) (string/upper-case (:method %))
+                                                     (:api %) (:time %))
+                                    (:usage usage))))]
        [:div.mb-3
         (r/with-let
           [user (r/atom nil)
@@ -79,7 +86,7 @@
               [:option {:value "愿望"} "愿望"]
               [:option {:value "建议"} "建议"]
               [:option {:value "BUG"} "BUG"]]
-             [:label.label.mt-4 {:for "advice"} (str @kind " * (不少于 20 个字)")]
+             [:label.label.mt-4 {:for "advice"} (str @kind " * (不少于 10 个字)")]
              [:textarea.textarea {:rows        4
                                   :value       (or @advice "")
                                   :id          :advice
@@ -107,7 +114,7 @@
                              (cond (nil? @user) (reset! error "称呼不能为空")
                                    (nil? @kind) (reset! error "类别不能为空")
                                    (nil? @advice) (reset! error (str @kind "不能为空"))
-                                   (< (count @advice) 20) (reset! error (str @kind "少于 20 个字。"))
+                                   (< (count @advice) 10) (reset! error (str @kind "少于 10 个字。"))
                                    :else (rf/dispatch [:send-wishlist {:client @user
                                                                        :kind   @kind
                                                                        :advice @advice}]))))}

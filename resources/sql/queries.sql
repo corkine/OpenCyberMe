@@ -82,4 +82,3 @@ where kind = '愿望'
 order by add_time desc
 limit 50;
 
-
