@@ -60,7 +60,7 @@
    [feature/feature-filter]
    (let [feature-filtered @(rf/subscribe [:get-filtered-features])]
      (if-not (empty? feature-filtered)
-       [:section.section>div.container>div.content {:style {:margin-top "-40px"}}
+       [:section.section>div.container>div.content.mx-3 {:style {:margin-top "-40px"}}
         (for [data feature-filtered]
           ^{:key (:id data)}
           [feature/feature-card data {:with-footer      true
@@ -75,11 +75,12 @@
 (defn feature-page []
   (let [feature-data @(rf/subscribe [:current-feature])]
     [:<>
-     [:div.hero.is-success.is-small
-      {:style {:padding-left   :30px
-               :padding-bottom :30px}}
-      [feature/feature-card feature-data {:with-footer      false
-                                          :with-description true}]]
+     [:div {:style {:background-color :#48c774}}
+      [:div.hero.is-success.is-small.container.is-fullhd
+       {:style {:padding-left   :30px
+                :padding-bottom :30px}}
+       [feature/feature-card feature-data {:with-footer      false
+                                           :with-description true}]]]
      [:section.section>div.container>div.content
       [feature-edit/feature-form feature-data]]]))
 
@@ -119,7 +120,9 @@
                                                            {:keys [go]}    :query}]
                                                        (rf/dispatch [:set-view-go go])
                                                        (rf/dispatch [:fetch-feature rs-id]))
-                                         :stop       (fn [_] (rf/dispatch [:clean-view-go]))}]}]
+                                         :stop       (fn [_]
+                                                       (rf/dispatch [:clean-current-feature])
+                                                       (rf/dispatch [:clean-view-go]))}]}]
      ["/about" {:name        :about
                 :view        #'about-page
                 :controllers [{:start (fn [_]

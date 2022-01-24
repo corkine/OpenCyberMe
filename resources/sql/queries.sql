@@ -78,7 +78,7 @@ returning *;
 -- :name find-all-wish :? :*
 select *
 from wishlist
-where kind = '愿望'
+where kind = '愿望' or kind = 'BUG'
 order by add_time desc
 limit 50;
 

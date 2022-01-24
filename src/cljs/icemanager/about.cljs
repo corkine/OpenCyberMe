@@ -29,6 +29,9 @@
 实现了按照 '版本'，'状态'，'开发者' 从前端对特性进行过滤，且允许通过 URL 访问特性过滤条件列表。
 解决了一个在 webkit 内核浏览器上由于 <select> 标签 on-click 导致无法过滤特性的 BUG。
 为特性提供了 '外部 API 测试环境' 属性，如果有的话，则主页特性 card 提供按钮跳转，没有的话，则跳转到特性页 api 文档位置。
+[2022-01-24]
+修复了 hero 组件在宽屏上的显示问题。
+确定了在不同浏览器上 scrollToView 跳转的能力。
 
 ================================================
 愿望清单：
@@ -52,14 +55,20 @@
     [:p.title "由 Corkine Ma 开发"]
     (let [usage @(rf/subscribe [:usage])
           server-back @(rf/subscribe [:wishlist-server-back])
-          wish-list @(rf/subscribe [:wishlist])]
+          wish-list @(rf/subscribe [:wishlist])
+          real-wish-list (filter #(= (:kind %) "愿望") wish-list)
+          bug-list (filter #(= (:kind %) "BUG") wish-list)]
       [:<>
        [:p {:style {:margin-top :-20px}} (str "本服务已服务 " (:pv usage) " 人，共计 " (:uv usage) " 次")]
        [:pre (str log
                   "\n================================================\n数据库记录的请求：\n"
                   (string/join "\n"
                                (map (fn [line] (str "- " (:advice line)
-                                                    " / 来自：" (:client line) "")) wish-list))
+                                                    " / 来自：" (:client line) "")) real-wish-list))
+                  "\n\n================================================\n已知 BUG：\n"
+                  (string/join "\n"
+                               (map (fn [line] (str "- " (:advice line)
+                                                    " / 来自：" (:client line) "")) bug-list))
                   "\n\n================================================\n最近 10 次 API 更改：\n"
                   (string/join "\n"
                                (map #(gstring/format "%-15s %-4s %-20s %-s"

@@ -9,9 +9,9 @@
   (r/create-class
     {:component-did-mount
      (fn [this]
-       (when (= go title) (.scrollIntoView (rdom/dom-node this) true)))
+       (when (= go title) (js/setTimeout (fn [_] (.scrollIntoView (rdom/dom-node this) true)) 500)))
      :reagent-render
-     (fn [_] [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 title])}))
+     (fn [_] {:key (random-uuid)}[:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 title])}))
 
 (defn feature-top [go]
   (r/create-class
@@ -32,13 +32,14 @@
 (defn feature-view-content [feature-data go]
   [:<>
    [feature-top]
-   [:div.hero.is-success.is-small
-    {:style {:padding-left   :30px
-             :padding-bottom :30px}}
-    [feature/feature-card feature-data {:with-footer      false
-                                        :with-description false
-                                        :with-big-pic     true
-                                        :with-edit        true}]]
+   [:div {:style {:background-color :#48c774}}
+    [:div.hero.is-success.is-small.container
+     {:style {:padding-left   :30px
+              :padding-bottom :30px}}
+     [feature/feature-card feature-data {:with-footer      false
+                                         :with-description false
+                                         :with-big-pic     true
+                                         :with-edit        true}]]]
    [:section.section>div.container>div.content
     (let [{:keys [description version rs_id info]} feature-data
           {:keys [uiRes designRes status developer implement review api
@@ -52,13 +53,15 @@
         (if-not (string/blank? designRes)
           [:<>
            [:object {:data designRes :type "image/svg+xml"}]
+           [:br]
            [:a {:href designRes}
             [:i.material-icons {:style {:vertical-align :-30%
                                         :margin-right   :3px}}
              "insert_link"]
             designRes]]
           [:div "暂无相关文件"])]
-       [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "UI 渲染图"]
+       [feature-head "UI 渲染图" go]
+       #_[:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "UI 渲染图"]
        [:div.ml-2
         (if-not (string/blank? uiRes)
           [:<>
@@ -68,6 +71,7 @@
             "点此显示预览界面"]]
           [:div "暂无相关文件"])]
        [feature-head "API 测试环境" go]
+       #_[:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "API 测试环境"]
        [:div.ml-2
         (if-not (string/blank? apiRes)
           [:<>
@@ -77,6 +81,9 @@
             "点此打开外部 API 测试环境"]]
           [:div "暂无本特性的外部接口测试环境"])]
        [feature-head "API 接口" go]
+       #_[:h3.notification.is-link.is-light.pt-2.pb-2.pl-3
+        [:a {:href (let [origin (.-origin js/window.location)]
+                     (str origin "#/feature/" (string/lower-case (or rs_id "")) "/?go=api"))} "API 接口"]]
        [:div.ml-2
         (for [[index {:keys [name note path method request response]}]
               (map-indexed vector api)]

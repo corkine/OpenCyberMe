@@ -109,6 +109,11 @@
   (fn [db _]
     (:current-feature db)))
 
+(rf/reg-event-db
+  :clean-current-feature
+  (fn [db _]
+    (dissoc db :current-feature)))
+
 (rf/reg-sub
   :update-feature-error
   (fn [db _]
