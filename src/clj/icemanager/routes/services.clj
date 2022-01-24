@@ -14,6 +14,7 @@
     [clojure.java.io :as io]
     [clojure.tools.logging :as log]
     [icemanager.auth :as auth]
+    [icemanager.doc :as doc]
     [icemanager.db.core :as db]))
 
 (defn service-routes []
@@ -94,12 +95,25 @@
                                 {:keys [rs-id-lower]}   :path} :parameters}]
                            #_(hr/not-found "Not Found")
                            (hr/response (feature/update-feature rs-id-lower body)))}}]
+
     ["/:id/delete"
      {:auth/logged true
       :post {:summary "删除特性"
              :parameters {:path {:id string?}}
              :handler (fn [{{data :path} :parameters}]
-                        (hr/response (feature/delete-feature data)))}}]]
+                        (hr/response (feature/delete-feature data)))}}]
+    ["/:rs-id-lower/tr.docx"
+     {:get {:summary "下载 TR 文档"
+            :swagger {:produces ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]}
+            :parameters {:path {:rs-id-lower string?}}
+            :handler (fn [{{{:keys [rs-id-lower]}   :path} :parameters}]
+                       {:status  200
+                        :headers {"Content-Type"
+                                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+                        :body    (doc/resp-tr-doc rs-id-lower)
+                        #_(-> "public/img/warning_clojure.png"
+                                     (io/resource)
+                                     (io/input-stream))})}}]]
    ["/features"
     {:auth/logged true
      :get {:summary "获取所有特性"

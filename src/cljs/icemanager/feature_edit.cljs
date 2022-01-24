@@ -325,7 +325,7 @@
             "cancel"]]])
        [:a {:on-click (fn [_]
                         (let [new-key (keyword (str "implement." (first (string/split (random-uuid) "-"))))]
-                          (swap! fields assoc new-key {:title "" :content ""})
+                          (swap! fields assoc new-key {:title "" :content "" :summary ""})
                           (swap! fields assoc :implement-keys (conj implement-keys new-key))
                           (swap! fields assoc :implement-index (count implement-keys))))}
         [:i.material-icons "add"]]]]
@@ -335,6 +335,11 @@
      [common-field [(get implement-keys implement-index) :title]
       "步骤标题" "在此输入方案分解后的子标题"
       (if (empty? implement-keys) {:readonly ""})]
+     [common-field [(get implement-keys implement-index) :summary]
+      "步骤概述" "在此输入方案分解的概述"
+      {:type     :textarea
+       :rows     2
+       :readonly (if (empty? implement-keys) "" nil)}]
      [common-field [(get implement-keys implement-index) :content]
       "步骤内容" "在此输入方案分解的具体实施计划"
       {:type     :textarea
@@ -476,14 +481,18 @@
        [:div.title "特性概况"]
        [common-field :rs_id "RS 号" "全大写，不能有空格"]
        [common-field :title "特性名字" "简短易懂"]
-       [common-field :description "描述" "简短的对特性的应用场景进行描述"
-        {:type :textarea}]
+       [common-field :description "描述" "对特性的描述，第一个全角句号前必须是一句话精简描述。"
+        {:type :textarea :rows 2}]
        [common-field :version "引入版本" "输入 ICE 4.3 或者 ICE 5.0"
         {:type :select :selects f/ice-versions}]
        [common-field [:info :designRes] "设计图 URL" "输入设计图 xxx.svg 所在的位置"]
        [common-field [:info :uiRes] "UI 渲染图 URL" "输入 UI 渲染图所在文件夹"]
        [common-field [:info :apiRes] "外部测试环境 URL"
         "本特性的外部 SwaggerUI/PostMan/ApiMan 测试环境 URL"]
+       [common-field [:info :feature-version] "特性版本"
+        "当前特性的版本，不是 ICE 的版本，用于标记 TR 和评审文档"]
+       [common-field [:info :limit] "设计约束" "当前特性的设计约束"
+        {:type :textarea :rows 2}]
        [common-field [:info :status] "当前状态" "正在开发，开发完毕 或者尚未开始"
         {:type :select :selects f/ice-status}]
        [developer-form fields common-field]

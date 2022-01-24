@@ -25,6 +25,8 @@
                  [metosin/ring-http-response "0.9.1"]
                  [mount "0.1.16"]
                  [nrepl "0.8.3"]
+                 [lt.tokenmill/docx-utils "1.0.3"]
+                 [clj-pdf "2.5.5"]
                  [org.clojure/clojure "1.10.1"]
                  [org.clojure/clojurescript "1.10.773" :scope "provided"]
                  [org.clojure/core.async "1.3.610"]

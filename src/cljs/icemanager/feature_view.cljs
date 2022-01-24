@@ -106,11 +106,12 @@
                                    "attach_file"] (str "备注：" note)]])]
        [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "特性分解"]
        [:div.ml-2
-        (for [[index {:keys [title content]}] (map-indexed vector implement)]
+        (for [[index {:keys [title summary content]}] (map-indexed vector implement)]
           ^{:key title}
           [:<>
            [:h5 " # " title " " [:span.tag.is-light {:style {:vertical-align :10%}}
                                  (str "RS." rs_id ".00" (inc index))]]
+           [:p summary]
            [:p content]])]
        [:h3.notification.is-link.is-light.pt-2.pb-2.pl-3 "评审记录"]
        [:div.ml-2
