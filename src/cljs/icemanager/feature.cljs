@@ -39,7 +39,7 @@
               :justify-content :flex-start
               :margin-bottom   :-10px}}
      [:a.button.mr-2.mt-1.mb-1
-      {:href (str "/" lower-id ".docx")}
+      {:href (str "/api/feature/" lower-id "/tr.docx")}
       [:i.material-icons {:style {:vertical-align :-20%
                                   :padding-right  :5px
                                   :margin-left    :-5px}}
