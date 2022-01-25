@@ -94,9 +94,8 @@
                 api1 (doc-map 0)
                 api2 (doc-map 1)
                 api3 (doc-map 2)
-                api4 (doc-map 3)
-                _ (println "patH: " (.getPath (.getParentFile (io/file (io/resource "docs/tr.docx")))))]
-            (try (doc/transform (.getPath (.getParentFile (io/file (io/resource "docs/tr.docx"))))
+                api4 (doc-map 3)]
+            (try (doc/transform (str (io/as-file (io/resource "docs/tr.docx")))
                                 (concat
                                   (vec (map (fn [& [[hold real type]]]
                                               {:type        (or type :replace-text-inline)
