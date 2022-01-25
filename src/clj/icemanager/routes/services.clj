@@ -113,7 +113,13 @@
                         :body    (doc/resp-tr-doc rs-id-lower)
                         #_(-> "public/img/warning_clojure.png"
                                      (io/resource)
-                                     (io/input-stream))})}}]]
+                                     (io/input-stream))})}}]
+    ["/:rs-id-lower/review.pdf"
+     {:get {:summary "下载 Review 文档"
+            :swagger {:produces ["application/pdf"]}
+            :parameters {:path {:rs-id-lower string?}}
+            :handler (fn [{{{:keys [rs-id-lower]}   :path} :parameters}]
+                       (doc/resp-review-pdf rs-id-lower))}}]]
    ["/features"
     {:auth/logged true
      :get {:summary "获取所有特性"

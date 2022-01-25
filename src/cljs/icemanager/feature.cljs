@@ -46,7 +46,7 @@
        "description"]
       [:span "TR 文档"]]
      [:a.button.mr-2.mt-1.mb-1
-      {:href (str "/" lower-id ".pdf")}
+      {:href (str "/api/feature/" lower-id "/review.pdf")}
       [:i.material-icons {:style {:vertical-align :-20%
                                   :padding-right  :5px
                                   :margin-left    :-5px}}

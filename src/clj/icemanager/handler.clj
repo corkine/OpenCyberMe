@@ -3,6 +3,7 @@
     [icemanager.middleware :as middleware]
     [icemanager.layout :refer [error-page]]
     [icemanager.routes.home :refer [home-routes]]
+    [icemanager.router :as share]
     [icemanager.routes.services :refer [service-routes]]
     [reitit.swagger-ui :as swagger-ui]
     [reitit.ring :as ring]
@@ -19,7 +20,8 @@
   :start
   (ring/ring-handler
     (ring/router
-      [(home-routes)
+      [#_(home-routes)
+       (share/share-router)
        (service-routes)]
       {:conflict nil})
     (ring/routes

@@ -5,7 +5,7 @@
             [goog.string :as gstring]
             [clojure.string :as string]))
 
-(def version "alpha 0.1.3")
+(def version "beta 1.0.1")
 
 (def log (str "now: " version "
 [2022-01-19]
@@ -32,6 +32,10 @@
 [2022-01-24]
 修复了 hero 组件在宽屏上的显示问题。
 确定了在不同浏览器上 scrollToView 跳转的能力。
+[2022-01-25]
+根据特性的数据自动生成 TR 文档（DOCX）和评审文档（PDF）。
+前后端共享路由，去除了 ugly 的 #hash 前端路由。
+发布 Beta 1.0.0 版本。
 
 ================================================
 愿望清单：
@@ -45,7 +49,7 @@
 - 实现新建 ICE 特性的能力（已实现）
 - 实现特性 API 接口编辑功能（已实现）
 - 实现根据项目筛选特性的能力：ICE 4.3 or ICE 5.0（已实现）
-- 整合 devKit，根据数据自动生成 TR 文档，评审文档
+- 整合 devKit，根据数据自动生成 TR 文档，评审文档（已实现）
 - 根据特性的 API 接口自动生成 Swagger 文档（推迟，暂无必要）
 "))
 
@@ -57,7 +61,10 @@
           server-back @(rf/subscribe [:wishlist-server-back])
           wish-list @(rf/subscribe [:wishlist])
           real-wish-list (filter #(= (:kind %) "愿望") wish-list)
-          bug-list (filter #(= (:kind %) "BUG") wish-list)]
+          bug-list (filter #(= (:kind %) "BUG") wish-list)
+          bug-list (into [{:advice "在 Firefox 下可能随机出现 ScrollIntoView 不生效的问题。"
+                           :kind "BUG"
+                           :client "Corkine Ma"}] bug-list)]
       [:<>
        [:p {:style {:margin-top :-20px}} (str "本服务已服务 " (:pv usage) " 人，共计 " (:uv usage) " 次")]
        [:pre (str log
@@ -65,7 +72,7 @@
                   (string/join "\n"
                                (map (fn [line] (str "- " (:advice line)
                                                     " / 来自：" (:client line) "")) real-wish-list))
-                  "\n\n================================================\n已知 BUG：\n"
+                  "\n\n================================================\n数据库记录的 BUG：\n"
                   (string/join "\n"
                                (map (fn [line] (str "- " (:advice line)
                                                     " / 来自：" (:client line) "")) bug-list))

@@ -5,6 +5,7 @@
             [icemanager.modals :as modals]
             [goog.string :as gstring]
             [clojure.string :as string]
+            [cljs.pprint :as pprint]
             [icemanager.feature :as feature]))
 
 (defn reformat-review-user-to-array [row]
@@ -110,7 +111,7 @@
                          [:p "特性更新成功！"]
                          [:div
                           [:p "特性更新失败！"]
-                          [:pre (with-out-str (cljs.pprint/pprint error))]]))
+                          [:pre (with-out-str (pprint/pprint error))]]))
                      [:button.button.is-success.is-fullwidth
                       {:on-click #(rf/dispatch [:app/hide-modal :update-feature-notice])}
                       "关闭"]))
@@ -124,7 +125,7 @@
                          [:div
                           [:p "特性删除失败！"]
                           [:div.notification.is-danger.mt-4
-                           (with-out-str (cljs.pprint/pprint (:content data)))]]))
+                           (with-out-str (pprint/pprint (:content data)))]]))
                      [:button.button.is-success.is-fullwidth
                       {:on-click
                        (fn [_]
