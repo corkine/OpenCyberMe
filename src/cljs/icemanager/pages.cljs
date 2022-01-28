@@ -40,6 +40,7 @@
 (defn feature-page []
   (let [feature-data @(rf/subscribe [:current-feature])]
     [:<>
+     [top-point]
      [:div {:style {:background-color :#48c774}}
       [:div.hero.is-success.is-small.container.is-fullhd
        {:style {:padding-left   :30px

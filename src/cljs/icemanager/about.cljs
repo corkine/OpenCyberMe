@@ -5,7 +5,7 @@
             [goog.string :as gstring]
             [clojure.string :as string]))
 
-(def version "beta 1.0.1")
+(def version "beta 1.0.2")
 
 (def log (str "now: " version "
 [2022-01-19]
@@ -36,6 +36,9 @@
 根据特性的数据自动生成 TR 文档（DOCX）和评审文档（PDF）。
 前后端共享路由，去除了 ugly 的 #hash 前端路由。
 发布 Beta 1.0.0 版本。
+[2022-01-28]
+修复了 edit 页面不滚动到 top 的问题。
+发现了在 Firefox 96.0.3 上（2022-1-27 更新），hero 组件定义的颜色和背景颜色出现互相遮罩的问题。
 
 ================================================
 愿望清单：
@@ -61,10 +64,7 @@
           server-back @(rf/subscribe [:wishlist-server-back])
           wish-list @(rf/subscribe [:wishlist])
           real-wish-list (filter #(= (:kind %) "愿望") wish-list)
-          bug-list (filter #(= (:kind %) "BUG") wish-list)
-          bug-list (into [{:advice "在 Firefox 下可能随机出现 ScrollIntoView 不生效的问题。"
-                           :kind "BUG"
-                           :client "Corkine Ma"}] bug-list)]
+          bug-list (filter #(= (:kind %) "BUG") wish-list)]
       [:<>
        [:p {:style {:margin-top :-20px}} (str "本服务已服务 " (:pv usage) " 人，共计 " (:uv usage) " 次")]
        [:pre (str log
