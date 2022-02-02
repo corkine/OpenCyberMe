@@ -40,7 +40,7 @@
               {title1 :title summary1 :summary content1 :content} (nth implement 0 default-pa)
               {title2 :title summary2 :summary content2 :content} (nth implement 1 default-pa)
               {title3 :title summary3 :summary content3 :content} (nth implement 2 default-pa)
-              {title4 :title summary4 :summary content4 :content} (nth implement 4 default-pa)
+              {title4 :title summary4 :summary content4 :content} (nth implement 3 default-pa)
               content4 (if (> (count implement) 4)
                          (str content4
                               (string/join
