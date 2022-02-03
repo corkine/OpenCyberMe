@@ -164,7 +164,7 @@
                 :opacity   :0.2
                 }} "camera"]])])
 
-(defn feature-filter []
+(defn home-filter []
   (let [versions @(rf/subscribe [:all-version])
         developers @(rf/subscribe [:all-developer])
         statuses @(rf/subscribe [:all-status])
@@ -172,48 +172,54 @@
     [:div {:style {:background-color "#ffdd57"}}
      [:div.hero.is-warning.is-small.container
       [:div.hero-body
-       [:p.title "ICE 特性列表"]
        [:div.columns
         [:div.column.is-6
-         [:p "纳入系统管理的 ICE 特性列表"]]
-        [:div.column.is-6.has-text-right.has-text-left-mobile
+         [:p.title "位置列表"]
+         [:p "纳入系统管理的物的位置列表"]]
+        [:div.column.is-6.has-text-right.has-text-left-mobile.mt-3
          {:style {:margin-top "-8px"}}
-         [:div.select.is-small.is-warning.mr-2.mt-1
-          [:select
-           {:on-change (fn [e]
-                         (let [sel-o (-> e .-target .-value)
-                               mg (if (= sel-o "所有版本")
-                                    (dissoc filter :version)
-                                    (assoc filter :version sel-o))]
-                           (rf/dispatch [:set-filter mg])
-                           (reitit.frontend.easy/replace-state :home nil mg)))
-            :value (or (:version filter) "")
-            :id :version}
-           [:option "所有版本"]
-           (for [version versions]
-             ^{:key version}
-             [:option {:value version} version])]]
-         [:div.select.is-small.is-warning.mr-2.mt-1>select
-          {:on-change (fn [e] (let [sel-o (-> e .-target .-value)
-                                    mg (if (= sel-o "任意状态")
-                                         (dissoc filter :status)
-                                         (assoc filter :status sel-o))]
-                                (rf/dispatch [:set-filter mg])
-                                (reitit.frontend.easy/replace-state :home nil mg)))
-           :value (or (:status filter) "")}
-          [:option "任意状态"]
-          (for [status statuses]
-            ^{:key status}
-            [:option {:value status} status])]
-         [:div.select.is-small.is-warning.mr-2.mt-1>select
-          {:on-change (fn [e] (let [sel-o (-> e .-target .-value)
-                                    mg (if (= sel-o "任意人员")
-                                         (dissoc filter :contains)
-                                         (assoc filter :contains sel-o))]
-                                (rf/dispatch [:set-filter mg])
-                                (reitit.frontend.easy/replace-state :home nil mg)))
-           :value (or (:contains filter) "")}
-          [:option "任意人员"]
-          (for [developer developers]
-            ^{:key developer}
-            [:option {:value developer} (str "包含:" developer)])]]]]]]))
+         [:div
+          [:div.select.is-small.is-warning.mr-2.mt-1
+           [:select
+            {:on-change (fn [e]
+                          (let [sel-o (-> e .-target .-value)
+                                mg (if (= sel-o "任何位置")
+                                     (dissoc filter :version)
+                                     (assoc filter :version sel-o))]
+                            (rf/dispatch [:set-filter mg])
+                            (reitit.frontend.easy/replace-state :home nil mg)))
+             :value (or (:version filter) "")
+             :id :module}
+            [:option "任何位置"]
+            (for [version versions]
+              ^{:key version}
+              [:option {:value version} version])]]
+          [:div.select.is-small.is-warning.mr-2.mt-1>select
+           {:on-change (fn [e] (let [sel-o (-> e .-target .-value)
+                                     mg (if (= sel-o "包含标签")
+                                          (dissoc filter :status)
+                                          (assoc filter :status sel-o))]
+                                 (rf/dispatch [:set-filter mg])
+                                 (reitit.frontend.easy/replace-state :home nil mg)))
+            :value (or (:status filter) "")}
+           [:option "包含标签"]
+           (for [status statuses]
+             ^{:key status}
+             [:option {:value status} (str "#" status)])]
+          [:div.select.is-small.is-warning.mr-2.mt-1>select
+           {:on-change (fn [e] (let [sel-o (-> e .-target .-value)
+                                     mg (if (= sel-o "包含状态")
+                                          (dissoc filter :contains)
+                                          (assoc filter :contains sel-o))]
+                                 (rf/dispatch [:set-filter mg])
+                                 (reitit.frontend.easy/replace-state :home nil mg)))
+            :value (or (:contains filter) "")}
+           [:option "包含状态"]
+           (for [developer developers]
+             ^{:key developer}
+             [:option {:value developer} developer])]]
+         [:div.is-pulled-right.is-hidden-mobile.mr-2.mt-2
+          [:p.control.has-icons-left {:style {:width :308px}}
+           [:input.input.is-warning.is-small {:type "text" :placeholder "过滤物品名称"}]
+           [:span.icon.is-left
+            [:i.fa.fa-search {:aria-hidden "true"}]]]]]]]]]))

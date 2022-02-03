@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>ICE 特性（文档和接口）管理器</title>
+    <title>重力管家 - 模块化物品管理</title>
     <style type="text/css">
         .dui-tips {
             position: relative;
@@ -53,6 +53,14 @@
 
         }
 
+        .hover-show {
+            display: none;
+        }
+
+        a:hover .hover-show {
+            display: block;
+        }
+
         .dui-tips:hover:after {
             color: rgba(255, 255, 255, 1);
             background-color: rgba(0, 0, 0, 0.8);
@@ -73,7 +81,7 @@
     <section class="section">
         <div class="container is-fluid">
             <div class="content">
-                <h4 class="title">ICE 特性（文档和接口）管理器</h4>
+                <h4 class="title">重力管家</h4>
                 <!--<p>If you're seeing this message, that means you haven't yet compiled your ClojureScript!</p>
                 <p>Please run <code>lein shadow watch app</code> to start the ClojureScript compiler and reload the page.</p>
                 <h4>For better ClojureScript development experience in Chrome follow these steps:</h4>
@@ -94,6 +102,7 @@
 {% style "/assets/bulma/css/bulma.min.css" %}
 {% style "/assets/material-icons/css/material-icons.min.css" %}
 {% style "/css/screen.css" %}
+{% style "/css/font-awesome.min.css" %}
 
 <script type="text/javascript">
     var csrfToken = "{{csrf-token}}";
