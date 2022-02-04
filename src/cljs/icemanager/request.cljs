@@ -280,3 +280,19 @@
   :clean-view-go
   (fn [db _]
     (dissoc db :view-go)))
+
+;;;;;;;;;;;;;;;;;;
+(rf/reg-sub
+  :add-place-server-back
+  (fn [db _]
+    (:add-place-server-back db)))
+
+(rf/reg-sub
+  :add-package-server-back
+  (fn [db _]
+    (:add-package-server-back db)))
+
+(rf/reg-sub
+  :add-good-server-back
+  (fn [db _]
+    (:add-good-server-back db)))

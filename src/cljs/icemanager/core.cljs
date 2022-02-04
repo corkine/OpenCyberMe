@@ -11,7 +11,9 @@
     [reitit.core :as reitit]
     [reitit.frontend.easy :as rfe]
     [icemanager.about :refer [log about-page]]
-    [icemanager.feature-new :as feature-new]
+    [icemanager.place-new :as place-new]
+    [icemanager.package-new :as package-new]
+    [icemanager.good-new :as good-new]
     [icemanager.router :as share])
   (:import goog.History))
 
@@ -40,16 +42,13 @@
                  [nav-link "/good" "物品" :good]
                  [nav-link "/package" "打包" :package]
                  [nav-link "/about" "关于" :about]]
-                [:div.navbar-end
-                 [:div.navbar-item.px-1 [:button.button.is-white.is-outlined [:span.icon-text
-                                                                              [:span.icon [:i.fa.fa-inbox {:aria-hidden "true"}]]
-                                                                              [:span "新位置"]]]]
-                 [:div.navbar-item.px-1 [:button.button.is-white.is-outlined [:span.icon-text
-                                                                              [:span.icon [:i.fa.fa-suitcase {:aria-hidden "true"}]]
-                                                                              [:span "新打包"]]]]
-                 [:div.navbar-item.px-1 [:button.button.is-primary [:span.icon-text
-                                                                              [:span.icon [:i.fa.fa-plus-square {:aria-hidden "true"}]]
-                                                                              [:span "物品入库"]]]]]]]))
+                [:div.navbar-end {:style {:margin-right :15px}}
+                 [:div.navbar-item.px-1
+                  [place-new/new-place-btn]]
+                 [:div.navbar-item.px-1
+                  [package-new/new-package-btn]]
+                 [:div.navbar-item.px-1
+                  [good-new/new-good-btn]]]]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]

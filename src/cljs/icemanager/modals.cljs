@@ -25,16 +25,29 @@
   (fn [modals [_ modal-id]]
     (get modals modal-id false)))
 
-(defn modal-card [id title body footer]
-  [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
-                        "is-active")}
-   [:div.modal-background {:on-click #(rf/dispatch [:app/hide-modal id])}]
-   [:div.modal-card [:header.modal-card-head
-                     [:p.modal-card-title {:style {:margin-bottom :0px}} title]
-                     [:button.delete
-                      {:on-click #(rf/dispatch [:app/hide-modal id])}]]
-    [:section.modal-card-body body]
-    [:footer.modal-card-foot footer]]])
+(defn modal-card
+  ([id title body footer]
+   [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
+                         "is-active")}
+    [:div.modal-background {:on-click #(rf/dispatch [:app/hide-modal id])}]
+    [:div.modal-card [:header.modal-card-head
+                      [:p.modal-card-title {:style {:margin-bottom :0px}} title]
+                      [:button.delete
+                       {:on-click #(rf/dispatch [:app/hide-modal id])}]]
+     [:section.modal-card-body body]
+     [:footer.modal-card-foot footer]]])
+  ([id title body footer fields errors]
+   [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
+                         "is-active")}
+    [:div.modal-background {:on-click (fn [_] (reset! fields {})
+                                        (reset! errors {})
+                                        (rf/dispatch [:app/hide-modal id]))}]
+    [:div.modal-card [:header.modal-card-head
+                      [:p.modal-card-title {:style {:margin-bottom :0px}} title]
+                      [:button.delete
+                       {:on-click #(rf/dispatch [:app/hide-modal id])}]]
+     [:section.modal-card-body body]
+     [:footer.modal-card-foot footer]]]))
 
 (defn modal-button
   ([id title body footer]
@@ -44,4 +57,20 @@
           (merge (:button opts)
                  {:on-click #(rf/dispatch [:app/show-modal id])})
           title]
-    [modal-card id title body footer]]))
+    [modal-card id title body footer]])
+  ([id opts icon title body footer]
+   [:div [:button.button
+          (merge (:button opts)
+                 {:on-click #(rf/dispatch [:app/show-modal id])})
+          [:span.icon-text
+           [:span.icon icon]
+           [:span title]]]
+    [modal-card id title body footer]])
+  ([id opts icon title body footer fields errors]
+   [:div [:button.button
+          (merge (:button opts)
+                 {:on-click #(rf/dispatch [:app/show-modal id])})
+          [:span.icon-text
+           [:span.icon icon]
+           [:span title]]]
+    [modal-card id title body footer fields errors]]))

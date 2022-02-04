@@ -15,7 +15,8 @@
     [clojure.tools.logging :as log]
     [icemanager.auth :as auth]
     [icemanager.doc :as doc]
-    [icemanager.db.core :as db]))
+    [icemanager.db.core :as db]
+    [icemanager.goods :as goods]))
 
 (defn service-routes []
   ["/api"
@@ -73,6 +74,12 @@
              :handler    (fn [{{{:keys [x y]} :body} :parameters}]
                            {:status 200
                             :body   {:total (+ x y)}})}}]]
+
+   ["/places"
+    {:auth/logged true
+     :get {:summary "获取所有位置的所有物品"
+           :handler (fn [_]
+                      (hr/response (goods/all-place-with-goods)))}}]
 
    ["/feature"
     [""

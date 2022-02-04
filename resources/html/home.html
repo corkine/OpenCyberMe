@@ -23,7 +23,7 @@
             visibility: hidden;
             position: absolute;
             top: 50%;
-            left: 100%;
+            left: 106%;
             transition: all .3s;
         }
 
@@ -57,8 +57,16 @@
             display: none;
         }
 
-        a:hover .hover-show {
+        .panel-block:hover .hover-show {
             display: block;
+        }
+
+        .panel-block .fa:hover {
+            color: #565656;
+        }
+
+        .panel-block .fa-trash:hover {
+            color: #d90000;
         }
 
         .dui-tips:hover:after {
@@ -71,6 +79,26 @@
         .dui-tips:hover:before {
             border-color: transparent rgba(0, 0, 0, 0.8) transparent transparent;
             transform: translate(0px, -50%);
+        }
+
+        @media (max-width: 1000px) {
+            div.navbar-item:nth-child(2) > div:nth-child(1) > button:nth-child(1) {
+                color: black;
+                border-color: black;
+            }
+
+            div.navbar-item:nth-child(1) > div:nth-child(1) > button:nth-child(1) {
+                color: black;
+                border-color: black;
+            }
+        }
+
+        .card {
+            overflow: visible !important;
+        }
+
+        .card-content {
+            overflow: visible !important;
         }
 
     </style>
