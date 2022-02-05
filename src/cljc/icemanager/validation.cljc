@@ -18,7 +18,7 @@
   (first (st/validate params message-schema)))
 
 (def add-place-schema
-  [[:id required {:message  "最少需要 4 个字符"
+  [#_[:id required {:message  "最少需要 4 个字符"
                   :validate (fn [msg] (>= (count msg) 4))}]
    [:place required st/string {:message  "最少需要 2 个字符"
                                :validate (fn [msg] (>= (count msg) 2))}]

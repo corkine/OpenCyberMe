@@ -39,8 +39,8 @@
               (let [raw-data @fields
                     error (va/validate-add-package raw-data)]
                 (if error (reset! errors error)
-                          (rf/dispatch [:add-package raw-data]))))]
-      (let [server-back @(rf/subscribe [:add-package-server-back])]
+                          (rf/dispatch [:package/new raw-data]))))]
+      (let [server-back @(rf/subscribe [:package/new-failure])]
         (modals/modal-button
           :create-new-package
           {:button {:class [:is-info :is-inverted :is-outlined]}}
@@ -51,21 +51,19 @@
            [common-fields :description "打包概述" "简短的描述此次打包的用途和设备容量等信息"
             {:type :textarea :attr {:rows 2}}]
            (when server-back
-             [(if (= (:status server-back) :success)
+             [(if (not= (:status server-back) 0)
                 :div.notification.is-success.mt-4
                 :div.notification.is-danger.mt-4)
-              [:blockquote (:content server-back)]])]
+              [:blockquote (:message server-back)]])]
           (let [is-success-call (and (not (nil? server-back))
-                                     (= (:status server-back) :success))]
+                                     (not= (:status server-back) 0))]
             [:button.button.is-primary.is-fullwidth
              {:on-click (if is-success-call
                           (fn [_]
                             (reset! fields {})
                             (reset! errors {})
-                            (rf/dispatch [:clean-add-package-server-back])
+                            (rf/dispatch [:package/new-clean-failure])
                             (rf/dispatch [:app/hide-modal :create-new-package]))
                           (fn [_] (submit-add)))}
              (if is-success-call "关闭" "新键打包")])
-          fields errors)))))
-;modal：create-new-package
-;ajax：add-package, add-package-server-back, clean-add-package-server-back
+          fields errors #(rf/dispatch [:package/new-clean-failure]))))))

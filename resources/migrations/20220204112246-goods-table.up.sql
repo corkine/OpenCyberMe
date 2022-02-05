@@ -14,10 +14,11 @@ create table goods
 create table places
 (
     id serial primary key,
-    place varchar(100),
+    place varchar(100) unique ,
     location varchar(100),
     description text,
-    createAt timestamptz default current_timestamp
+    createAt timestamptz default current_timestamp,
+    updateAt timestamptz default current_timestamp
 );
 
 --;;
@@ -34,7 +35,7 @@ alter table goods add constraint uid_check check ( uid = upper(uid) );
 create table packages
 (
     id serial primary key,
-    name varchar(100),
+    name varchar(100) unique ,
     info jsonb default '{}'::jsonb,
     createAt timestamptz default current_timestamp
 );

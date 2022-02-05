@@ -16,6 +16,7 @@
            #?(:cljs {:view        #'core/home-page
                      :controllers [{:parameters {:query [:status :contains :version]}
                                     :start      (fn [{query :query}]
+                                                  (rf/dispatch [:place/fetch])
                                                   (rf/dispatch [:set-filter query])
                                                   (rf/dispatch [:fetch-features]))}]}))]
    ["/feature/:rs-id/edit"

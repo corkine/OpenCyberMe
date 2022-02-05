@@ -6,6 +6,22 @@
     [reitit.frontend.controllers :as rfc]
     [clojure.string :as string]))
 
+(rf/reg-event-db
+  :global/notice
+  (fn [db [_ data]]
+    (rf/dispatch [:app/show-modal :notice])
+    (assoc db :global/notice data)))
+
+(rf/reg-event-db
+  :global/notice-clean
+  (fn [db _]
+    (dissoc db :global/notice)))
+
+(rf/reg-sub
+  :global/notice
+  (fn [db _]
+    (:global/notice db)))
+
 ;;;;;;;;;;;;;; fetch feature and features, update feature ;;;;;;;;;;;
 
 (rf/reg-event-fx

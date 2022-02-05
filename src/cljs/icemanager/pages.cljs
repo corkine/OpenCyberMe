@@ -10,7 +10,8 @@
     [icemanager.feature-view :as feature-view]
     [icemanager.feature-edit :as feature-edit]
     [icemanager.place :as place]
-    [icemanager.fake :as fake]
+    [icemanager.place-request :as place-request]
+    [icemanager.good-request :as good-request]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -22,16 +23,34 @@
      :reagent-render
      (fn [_] [:div ""])}))
 
-(defn home-page []
+(defn home-page-old []
   [:<>
    [top-point]
    [feature/home-filter]
-   (let [feature-filtered @(rf/subscribe [:get-filtered-features])]
+   (let [feature-filtered @(rf/subscribe [:get-filtered-features])
+         fetched-place @(rf/subscribe [:place/fetch-data])]
      (if-not (empty? feature-filtered)
        [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}
         (for [data feature-filtered]
           ^{:key (:id data)}
-          [place/place-card fake/fake-place-data])]
+          [place/place-card fetched-place])]
+       [:div.hero.is-small.pl-0.pr-0
+        [:div.hero-body
+         [:div.container.has-text-centered
+          [:h3.subtitle.mt-6
+           "Oops... 暂无符合条件的位置"]]]]))])
+
+(defn home-page []
+  [:<>
+   [top-point]
+   [feature/home-filter]
+   (let [fetched-place-raw @(rf/subscribe [:place/fetch-data])
+         fetched-place (sort-by :id fetched-place-raw)]
+     (if-not false
+       [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}
+        (for [data fetched-place]
+          ^{:key (:id data)}
+          [place/place-card data])]
        [:div.hero.is-small.pl-0.pr-0
         [:div.hero-body
          [:div.container.has-text-centered

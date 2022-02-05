@@ -89,6 +89,6 @@
                             (rf/dispatch [:app/hide-modal :create-new-good]))
                           (fn [_] (submit-add)))}
              (if is-success-call "关闭" "入库！")])
-          fields errors)))))
+          fields errors #(rf/dispatch [:package/good-clean-failure]))))))
 ;modal：create-new-good
 ;ajax：add-good, add-good-server-back, clean-add-good-server-back

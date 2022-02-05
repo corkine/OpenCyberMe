@@ -37,37 +37,38 @@
                              [:p.help.is-danger message])]))
             (submit-add []
               (let [raw-data @fields
-                    error (va/validate-add-place raw-data)]
+                    error (va/validate-add-place raw-data)
+                    raw-data (if (nil? (:description raw-data))
+                               (assoc raw-data :description nil)
+                               raw-data)]
                 (if error (reset! errors error)
-                          (rf/dispatch [:add-place raw-data]))))]
-      (let [server-back @(rf/subscribe [:add-place-server-back])]
+                          (rf/dispatch [:place/new raw-data]))))]
+      (let [server-back @(rf/subscribe [:place/new-failure])]
         (modals/modal-button
           :create-new-place
           {:button {:class [:is-info :is-inverted :is-outlined]}}
           [:i.fa.fa-inbox {:aria-hidden "true"}]
           "新位置"
           [:div {:style {:color "black"}}
-           [common-fields :id "位置编号 *" "大写且唯一，仅能包含 - _ 和英文字母"]
+           #_[common-fields :id "位置编号 *" "大写且唯一，仅能包含 - _ 和英文字母"]
            [common-fields :place "位置名称 *" "位置的中文名称，比如 抽屉#1"]
            [common-fields :location "位置地点 *" "位置所在的地理位置，比如 洪山区"]
            [common-fields :description "位置概述" "简短的描述如何找到此位置，比如 衣帽间靠右第一个抽屉"
             {:type :textarea :attr {:rows 2}}]
            (when server-back
-             [(if (= (:status server-back) :success)
+             [(if (not= (:status server-back) 0)
                 :div.notification.is-success.mt-4
                 :div.notification.is-danger.mt-4)
-              [:blockquote (:content server-back)]])]
+              [:blockquote (:message server-back)]])]
           (let [is-success-call (and (not (nil? server-back))
-                                     (= (:status server-back) :success))]
+                                     (not= (:status server-back) 0))]
             [:button.button.is-primary.is-fullwidth
              {:on-click (if is-success-call
                           (fn [_]
                             (reset! fields {})
                             (reset! errors {})
-                            (rf/dispatch [:clean-add-place-server-back])
+                            (rf/dispatch [:place/new-clean-failure])
                             (rf/dispatch [:app/hide-modal :create-new-place]))
                           (fn [_] (submit-add)))}
              (if is-success-call "关闭" "创建")])
-          fields errors)))))
-;modal：create-new-place
-;ajax：add-place, add-place-server-back, clean-add-place-server-back
+          fields errors #(rf/dispatch [:place/new-clean-failure]))))))

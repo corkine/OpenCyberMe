@@ -14,7 +14,8 @@
     [icemanager.place-new :as place-new]
     [icemanager.package-new :as package-new]
     [icemanager.good-new :as good-new]
-    [icemanager.router :as share])
+    [icemanager.router :as share]
+    [icemanager.modals :as modals])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -22,6 +23,20 @@
    {:href  uri
     :class (when (= page @(rf/subscribe [:common/page])) :is-active)}
    title])
+
+(defn global-info []
+  (let [{:keys [message callback]} @(rf/subscribe [:global/notice])]
+    [modals/modal-card :notice "提示"
+     [:p.has-text-black message]
+     [:button.button.is-primary.is-fullwidth
+      {:on-click (fn [_]
+                   (rf/dispatch [:global/notice-clean])
+                   (when-not (nil? callback)
+                     (do
+                       (rf/dispatch callback)))
+                   (rf/dispatch [:app/hide-modal :notice]))}
+      "确定"]
+     #(rf/dispatch [:global/notice-clean])]))
 
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
@@ -48,7 +63,8 @@
                  [:div.navbar-item.px-1
                   [package-new/new-package-btn]]
                  [:div.navbar-item.px-1
-                  [good-new/new-good-btn]]]]]))
+                  [good-new/new-good-btn]]
+                 [global-info]]]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]

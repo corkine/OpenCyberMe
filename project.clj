@@ -1,7 +1,7 @@
-(defproject icemanager "0.1.0-SNAPSHOT"
+(defproject icemanager "0.0.2-SNAPSHOT"
 
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+  :description "一个简单易用的家庭模块化物品管理系统"
+  :url "https://mazhangjing.com"
 
   :dependencies [[ch.qos.logback/logback-classic "1.2.3"]
                  [cheshire "5.10.0"]
@@ -43,6 +43,7 @@
                  [ring/ring-core "1.8.2"]
                  [ring/ring-defaults "0.3.2"]
                  [selmer "1.12.31"]
+                 [com.andrewmcveigh/cljs-time "0.5.2"]
                  [thheller/shadow-cljs "2.11.5" :scope "provided"]]
 
   :min-lein-version "2.0.0"
