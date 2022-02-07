@@ -10,6 +10,8 @@
     [cljs-time.format :as format]
     [clojure.string :as string]))
 
+(def max-package-item 7)
+
 (defn gen-key []
   (gensym "key-"))
 
@@ -60,12 +62,12 @@
          [:p.title
           ;:on-click #(rf/dispatch [:common/navigate! :feature-view
           ;                         {:rs-id (string/lower-case "11")}])
-          [:span {:style {:cursor       :pointer
-                          :margin-right :10px}
+          [:span {:style    {:cursor       :pointer
+                             :margin-right :10px}
                   :on-click (fn [_]
-                              (rf/dispatch [:place/current {:id id
-                                                            :place place
-                                                            :location location
+                              (rf/dispatch [:place/current {:id          id
+                                                            :place       place
+                                                            :location    location
                                                             :description description}])
                               (rf/dispatch [:app/show-modal :edit-place]))} place]
           [:span.tag.is-light.is-rounded
@@ -97,12 +99,12 @@
               first-column (if (> data-size split-col) (take (/ data-size 2) select-data) select-data)
               second-column (if (> data-size split-col) (drop (/ data-size 2) select-data) [])]
           [:div.column
-           [:nav                                              ;;抽屉导航
-            [:p.panel-tabs.is-justify-content-start.pl-1      ;;抽屉详情右半边
+           [:nav                                            ;;抽屉导航
+            [:p.panel-tabs.is-justify-content-start.pl-1    ;;抽屉详情右半边
              (for [label labels]
                ^{:key label}
                [place-card-right-nav label ss select])]
-            [:div.columns.mt-2                                ;;抽屉内容
+            [:div.columns.mt-2                              ;;抽屉内容
              [place-card-right-contents first-column second-column]]]])]])))
 
 (defn place-card-right-nav [label ss select]
@@ -129,19 +131,22 @@
       [place-card-right-contents-line col])]])
 
 (defn place-card-right-contents-line [{:keys [id status name note packages createAt updateAt]
-                                      :or    {status "收纳" name "无标题" packages []}}]
+                                       :or   {status "收纳" name "无标题" packages []}}]
   (let [color (case status
                 "活跃" :is-success
                 "收纳" :is-normal
                 "移除" :is-danger
                 :is-normal)
-        have-package (> (count packages) 0)]
+        have-package (> (count packages) 0)
+        {all-packages :data} @(rf/subscribe [:package/fetch-data])
+        all-packages (sort-by :createat all-packages)
+        all-packages (take 7 all-packages)]
     [:a.panel-block.is-active
-     [:span {:class [:tag :mr-3 :is-light color]} status] ;状态
+     [:span {:class [:tag :mr-3 :is-light color]} status]   ;状态
      [:span.dropdown.is-hoverable.is-up
       [:div.dropdown-trigger
        [:div {:aria-haspopup "true" :aria-controls "dropdown-menu"}
-        [:span.mr-2 name]]]                              ;名称和鼠标移动时的备注、创建和修改时间
+        [:span.mr-2 name]]]                                 ;名称和鼠标移动时的备注、创建和修改时间
       [:div#dropdown-menu.dropdown-menu {:role "menu"}
        (if (or note createAt updateAt)
          [:div.dropdown-content
@@ -151,15 +156,18 @@
                           [:p [:i.fa.fa-asterisk] " " (or (jvm->js-time-str createAt) "")]])
           (when updateAt [:div.dropdown-item.is-size-7.pt-1.pb-1
                           [:p [:i.fa.fa-clock-o] " " (or (jvm->js-time-str updateAt) "")]])])]]
-     (for [{:keys [id name status] :as package} packages]
-       ^{:key (random-uuid)}
-       [(if (= status 1)                                 ;打包
+     (for [{:keys [name status] :as package} packages]
+       ^{:key package}
+       [(if (= status 1)                                    ;打包
           :span.tag.is-warning.is-small.is-rounded
-          :span.tag.is-warning.is-small.is-rounded.is-light) name [:button.delete.is-small]])
+          :span.tag.is-warning.is-small.is-rounded.is-light)
+        [:span {:on-click #(rf/dispatch [:good/box [id (:id package)]])} name]
+        [:button.delete.is-small
+         {:on-click #(rf/dispatch [:good/unbox [id (:id package)]])}]])
      #_[:span.dui-tips (when note {:data-tooltip (or note "无备注")})]
      [:span.has-text-grey-light.hover-show {:style {:margin-left :auto}} ;操作按钮
       (if-not have-package
-        [:span.dropdown.is-hoverable.is-up               ;移动到新位置按钮
+        [:span.dropdown.is-hoverable.is-up                  ;移动到新位置按钮
          [:div.dropdown-trigger
           [:div {:aria-haspopup "true" :aria-controls "dropdown-menu"}
            [:span.icon [:i.fa.faa.fa-share]]]]
@@ -170,27 +178,29 @@
              [:button.button.is-white.dropdown-item [:p "抽屉 #2"]]
              [:button.button.is-white.dropdown-item [:p "抽屉 #3"]]])]])
       (if-not have-package
-        [:span.dropdown.is-hoverable.is-up               ;打包按钮
+        [:span.dropdown.is-hoverable.is-up                  ;打包按钮
          [:div.dropdown-trigger
           [:div {:aria-haspopup "true" :aria-controls "dropdown-menu"}
            [:span.icon [:i.fa.faa.fa-cube]]]]
          [:div#dropdown-menu.dropdown-menu {:role "menu"}
           (if true
             [:div.dropdown-content
-             [:button.button.is-white.dropdown-item [:p "过年回家 #2022.02.04"]]
-             [:button.button.is-white.dropdown-item [:p "海南旅游 #2022.03.04"]]])]])
-      [:span.icon [:i.fa.faa.fa-pencil]]                     ;修改按钮
+             (for [{:keys [name] :as package} all-packages]
+               ^{:key name}
+               [:button.button.is-white.dropdown-item
+                {:on-click #(rf/dispatch [:good/plan [id (:id package)]])} [:p name]])])]])
+      [:span.icon [:i.fa.faa.fa-pencil]]                    ;修改按钮
       (if-not have-package
         [:span.icon
          {:on-click
           #(rf/dispatch [:global/notice
-                         {:message "此操作会将此物品标记为删除，但保留数据库条目，是否继续？"
+                         {:message  "此操作会将此物品标记为删除，但保留数据库条目，是否继续？"
                           :callback [:good/hide id]}])}
-         [:i.fa.faa.fa-ban]])                     ;删除按钮
+         [:i.fa.faa.fa-ban]])                               ;删除按钮
       (if-not have-package
         [:span.icon.has-text-danger
          {:on-click
           #(rf/dispatch [:global/notice
-                         {:message "此操作会将此物品从数据库彻底移除，是否继续？"
+                         {:message  "此操作会将此物品从数据库彻底移除，是否继续？"
                           :callback [:good/delete id]}])}
          [:i.fa.faa.fa-trash]])]]))

@@ -41,32 +41,33 @@
 
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
-              [:nav.navbar.is-info>div.container
-               [global-info]
-               [place-edit/place-edit-holder]
-               [:div.navbar-brand
-                [:a.icon-text.navbar-item.has-text-white {:href "/"}
-                 [:span.icon [:i.fa.fa-ravelry.mr-1]]
-                 [:span.is-family-monospace.has-text-bold.is-size-4.has-text-white "管家"]]
-                [:span.navbar-burger.burger
-                 {:data-target :nav-menu
-                  :on-click    #(swap! expanded? not)
-                  :class       (when @expanded? :is-active)}
-                 [:span] [:span] [:span]]]
-               [:div#nav-menu.navbar-menu
-                {:class (when @expanded? :is-active)}
-                [:div.navbar-start
-                 [nav-link "/" "位置" :home]
-                 [nav-link "/good" "物品" :good]
-                 [nav-link "/package" "打包" :package]
-                 [nav-link "/about" "关于" :about]]
-                [:div.navbar-end {:style {:margin-right :15px}}
-                 [:div.navbar-item.px-1
-                  [place-new/new-place-btn]]
-                 [:div.navbar-item.px-1
-                  [package-new/new-package-btn]]
-                 [:div.navbar-item.px-1
-                  [good-new/new-good-btn]]]]]))
+              [:nav.navbar.is-info {:style {:z-index :1}}
+               [:div.container
+                [global-info]
+                [place-edit/place-edit-holder]
+                [:div.navbar-brand
+                 [:a.icon-text.navbar-item.has-text-white {:href "/"}
+                  [:span.icon [:i.fa.fa-ravelry.mr-1]]
+                  [:span.is-family-monospace.has-text-bold.is-size-4.has-text-white "管家"]]
+                 [:span.navbar-burger.burger
+                  {:data-target :nav-menu
+                   :on-click    #(swap! expanded? not)
+                   :class       (when @expanded? :is-active)}
+                  [:span] [:span] [:span]]]
+                [:div#nav-menu.navbar-menu
+                 {:class (when @expanded? :is-active)}
+                 [:div.navbar-start
+                  [nav-link "/" "位置" :home]
+                  [nav-link "/good" "物品" :good]
+                  [nav-link "/package" "打包" :package]
+                  [nav-link "/about" "关于" :about]]
+                 [:div.navbar-end {:style {:margin-right :15px}}
+                  [:div.navbar-item.px-1
+                   [place-new/new-place-btn]]
+                  [:div.navbar-item.px-1
+                   [package-new/new-package-btn]]
+                  [:div.navbar-item.px-1
+                   [good-new/new-good-btn]]]]]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]

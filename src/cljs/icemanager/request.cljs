@@ -44,11 +44,14 @@
     (rf/reg-event-db
       on-success
       (fn [db [_ resp]]                                     ;data, message, status
-        (when (and success-notice (= (:status resp) 1))
-          (rf/dispatch [:global/notice
-                        {:message  (or (:message resp)
-                                       "服务器成功响应，但无回调消息。")
-                         :callback success-callback-event}]))
+        (when (= (:status resp) 1)
+          (if success-notice
+            (rf/dispatch [:global/notice
+                          {:message  (or (:message resp)
+                                         "服务器成功响应，但无回调消息。")
+                           :callback success-callback-event}])
+            (when success-callback-event
+              (rf/dispatch (vec success-callback-event)))))
         (when (and failure-notice (= (:status resp) 0))
           (rf/dispatch [:global/notice
                         {:message (or (:message resp)
@@ -107,6 +110,13 @@
             :success-callback-event [:place/fetch]
             :failure-notice         true})
 
+;最近打包，静默写入数据，失败弹窗
+(ajax-flow {:call :package/fetch
+            :uri-fn #(str "/api/packages")
+            :data :package/fetch-data
+            :clean :package/fetch-data-clean
+            :failure-notice true})
+
 ;新建打包，失败后由对话框获取数据展示并自行清除
 (ajax-flow {:call    :package/new
             :is-post true
@@ -137,6 +147,30 @@
             :success-callback-event [:place/fetch]
             :failure-notice         true})
 
+;物品取消打包，数据库返回结果不论成功失败全部显示，并刷新主界面
+(ajax-flow {:call :good/unbox
+            :uri-fn #(str "/api/good/" (first %) "/unbox/" (second %))
+            :data :good/unbox-data
+            :clean :good/unbox-data-clean
+            :success-notice true
+            :success-callback-event [:place/fetch]
+            :failure-notice true})
+
+;物品确定打包，数据库返回结果失败显示，成功则刷新主界面
+(ajax-flow {:call :good/box
+            :uri-fn #(str "/api/good/" (first %) "/box/" (second %))
+            :data :good/box-data
+            :clean :good/box-data-clean
+            :success-callback-event [:place/fetch]
+            :failure-notice true})
+
+;物品准备打包，数据库返回结果失败显示，成功则刷新主界面
+(ajax-flow {:call :good/plan
+            :uri-fn #(str "/api/good/" (first %) "/plan/" (second %))
+            :data :good/plan-data
+            :clean :good/plan-data-clean
+            :success-callback-event [:place/fetch]
+            :failure-notice true})
 
 ;;;; dispatch [:global/notice {:message :callback (may nil)}]
 ;;;; show modal with :message

@@ -77,9 +77,9 @@
 
    ["/places"
     {:auth/logged true
-     :get {:summary "获取所有位置的所有物品"
-           :handler (fn [_]
-                      (hr/response (goods/all-place-with-goods)))}}]
+     :get         {:summary "获取所有位置的所有物品"
+                   :handler (fn [_]
+                              (hr/response (goods/all-place-with-goods)))}}]
 
    ["/place"
     [""
@@ -110,25 +110,53 @@
                    :handler    (fn [{{body :body} :parameters}]
                                  (hr/response (goods/add-package body)))}}]
 
+   ["/packages"
+    {:auth/logged true
+     :get         {:summary    "获取最近打包"
+                   :parameters {:query any?}
+                   :handler    (fn [{{body :query} :parameters}]
+                                 (hr/response (goods/get-packages body)))}}]
+
    ["/good"
     [""
      {:auth/logged true
-      :post {:summary "新建物品"
-             :parameters {:body any?}
-             :handler (fn [{{body :body} :parameters}]
-                        (hr/response (goods/add-good body)))}}]
+      :post        {:summary    "新建物品"
+                    :parameters {:body any?}
+                    :handler    (fn [{{body :body} :parameters}]
+                                  (hr/response (goods/add-good body)))}}]
     ["/:id/delete"
      {:auth/logged true
-      :post {:summary "删除物品"
-             :parameters {:path any?}
-             :handler (fn [{{path :path} :parameters}]
-                        (hr/response (goods/delete-good path)))}}]
+      :post        {:summary    "删除物品"
+                    :parameters {:path any?}
+                    :handler    (fn [{{path :path} :parameters}]
+                                  (hr/response (goods/delete-good path)))}}]
     ["/:id/hide"
      {:auth/logged true
-      :post {:summary "删除(隐藏)物品"
-             :parameters {:path any?}
-             :handler (fn [{{path :path} :parameters}]
-                        (hr/response (goods/hide-good path)))}}]]
+      :post        {:summary    "删除(隐藏)物品"
+                    :parameters {:path any?}
+                    :handler    (fn [{{path :path} :parameters}]
+                                  (hr/response (goods/hide-good path)))}}]
+
+    ["/:id/box/:box-id"
+     {:auth/logged true
+      :get {:summary "打包"
+            :parameters {:path any?}
+            :handler (fn [{{path :path} :parameters}]
+                       (hr/response (goods/box-good path)))}}]
+
+    ["/:id/plan/:box-id"
+     {:auth/logged true
+      :get {:summary "准备打包"
+            :parameters {:path any?}
+            :handler (fn [{{path :path} :parameters}]
+                       (hr/response (goods/box-good (assoc path :is-plan true))))}}]
+
+    ["/:id/unbox/:box-id"
+     {:auth/logged true
+      :get {:summary "取消打包"
+            :parameters {:path any?}
+            :handler (fn [{{path :path} :parameters}]
+                       (hr/response (goods/unbox-good path)))}}]]
 
    ["/feature"
     [""
@@ -140,57 +168,57 @@
                                   (hr/response (feature/add-feature body)))}}]
     ["/:rs-id-lower"
      {:auth/logged true
-      :get  {:summary    "获取特性特性信息"
-             :parameters {:path {:rs-id-lower string?}}
-             :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
-                           (hr/response (feature/feature-by-rs-id rs-id-lower)))}
-      :post {:summary    "特性更新"
-             :parameters {:path {:rs-id-lower string?}
-                          :body map?}
-             :handler    (fn [{{body :body
-                                {:keys [rs-id-lower]}   :path} :parameters}]
-                           #_(hr/not-found "Not Found")
-                           (hr/response (feature/update-feature rs-id-lower body)))}}]
+      :get         {:summary    "获取特性特性信息"
+                    :parameters {:path {:rs-id-lower string?}}
+                    :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
+                                  (hr/response (feature/feature-by-rs-id rs-id-lower)))}
+      :post        {:summary    "特性更新"
+                    :parameters {:path {:rs-id-lower string?}
+                                 :body map?}
+                    :handler    (fn [{{body                  :body
+                                       {:keys [rs-id-lower]} :path} :parameters}]
+                                  #_(hr/not-found "Not Found")
+                                  (hr/response (feature/update-feature rs-id-lower body)))}}]
 
     ["/:id/delete"
      {:auth/logged true
-      :post {:summary "删除特性"
-             :parameters {:path {:id string?}}
-             :handler (fn [{{data :path} :parameters}]
-                        (hr/response (feature/delete-feature data)))}}]
+      :post        {:summary    "删除特性"
+                    :parameters {:path {:id string?}}
+                    :handler    (fn [{{data :path} :parameters}]
+                                  (hr/response (feature/delete-feature data)))}}]
     ["/:rs-id-lower/tr.docx"
-     {:get {:summary "下载 TR 文档"
-            :swagger {:produces ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]}
+     {:get {:summary    "下载 TR 文档"
+            :swagger    {:produces ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]}
             :parameters {:path {:rs-id-lower string?}}
-            :handler (fn [{{{:keys [rs-id-lower]}   :path} :parameters}]
-                       {:status  200
-                        :headers {"Content-Type"
-                                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
-                        :body    (doc/resp-tr-doc rs-id-lower)
-                        #_(-> "public/img/warning_clojure.png"
-                                     (io/resource)
-                                     (io/input-stream))})}}]
+            :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
+                          {:status  200
+                           :headers {"Content-Type"
+                                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
+                           :body    (doc/resp-tr-doc rs-id-lower)
+                           #_(-> "public/img/warning_clojure.png"
+                                 (io/resource)
+                                 (io/input-stream))})}}]
     ["/:rs-id-lower/review.pdf"
-     {:get {:summary "下载 Review 文档"
-            :swagger {:produces ["application/pdf"]}
+     {:get {:summary    "下载 Review 文档"
+            :swagger    {:produces ["application/pdf"]}
             :parameters {:path {:rs-id-lower string?}}
-            :handler (fn [{{{:keys [rs-id-lower]}   :path} :parameters}]
-                       (doc/resp-review-pdf rs-id-lower))}}]]
+            :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
+                          (doc/resp-review-pdf rs-id-lower))}}]]
    ["/features"
     {:auth/logged true
-     :get {:summary "获取所有特性"
-           :handler (fn [_]
-                      (hr/response (feature/all-features)))}}]
+     :get         {:summary "获取所有特性"
+                   :handler (fn [_]
+                              (hr/response (feature/all-features)))}}]
    ["/usage"
     {:get {:handler (fn [_]
                       (hr/response (feature/fetch-usage)))}}]
    ["/wishlist"
     {:auth/logged true
-     :post {:parameters {:body any?}
-            :handler (fn [{{body :body} :parameters}]
-                       (hr/response (db/insert-wishlist body)))}
-     :get {:handler (fn [_]
-                      (hr/response (db/find-all-wish)))}}]
+     :post        {:parameters {:body any?}
+                   :handler    (fn [{{body :body} :parameters}]
+                                 (hr/response (db/insert-wishlist body)))}
+     :get         {:handler (fn [_]
+                              (hr/response (db/find-all-wish)))}}]
    ["/files"
     {:swagger {:tags ["files"]}}
 

@@ -10,6 +10,7 @@ select places.id           as placeId,
        g.info ->> 'note'   as note,
        g.info -> 'labels'  as labels,
        g.info ->> 'status' as status,
+       g.info -> 'packages' as packages,
        g.createat,
        g.updateat
 from places
@@ -49,3 +50,16 @@ where id = :id;
 update goods
 set placeid = '1'
 where placeid = :id;
+-- :name get-packages :? :*
+select * from packages
+where createat > now() - (:day || ' days')::interval
+order by createat desc;
+-- :name update-good-packages :! :1
+update goods set info = jsonb_set(info,'{packages}'::text[],:packages::jsonb,true)
+where id = :id;
+-- :name get-good-packages :? :1
+select info->'packages' as packages from goods
+where id = :id;
+-- :name get-package-info :? :1
+select * from packages
+where id = :id;
