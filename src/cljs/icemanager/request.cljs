@@ -2,9 +2,145 @@
   (:require
     [re-frame.core :as rf]
     [ajax.core :as ajax]
-    [reitit.frontend.easy :as rfe]
-    [reitit.frontend.controllers :as rfc]
     [clojure.string :as string]))
+
+(defn ajax-flow [{:keys [call data clean uri-fn is-post
+                         success-notice failure-notice
+                         success-callback-event]}]
+  "一套基于 Ajax 的事件传递方案：
+  通过 ajax 触发：model/action ->
+  ajax 回调设置： model/action-on-success[failure] ->
+  更新数据库信息：model/action-data {data message status} ->
+  提供弹窗通知(成功和失败）：
+  提供数据查询和清空数据动作：action-data & action-data-clean
+  eg:
+  (ajax-call {:call :package/all :uri-fn (fn [id] (str \"/hello/\" id)})
+  (ajax-call {:call :package/new :uri-fn (fn [_] (str \"/hello/\") :is-post true})"
+  (let [key-str (string/replace (str call) ":" "")          ;package/all
+        model-key-list (string/split key-str "/")
+        model (first model-key-list)                        ;package
+        key (last model-key-list)                           ;all
+        on-failure (keyword (str model "/" key "-on-failure")) ;package-all-on-failure
+        on-success (keyword (str model "/" key "-on-success")) ;package-all-on-success
+        data (or data (keyword (str model "/" key "-data"))) ;package-all-data
+        data-clean (or clean (keyword (str model "/" key "-data-clean"))) ;package-all-data-clean
+        ]
+    (rf/reg-event-fx
+      call
+      (fn [_ [_ data]]
+        (if-not is-post
+          {:http-xhrio {:method          :get
+                        :uri             (uri-fn data)
+                        :response-format (ajax/json-response-format {:keywords? true})
+                        :on-failure      [on-failure]
+                        :on-success      [on-success]}}
+          {:http-xhrio {:method          :post
+                        :params          data
+                        :uri             (uri-fn data)
+                        :format          (ajax/json-request-format)
+                        :response-format (ajax/json-response-format {:keywords? true})
+                        :on-failure      [on-failure]
+                        :on-success      [on-success]}})))
+    (rf/reg-event-db
+      on-success
+      (fn [db [_ resp]]                                     ;data, message, status
+        (when (and success-notice (= (:status resp) 1))
+          (rf/dispatch [:global/notice
+                        {:message  (or (:message resp)
+                                       "服务器成功响应，但无回调消息。")
+                         :callback success-callback-event}]))
+        (when (and failure-notice (= (:status resp) 0))
+          (rf/dispatch [:global/notice
+                        {:message (or (:message resp)
+                                      "服务器返回了一个错误。")}]))
+        (assoc db data resp)))
+    (rf/reg-event-db
+      on-failure
+      (fn [db [_ error]]
+        (when failure-notice
+          (rf/dispatch [:global/notice
+                        {:message  (str "请求调用失败：" (:last-error error))
+                         :callback (vector data-clean)}]))
+        (assoc db data
+                  {:data    nil
+                   :status  0
+                   :message (str "请求调用失败：" (:last-error error))})))
+    (rf/reg-sub data (fn [db _] (data db)))
+    (rf/reg-event-db data-clean (fn [db _] (dissoc db data)))))
+
+;;;;;;;;;;;;;; 业务事件 ;;;;;;;;;;;;
+;获取所有位置和物品数据，失败后自动弹出对话框并清空数据
+(ajax-flow {:call           :place/fetch
+            :uri-fn         #(str "/api/places")
+            :failure-notice true
+            :data           :place/fetch-data
+            :clean          :place/clean-data})
+
+;新建位置，失败后由对话框获取数据展示并自行清除
+(ajax-flow {:call    :place/new
+            :is-post true
+            :uri-fn  #(str "/api/place")
+            :data    :place/new-failure
+            :clean   :place/new-clean-failure})
+
+;修改位置
+(ajax-flow {:call                   :place/edit
+            :data                   :place/edit-callback
+            :clean                  :place/edit-callback-clean
+            :uri-fn                 #(str "/api/place/" (:id %))
+            :is-post                true})
+
+(rf/reg-event-db
+  :place/current (fn [db [_ data]] (assoc db :place/current data)))
+
+(rf/reg-sub
+  :place/current (fn [db _] (:place/current db)))
+
+(rf/reg-event-db
+  :place/current-clean (fn [db _] (dissoc db :place/current)))
+
+;删除位置，数据库返回请求全部显示，如果成功还刷新主界面
+(ajax-flow {:call                   :place/delete
+            :is-post                true
+            :uri-fn                 #(str "/api/place/" % "/delete")
+            :success-notice         true
+            :success-callback-event [:place/fetch]
+            :failure-notice         true})
+
+;新建打包，失败后由对话框获取数据展示并自行清除
+(ajax-flow {:call    :package/new
+            :is-post true
+            :uri-fn  #(str "/api/package")
+            :data    :package/new-failure
+            :clean   :package/new-clean-failure})
+
+;新建物品，失败后由对话框获取数据展示并自行清除
+(ajax-flow {:call    :good/new
+            :is-post true
+            :uri-fn  #(str "/api/good")
+            :data    :good/new-failure
+            :clean   :good/new-clean-failure})
+
+;删除物品，数据库返回请求全部显示，如果成功还刷新主界面
+(ajax-flow {:call                   :good/delete
+            :is-post                true
+            :uri-fn                 #(str "/api/good/" % "/delete")
+            :success-notice         true
+            :success-callback-event [:place/fetch]
+            :failure-notice         true})
+
+;隐藏物品，数据库返回请求全部显示，如果成功还刷新主界面
+(ajax-flow {:call                   :good/hide
+            :is-post                true
+            :uri-fn                 #(str "/api/good/" % "/hide")
+            :success-notice         true
+            :success-callback-event [:place/fetch]
+            :failure-notice         true})
+
+
+;;;; dispatch [:global/notice {:message :callback (may nil)}]
+;;;; show modal with :message
+;;;; click ok call :callback event if necessary
 
 (rf/reg-event-db
   :global/notice

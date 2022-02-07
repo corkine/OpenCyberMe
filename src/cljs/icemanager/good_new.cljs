@@ -7,19 +7,22 @@
 
 (def good-status ["活跃","收纳","移除"])
 
-(defn validate-map-good-add [{:keys [name uid status note labels]
+(defn validate-map-good-add [{:keys [name uid status note labels placeId]
                               :or {status (first good-status)} :as raw}]
-  (cond (or (nil? name) (string/blank? name)) {:error {:name "名称不能为空"}}
+  "一定要提供的字段：name,uid,label(默认空列表),status(默认活跃),placeId"
+  (cond (or (nil? placeId) (string/blank? placeId)) {:error {:name "位置不能为空"}}
+        (or (nil? name) (string/blank? name)) {:error {:name "名称不能为空"}}
         (and (not (or (nil? uid) (string/blank? uid)))
              (<= (count uid) 4)) {:error {:uid "编号不能小于 4 个字符（如果提供的话）"}}
         :else (let [tags-list (string/split (string/replace (or labels "") "，" ",") #",")
+                    tags-list (filter (comp not string/blank?) tags-list)
                     clean-tags-list (vec (map string/trim tags-list))
                     fix-labels-status-data (assoc raw :labels clean-tags-list :status status)
                     have-uid (not (or (nil? uid) (string/blank? uid)))]
                 {:data
                  (if have-uid
                    (assoc fix-labels-status-data :uid (string/upper-case uid))
-                   (dissoc fix-labels-status-data :uid))})))
+                   (assoc fix-labels-status-data :uid nil))})))
 
 (defn new-good-btn []
   (r/with-let
@@ -55,11 +58,11 @@
             (submit-add []
               (let [raw-data @fields
                     {:keys [data error]} (validate-map-good-add raw-data)
-                    _ (println data)
+                    _ (println "data:" data)
                     _ (println "error:" error)]
                 (if error (reset! errors error)
-                          (rf/dispatch [:add-good raw-data]))))]
-      (let [server-back @(rf/subscribe [:add-good-server-back])]
+                          (rf/dispatch [:good/new data]))))]
+      (let [server-back @(rf/subscribe [:good/new-failure])]
         (modals/modal-button
           :create-new-good
           {:button {:class [:is-primary]}}
@@ -69,26 +72,30 @@
            [common-fields :name "名称 *" "物品名称"]
            [common-fields :status "状态 *" "物品所处的状态"
             {:type :select :selects good-status}]
+           [common-fields :placeId "位置 *" "物品所处的位置"
+            {:type :select :selects ["位置 #1" "位置 #2"]}]
+           ;;TODO 实现位置数据注入，并测试
            [common-fields :uid "编号" "个人物品编码 ID，以 CM 开头，比如 CMPRO"]
            [common-fields :labels "标签" "可输入零个或多个，使用逗号分开"]
            [common-fields :note "概述" "简短的描述物品特征，比如保质期、存放条件等"
             {:type :textarea :attr {:rows 2}}]
            (when server-back
-             [(if (= (:status server-back) :success)
+             [(if (= (:status server-back) 1)
                 :div.notification.is-success.mt-4
                 :div.notification.is-danger.mt-4)
-              [:blockquote (:content server-back)]])]
+              [:blockquote (:message server-back)]])]
           (let [is-success-call (and (not (nil? server-back))
-                                     (= (:status server-back) :success))]
+                                     (= (:status server-back) 1))]
             [:button.button.is-primary.is-fullwidth
              {:on-click (if is-success-call
                           (fn [_]
                             (reset! fields {})
                             (reset! errors {})
-                            (rf/dispatch [:clean-add-good-server-back])
-                            (rf/dispatch [:app/hide-modal :create-new-good]))
-                          (fn [_] (submit-add)))}
+                            (rf/dispatch [:good/new-clean-failure])
+                            (rf/dispatch [:app/hide-modal :create-new-good])
+                            (rf/dispatch [:place/fetch]))
+                          (fn [_]
+                            (reset! errors {})
+                            (submit-add)))}
              (if is-success-call "关闭" "入库！")])
-          fields errors #(rf/dispatch [:package/good-clean-failure]))))))
-;modal：create-new-good
-;ajax：add-good, add-good-server-back, clean-add-good-server-back
+          fields errors #(rf/dispatch [:good/new-clean-failure]))))))

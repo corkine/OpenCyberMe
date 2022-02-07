@@ -61,7 +61,13 @@
           ;:on-click #(rf/dispatch [:common/navigate! :feature-view
           ;                         {:rs-id (string/lower-case "11")}])
           [:span {:style {:cursor       :pointer
-                          :margin-right :10px}} place]
+                          :margin-right :10px}
+                  :on-click (fn [_]
+                              (rf/dispatch [:place/current {:id id
+                                                            :place place
+                                                            :location location
+                                                            :description description}])
+                              (rf/dispatch [:app/show-modal :edit-place]))} place]
           [:span.tag.is-light.is-rounded
            [:span.icon {:style {:margin-right :-4px
                                 :margin-left  :-9px}}

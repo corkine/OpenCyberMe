@@ -10,8 +10,6 @@
     [icemanager.feature-view :as feature-view]
     [icemanager.feature-edit :as feature-edit]
     [icemanager.place :as place]
-    [icemanager.place-request :as place-request]
-    [icemanager.good-request :as good-request]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -41,10 +39,12 @@
            "Oops... 暂无符合条件的位置"]]]]))])
 
 (defn home-page []
+  ;;TODO 实现标签、位置和状态的存储、URL 更新和对应的数据变更
   [:<>
    [top-point]
    [feature/home-filter]
    (let [fetched-place-raw @(rf/subscribe [:place/fetch-data])
+         fetched-place-raw (:data fetched-place-raw)
          fetched-place (sort-by :id fetched-place-raw)]
      (if-not false
        [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}

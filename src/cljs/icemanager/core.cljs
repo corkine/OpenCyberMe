@@ -15,6 +15,7 @@
     [icemanager.package-new :as package-new]
     [icemanager.good-new :as good-new]
     [icemanager.router :as share]
+    [icemanager.place-edit :as place-edit]
     [icemanager.modals :as modals])
   (:import goog.History))
 
@@ -41,6 +42,8 @@
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
               [:nav.navbar.is-info>div.container
+               [global-info]
+               [place-edit/place-edit-holder]
                [:div.navbar-brand
                 [:a.icon-text.navbar-item.has-text-white {:href "/"}
                  [:span.icon [:i.fa.fa-ravelry.mr-1]]
@@ -63,8 +66,7 @@
                  [:div.navbar-item.px-1
                   [package-new/new-package-btn]]
                  [:div.navbar-item.px-1
-                  [good-new/new-good-btn]]
-                 [global-info]]]]))
+                  [good-new/new-good-btn]]]]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]

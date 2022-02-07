@@ -33,5 +33,8 @@
 (defn validate-add-place [p]
   (first (st/validate p add-place-schema)))
 
+(defn validate-edit-place [p]
+  (first (st/validate p (conj add-place-schema [:id required]))))
+
 (defn validate-add-package [p]
   (first (st/validate p add-package-schema)))

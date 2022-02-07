@@ -63,7 +63,8 @@
                             (reset! fields {})
                             (reset! errors {})
                             (rf/dispatch [:package/new-clean-failure])
-                            (rf/dispatch [:app/hide-modal :create-new-package]))
+                            (rf/dispatch [:app/hide-modal :create-new-package])
+                            (rf/dispatch [:place/fetch]))
                           (fn [_] (submit-add)))}
              (if is-success-call "关闭" "新键打包")])
           fields errors #(rf/dispatch [:package/new-clean-failure]))))))

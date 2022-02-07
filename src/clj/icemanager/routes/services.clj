@@ -82,11 +82,26 @@
                       (hr/response (goods/all-place-with-goods)))}}]
 
    ["/place"
-    {:auth/logged true
-     :post        {:summary    "添加新位置"
-                   :parameters {:body any?}
-                   :handler    (fn [{{body :body} :parameters}]
-                                 (hr/response (goods/add-place body)))}}]
+    [""
+     {:auth/logged true
+      :post        {:summary    "添加新位置"
+                    :parameters {:body any?}
+                    :handler    (fn [{{body :body} :parameters}]
+                                  (hr/response (goods/add-place body)))}}]
+    ["/:id"
+     {:auth/logged true
+      :post        {:summary    "更改位置"
+                    :parameters {:path any?
+                                 :body any?}
+                    :handler    (fn [{{body :body} :parameters}]
+                                  (hr/response (goods/edit-place body)))}}]
+
+    ["/:id/delete"
+     {:auth/logged true
+      :post        {:summary    "删除位置"
+                    :parameters {:path any?}
+                    :handler    (fn [{{id-data :path} :parameters}]
+                                  (hr/response (goods/delete-place id-data)))}}]]
 
    ["/package"
     {:auth/logged true
@@ -96,6 +111,12 @@
                                  (hr/response (goods/add-package body)))}}]
 
    ["/good"
+    [""
+     {:auth/logged true
+      :post {:summary "新建物品"
+             :parameters {:body any?}
+             :handler (fn [{{body :body} :parameters}]
+                        (hr/response (goods/add-good body)))}}]
     ["/:id/delete"
      {:auth/logged true
       :post {:summary "删除物品"
