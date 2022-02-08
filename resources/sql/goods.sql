@@ -39,6 +39,13 @@ where id = :id;
 -- :name add-good :! :1
 insert into goods (uid, name, info, placeid)
 values (:uid, :name, :info, :placeId);
+-- :name edit-good :! :1
+update goods set uid = :uid,
+                 name = :name,
+                 info = info || :info,
+                 placeId = :placeId,
+                 updateat = current_timestamp
+where id = :id;
 -- :name delete-good :! :1
 delete
 from goods

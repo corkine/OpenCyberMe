@@ -163,6 +163,25 @@
        :message (str "物品入库失败：" (.getMessage e))
        :data    nil})))
 
+(defn edit-good [{:keys [id uid name placeId] :as data}]
+  ;id,uid,name,label,status,placeId,note* -> uid,name,info{label,status,note},placeId
+  "修改项目"
+  (try
+    (let [uid (if (nil? uid) uid (string/upper-case uid))
+          full-data {:id      id
+                     :uid     uid
+                     :name    name
+                     :info    (dissoc data :id :uid :name :placeId)
+                     :placeId placeId}]
+      (db/edit-good full-data)
+      {:status  1
+       :message (str name " 修改成功：" full-data)
+       :data    nil})
+    (catch Exception e
+      {:status  0
+       :message (str name " 修改失败：" (.getMessage e))
+       :data    nil})))
+
 (defn hide-good [id-map]                                    ;id:string
   "隐藏项目"
   (try

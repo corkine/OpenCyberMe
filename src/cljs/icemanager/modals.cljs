@@ -3,7 +3,9 @@
     [re-frame.core :as rf]
     [ajax.core :as ajax]
     [reitit.frontend.easy :as rfe]
-    [reitit.frontend.controllers :as rfc]))
+    [reitit.frontend.controllers :as rfc]
+    [reagent.dom :as rdom]
+    [reagent.core :as r]))
 
 (rf/reg-event-db
   :app/show-modal
@@ -28,7 +30,8 @@
 (defn modal-card
   ([id title body footer]
    [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
-                         "is-active")}
+                         "is-active")
+                :style {:z-index 999}}
     [:div.modal-background {:on-click #(rf/dispatch [:app/hide-modal id])}]
     [:div.modal-card [:header.modal-card-head
                       [:p.modal-card-title {:style {:margin-bottom :0px}} title]
@@ -38,7 +41,8 @@
      [:footer.modal-card-foot footer]]])
   ([id title body footer fields errors close-fn]
    [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
-                         "is-active")}
+                         "is-active")
+                :style {:z-index 999}}
     [:div.modal-background {:on-click (fn [_] (reset! fields {})
                                         (reset! errors {})
                                         (when-not (nil? close-fn) (close-fn))
@@ -55,7 +59,8 @@
      [:footer.modal-card-foot footer]]])
   ([id title body footer close-fn]
    [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
-                         "is-active")}
+                         "is-active")
+                :style {:z-index 999}}
     [:div.modal-background {:on-click (fn [_]
                                         (when-not (nil? close-fn) (close-fn))
                                         (rf/dispatch [:app/hide-modal id]))}]

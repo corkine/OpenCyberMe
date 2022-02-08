@@ -155,16 +155,20 @@
 (ajax-flow {:call                   :good/delete
             :is-post                true
             :uri-fn                 #(str "/api/good/" % "/delete")
+            :data                   :good/delete-data
+            :clean                  :good/delete-data-clean
             :success-notice         true
-            :success-callback-event [:place/fetch]
+            :success-callback-event [[:place/fetch] [:good/delete-data-clean]]
             :failure-notice         true})
 
 ;隐藏物品，数据库返回请求全部显示，如果成功还刷新主界面
 (ajax-flow {:call                   :good/hide
             :is-post                true
             :uri-fn                 #(str "/api/good/" % "/hide")
+            :data                   :good/hide-data
+            :clean                  :good/hide-data-clean
             :success-notice         true
-            :success-callback-event [:place/fetch]
+            :success-callback-event [[:place/fetch] [:good/hide-data-clean]]
             :failure-notice         true})
 
 ;物品更改位置，数据库返回请求全部显示，如果成功还刷新主界面
@@ -202,6 +206,21 @@
             :success-callback-event [[:place/fetch] [:good/plan-data-clean]]
             :failure-notice         true})
 
+;修改物品
+(ajax-flow {:call    :good/edit
+            :data    :good/edit-callback
+            :clean   :good/edit-callback-clean
+            :uri-fn  #(str "/api/good/" (:id %))
+            :is-post true})
+
+(rf/reg-event-db
+  :good/current (fn [db [_ data]] (assoc db :good/current data)))
+
+(rf/reg-sub
+  :good/current (fn [db _] (:good/current db)))
+
+(rf/reg-event-db
+  :good/current-clean (fn [db _] (dissoc db :good/current)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; notice ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;dispatch [:global/notice {:message :callback (may nil)}]

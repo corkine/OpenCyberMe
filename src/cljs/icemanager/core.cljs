@@ -14,6 +14,7 @@
     [icemanager.place.place-edit :as place-edit]
     [icemanager.good.package-new :as package-new]
     [icemanager.good.good-new :as good-new]
+    [icemanager.good.good-edit :as good-edit]
     [icemanager.about :refer [log about-page]]
     [icemanager.router :as share]
     [icemanager.modals :as modals])
@@ -44,10 +45,13 @@
 
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
-              [:nav.navbar.is-info {:style {:z-index :1}}
+              [:nav.navbar.is-info {:style {:z-index :5}}
+               ;移动设备place-edit穿模，select 箭头 z-index 为 4，这里要设置为5
+               ;默认 navbar 应该很高 z-index，其导致菜单被遮盖，5 的设置避免了此问题
                [:div.container
                 [global-info]
                 [place-edit/place-edit-holder]
+                [good-edit/edit-good-holder]
                 [:div.navbar-brand
                  [:a.icon-text.navbar-item.has-text-white {:href "/"}
                   [:span.icon [:i.fa.fa-ravelry.mr-1]]

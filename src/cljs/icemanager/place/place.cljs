@@ -111,7 +111,7 @@
                ^{:key label}
                [place-card-right-nav label ss select])]
             [:div.columns.mt-2                              ;;抽屉内容
-             [place-card-right-contents first-column second-column]]]])]])))
+             [place-card-right-contents first-column second-column id]]]])]])))
 
 (defn place-card-right-nav [label ss select]
   "位置卡片右侧详情按照标签进行导航"
@@ -124,20 +124,21 @@
      {:on-click #(reset! select label)}
      (str "# " (name label))]))
 
-(defn place-card-right-contents [first second]
+(defn place-card-right-contents [first second placeId]
   "位置卡片物品详情列，包括物品状态、备注和打包信息，以及鼠标移入显示的操作按钮"
   [:<>
    [:div.column.my-0.py-0
     (for [col first]
       ^{:key (:id col)}
-      [place-card-right-contents-line col])]
+      [place-card-right-contents-line col placeId])]
    [:div.column.my-0.py-0
     (for [col second]
       ^{:key (:id col)}
-      [place-card-right-contents-line col])]])
+      [place-card-right-contents-line col placeId])]])
 
 (defn place-card-right-contents-line [{:keys [id status name note packages createAt updateAt]
-                                       :or   {status "收纳" name "无标题" packages []}}]
+                                       :or   {status "收纳" name "无标题" packages []}
+                                       :as   good} placeId]
   (let [color (status-color-map status)
         have-package (> (count packages) 0)
         {{all-packages :packages
@@ -201,7 +202,11 @@
                   {:style    {:margin-left :auto}
                    :on-click #(rf/dispatch [:package/delete (:id package)])}
                   [:span.icon [:i.fa.fa-remove.package-delete]]]]])])]])
-      [:span.icon [:i.fa.faa.fa-pencil]]                    ;修改按钮
+      [:span.icon
+       {:on-click (fn [_]
+                    (rf/dispatch [:good/current (assoc good :placeId placeId)])
+                    (rf/dispatch [:app/show-modal :edit-good]))}
+       [:i.fa.faa.fa-pencil]]                               ;修改按钮
       (if-not have-package
         [:span.icon
          {:on-click

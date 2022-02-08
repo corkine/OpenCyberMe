@@ -138,6 +138,14 @@
                     :parameters {:body any?}
                     :handler    (fn [{{body :body} :parameters}]
                                   (hr/response (goods/add-good body)))}}]
+
+    ["/:id"
+     {:auth/logged true
+      :post        {:summary    "修改物品"
+                    :parameters {:body any?}
+                    :handler    (fn [{{body :body} :parameters}]
+                                  (hr/response (goods/edit-good body)))}}]
+
     ["/:id/delete"
      {:auth/logged true
       :post        {:summary    "删除物品"
