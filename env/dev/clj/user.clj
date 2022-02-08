@@ -1,13 +1,14 @@
 (ns user
   "Userspace functions you can run by default in your local REPL."
   (:require
-   [icemanager.config :refer [env]]
+    [icemanager.config :refer [env]]
     [clojure.pprint]
     [clojure.spec.alpha :as s]
     [expound.alpha :as expound]
     [mount.core :as mount]
     [icemanager.core :refer [start-app]]
     [icemanager.db.core]
+    [icemanager.handler]
     [conman.core :as conman]
     [luminus-migrations.core :as migrations]))
 
@@ -42,7 +43,8 @@
 
 (defn bind []
   (binding [*ns* (the-ns 'icemanager.db.core)]
-    (conman/bind-connection icemanager.db.core/*db* "sql/queries.sql")))
+    (conman/bind-connection icemanager.db.core/*db* "sql/queries.sql" "sql/goods.sql"))
+  (mount/start #'icemanager.handler/app-routes))
 
 (defn reset-db
   "Resets database."

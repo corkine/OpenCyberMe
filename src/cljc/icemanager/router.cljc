@@ -14,32 +14,22 @@
    ["/"
     (merge {:name :home}
            #?(:cljs {:view        #'core/home-page
-                     :controllers [{:parameters {:query [:status :contains :version]}
+                     :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:place/fetch])
-                                                  (rf/dispatch [:package/fetch])
-                                                  (rf/dispatch [:set-filter query])
-                                                  (rf/dispatch [:fetch-features]))}]}))]
-   ["/feature/:rs-id/edit"
-    (merge {:name :feature}
-           #?(:cljs {:view        #'core/feature-page
-                     :controllers [{:parameters {:path [:rs-id]}
-                                    :start      (fn [{{:keys [rs-id]} :path}]
-                                                  (rf/dispatch [:fetch-feature rs-id]))}]}))
-    ]
-   ["/feature/:rs-id/"
-    (merge {:name :feature-view}
-           #?(:cljs {:view        #'core/feature-view-page
-                     :controllers [{:parameters {:path  [:rs-id]
-                                                 :query [:go]}
-                                    :start      (fn [{{:keys [rs-id]} :path
-                                                      {:keys [go]}    :query}]
-                                                  (rf/dispatch [:set-view-go go])
-                                                  (rf/dispatch [:fetch-feature rs-id]))
-                                    :stop       (fn [_]
-                                                  (rf/dispatch [:clean-current-feature])
-                                                  (rf/dispatch [:clean-view-go]))}]}))
-    ]
+                                                  (rf/dispatch [:recent/fetch])
+                                                  (rf/dispatch [:set-filter query]))}]}))]
+
+   ["/good"
+    (merge {:name :good}
+           #?(:cljs {:view        #'core/good-page
+                     :controllers [{:start (fn [_])}]}))]
+
+   ["/package"
+    (merge {:name :package}
+           #?(:cljs {:view        #'core/package-page
+                     :controllers [{:start (fn [_])}]}))]
+
    ["/about"
     (merge {:name :about}
            #?(:cljs {:view        #'about/about-page

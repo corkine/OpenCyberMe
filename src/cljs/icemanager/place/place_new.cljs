@@ -1,11 +1,10 @@
-(ns icemanager.place-edit
+(ns icemanager.place.place-new
   (:require [re-frame.core :as rf]
             [icemanager.modals :as modals]
             [reagent.core :as r]
-            [icemanager.request :as req]
             [icemanager.validation :as va]))
 
-(defn place-edit-holder []
+(defn new-place-btn []
   (r/with-let
     [fields (r/atom {})
      errors (r/atom {})]
@@ -38,41 +37,24 @@
                              [:p.help.is-danger message])]))
             (submit-add []
               (let [raw-data @fields
-                    error (va/validate-edit-place raw-data)
+                    error (va/validate-add-place raw-data)
                     raw-data (if (nil? (:description raw-data))
                                (assoc raw-data :description nil)
                                raw-data)]
                 (if error (reset! errors error)
-                          ;一定具备字段 id place location description
-                          (rf/dispatch [:place/edit raw-data]))))]
-      (let [server-back @(rf/subscribe [:place/edit-callback])
-            {:keys [id place location description] :as current-place}
-            @(rf/subscribe [:place/current])
-            _ (reset! fields current-place)]
-        (modals/modal-card
-          :edit-place
-          (str "修改位置：" place " [id: " id "]")
+                          (rf/dispatch [:place/new raw-data]))))]
+      (let [server-back @(rf/subscribe [:place/new-failure])]
+        (modals/modal-button
+          :create-new-place
+          {:button {:class [:is-info :is-inverted :is-outlined]}}
+          [:i.fa.fa-inbox {:aria-hidden "true"}]
+          "新位置"
           [:div {:style {:color "black"}}
+           #_[common-fields :id "位置编号 *" "大写且唯一，仅能包含 - _ 和英文字母"]
            [common-fields :place "位置名称 *" "位置的中文名称，比如 抽屉#1"]
            [common-fields :location "位置地点 *" "位置所在的地理位置，比如 洪山区"]
            [common-fields :description "位置概述" "简短的描述如何找到此位置，比如 衣帽间靠右第一个抽屉"
             {:type :textarea :attr {:rows 2}}]
-           [:div.is-pulled-left.is-clickable.dui-tips
-            {:data-tooltip "物品将移动到 #1 位置, #1 不可删除"
-             :on-click     (fn [_]
-                             (reset! fields {})
-                             (reset! errors {})
-                             (rf/dispatch [:place/edit-callback-clean]) ;清空 ajax 返回的数据
-                             (rf/dispatch [:app/hide-modal :edit-place]) ;关闭模态框
-                             (rf/dispatch [:place/current-clean]) ;清空当前修改位置的数据
-                             (rf/dispatch
-                               [:global/notice {:message  "确定删除此位置吗，此操作不可恢复！"
-                                                :callback [:place/delete id]}]))}
-            (when-not server-back
-              [:span.icon-text.has-text-danger
-               [:span.icon
-                [:i.fa.fa-trash {:style {:margin-top :2px}}]]
-               [:span "删除此位置"]])]
            (when server-back
              [(if (not= (:status server-back) 0)
                 :div.notification.is-success.mt-4
@@ -85,12 +67,10 @@
                           (fn [_]
                             (reset! fields {})
                             (reset! errors {})
-                            (rf/dispatch [:place/edit-callback-clean]) ;清空 ajax 返回的数据
-                            (rf/dispatch [:app/hide-modal :edit-place]) ;关闭模态框
-                            (rf/dispatch [:place/current-clean]) ;清空当前修改位置的数据
-                            (rf/dispatch [:place/fetch]))   ;重新加载主界面
+                            (rf/dispatch [:place/new-clean-failure])
+                            (rf/dispatch [:app/hide-modal :create-new-place])
+                            (rf/dispatch [:recent/fetch])
+                            (rf/dispatch [:place/fetch]))
                           (fn [_] (submit-add)))}
-             (if is-success-call "关闭" "提交修改")])
-          fields errors (fn [_]                             ;手动关闭，会自动关闭模态框
-                          (rf/dispatch [:place/edit-callback-clean]) ;清空 ajax 返回的数据
-                          (rf/dispatch [:place/current-clean]))))))) ;清空当前修改位置的数据
+             (if is-success-call "关闭" "创建")])
+          fields errors #(rf/dispatch [:place/new-clean-failure]))))))

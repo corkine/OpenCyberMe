@@ -6,6 +6,7 @@
     [next.jdbc.result-set]
     [clojure.tools.logging :as log]
     [conman.core :as conman]
+    [mount.core :as mount]
     [icemanager.config :refer [env]]
     [mount.core :refer [defstate]])
   (:import (org.postgresql.util PGobject)))

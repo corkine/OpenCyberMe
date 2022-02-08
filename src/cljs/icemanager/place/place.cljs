@@ -1,19 +1,34 @@
-(ns icemanager.place
+(ns icemanager.place.place
   (:require
     [day8.re-frame.http-fx]
     [reagent.core :as r]
     [re-frame.core :as rf]
     [markdown.core :refer [md->html]]
-    [icemanager.events]
+    [icemanager.event.events]
     [icemanager.about :refer [log about-page]]
-    [cljs-time.core :as time]
     [cljs-time.format :as format]
     [clojure.string :as string]))
 
 (def max-package-item 7)
 
-(defn gen-key []
-  (gensym "key-"))
+(def status-compare-fn
+  (fn [{a :status a-n :name} {b :status b-n :name}]
+    (if (= a b) (compare a-n b-n)
+                (case (str a ":" b)
+                  "活跃:收纳" -1
+                  "活跃:移除" -1
+                  "收纳:移除" -1
+                  "收纳:活跃" 1
+                  "移除:活跃" 1
+                  "移除:收纳" 1
+                  1))))
+
+(def status-color-map
+  #(case %
+     "活跃" :is-success
+     "收纳" :is-normal
+     "移除" :is-danger
+     :is-normal))
 
 (defn jvm->js-time-str [jvm-time-str]
   (try
@@ -84,16 +99,7 @@
               [:i.fa.fa-clock-o {:aria-hidden "true"}]]
           [:span.has-text-dark-lighter (jvm->js-time-str updateAt)]]] ;;位置描述左半边
         (let [ss @select
-              select-data (sort-by identity (fn [{a :status a-n :name} {b :status b-n :name}]
-                                              (if (= a b) (compare a-n b-n)
-                                                          (case (str a ":" b)
-                                                            "活跃:收纳" -1
-                                                            "活跃:移除" -1
-                                                            "收纳:移除" -1
-                                                            "收纳:活跃" 1
-                                                            "移除:活跃" 1
-                                                            "移除:收纳" 1
-                                                            1))) (get data ss))
+              select-data (sort-by identity status-compare-fn (get data ss))
               data-size (count select-data)
               split-col 4
               first-column (if (> data-size split-col) (take (/ data-size 2) select-data) select-data)
@@ -132,15 +138,12 @@
 
 (defn place-card-right-contents-line [{:keys [id status name note packages createAt updateAt]
                                        :or   {status "收纳" name "无标题" packages []}}]
-  (let [color (case status
-                "活跃" :is-success
-                "收纳" :is-normal
-                "移除" :is-danger
-                :is-normal)
+  (let [color (status-color-map status)
         have-package (> (count packages) 0)
-        {all-packages :data} @(rf/subscribe [:package/fetch-data])
-        all-packages (sort-by :createat all-packages)
-        all-packages (take 7 all-packages)]
+        {{all-packages :packages
+          all-places   :places} :data} @(rf/subscribe [:recent/fetch-data])
+        all-packages (take 7 (sort-by :createat all-packages))
+        all-places (take 7 (sort-by :updateat all-places))]
     [:a.panel-block.is-active
      [:span {:class [:tag :mr-3 :is-light color]} status]   ;状态
      [:span.dropdown.is-hoverable.is-up
@@ -158,10 +161,11 @@
                           [:p [:i.fa.fa-clock-o] " " (or (jvm->js-time-str updateAt) "")]])])]]
      (for [{:keys [name status] :as package} packages]
        ^{:key package}
-       [(if (= status 1)                                    ;打包
+       [(if (= status 1)                                    ;打包状态胶囊
           :span.tag.is-warning.is-small.is-rounded
           :span.tag.is-warning.is-small.is-rounded.is-light)
-        [:span {:on-click #(rf/dispatch [:good/box [id (:id package)]])} name]
+        [:span {:on-click #(rf/dispatch [(if (= status 1) :good/plan :good/box)
+                                         [id (:id package)]])} name]
         [:button.delete.is-small
          {:on-click #(rf/dispatch [:good/unbox [id (:id package)]])}]])
      #_[:span.dui-tips (when note {:data-tooltip (or note "无备注")})]
@@ -172,23 +176,31 @@
           [:div {:aria-haspopup "true" :aria-controls "dropdown-menu"}
            [:span.icon [:i.fa.faa.fa-share]]]]
          [:div#dropdown-menu.dropdown-menu {:role "menu"}
-          (if true
+          (if-not (empty? all-places)
             [:div.dropdown-content
-             [:button.button.is-white.dropdown-item [:p "抽屉 #1"]]
-             [:button.button.is-white.dropdown-item [:p "抽屉 #2"]]
-             [:button.button.is-white.dropdown-item [:p "抽屉 #3"]]])]])
+             (for [{:keys [place] :as places} all-places]
+               ^{:key places}
+               [:button.button.is-white.dropdown-item
+                {:on-click #(rf/dispatch [:good/move [id (:id places)]])}
+                [:p place]])])]])
       (if-not have-package
         [:span.dropdown.is-hoverable.is-up                  ;打包按钮
          [:div.dropdown-trigger
           [:div {:aria-haspopup "true" :aria-controls "dropdown-menu"}
            [:span.icon [:i.fa.faa.fa-cube]]]]
          [:div#dropdown-menu.dropdown-menu {:role "menu"}
-          (if true
+          (if-not (empty? all-packages)
             [:div.dropdown-content
              (for [{:keys [name] :as package} all-packages]
                ^{:key name}
-               [:button.button.is-white.dropdown-item
-                {:on-click #(rf/dispatch [:good/plan [id (:id package)]])} [:p name]])])]])
+               [:button.button.is-white.dropdown-item.pr-5
+                [:div.is-flex
+                 [:div.is-flex-grow-5
+                  {:on-click #(rf/dispatch [:good/plan [id (:id package)]])} name]
+                 [:span.has-text-light.has-text-right
+                  {:style    {:margin-left :auto}
+                   :on-click #(rf/dispatch [:package/delete (:id package)])}
+                  [:span.icon [:i.fa.fa-remove.package-delete]]]]])])]])
       [:span.icon [:i.fa.faa.fa-pencil]]                    ;修改按钮
       (if-not have-package
         [:span.icon

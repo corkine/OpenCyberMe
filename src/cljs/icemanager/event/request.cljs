@@ -1,9 +1,11 @@
-(ns icemanager.request
+(ns icemanager.event.request
   (:require
     [re-frame.core :as rf]
     [ajax.core :as ajax]
-    [clojure.string :as string]))
+    [clojure.string :as string]
+    [clojure.set :as set]))
 
+;;;;;;;;;;;;;;;;; ajax-flow 抽象 ;;;;;;;;;;;;;;;;;
 (defn ajax-flow [{:keys [call data clean uri-fn is-post
                          success-notice failure-notice
                          success-callback-event]}]
@@ -11,7 +13,7 @@
   通过 ajax 触发：model/action ->
   ajax 回调设置： model/action-on-success[failure] ->
   更新数据库信息：model/action-data {data message status} ->
-  提供弹窗通知(成功和失败）：
+  提供弹窗通知(成功和失败）以及成功后的一个或多个事件回调，弹窗通知后会自动清空数据
   提供数据查询和清空数据动作：action-data & action-data-clean
   eg:
   (ajax-call {:call :package/all :uri-fn (fn [id] (str \"/hello/\" id)})
@@ -24,7 +26,13 @@
         on-success (keyword (str model "/" key "-on-success")) ;package-all-on-success
         data (or data (keyword (str model "/" key "-data"))) ;package-all-data
         data-clean (or clean (keyword (str model "/" key "-data-clean"))) ;package-all-data-clean
-        ]
+        success-callback-events
+        (if (and (not (nil? success-callback-event))
+                 (vector? success-callback-event)
+                 (not-empty success-callback-event)
+                 (vector? (first success-callback-event)))
+          success-callback-event
+          (vector success-callback-event))]
     (rf/reg-event-fx
       call
       (fn [_ [_ data]]
@@ -51,7 +59,8 @@
                                          "服务器成功响应，但无回调消息。")
                            :callback success-callback-event}])
             (when success-callback-event
-              (rf/dispatch (vec success-callback-event)))))
+              (doseq [sce success-callback-events]
+                (rf/dispatch (vec sce))))))
         (when (and failure-notice (= (:status resp) 0))
           (rf/dispatch [:global/notice
                         {:message (or (:message resp)
@@ -71,7 +80,7 @@
     (rf/reg-sub data (fn [db _] (data db)))
     (rf/reg-event-db data-clean (fn [db _] (dissoc db data)))))
 
-;;;;;;;;;;;;;; 业务事件 ;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;; 位置 ;;;;;;;;;;;;;;;;;;;;;;
 ;获取所有位置和物品数据，失败后自动弹出对话框并清空数据
 (ajax-flow {:call           :place/fetch
             :uri-fn         #(str "/api/places")
@@ -87,11 +96,11 @@
             :clean   :place/new-clean-failure})
 
 ;修改位置
-(ajax-flow {:call                   :place/edit
-            :data                   :place/edit-callback
-            :clean                  :place/edit-callback-clean
-            :uri-fn                 #(str "/api/place/" (:id %))
-            :is-post                true})
+(ajax-flow {:call    :place/edit
+            :data    :place/edit-callback
+            :clean   :place/edit-callback-clean
+            :uri-fn  #(str "/api/place/" (:id %))
+            :is-post true})
 
 (rf/reg-event-db
   :place/current (fn [db [_ data]] (assoc db :place/current data)))
@@ -110,11 +119,12 @@
             :success-callback-event [:place/fetch]
             :failure-notice         true})
 
-;最近打包，静默写入数据，失败弹窗
-(ajax-flow {:call :package/fetch
-            :uri-fn #(str "/api/packages")
-            :data :package/fetch-data
-            :clean :package/fetch-data-clean
+;;;;;;;;;;;;;;;;;;;;;;;; 打包 ;;;;;;;;;;;;;;;;;;;;;;
+;最近打包和位置，静默写入数据，失败弹窗
+(ajax-flow {:call           :recent/fetch
+            :uri-fn         #(str "/api/recent")
+            :data           :recent/fetch-data
+            :clean          :recent/fetch-data-clean
             :failure-notice true})
 
 ;新建打包，失败后由对话框获取数据展示并自行清除
@@ -124,6 +134,16 @@
             :data    :package/new-failure
             :clean   :package/new-clean-failure})
 
+;删除打包，成功和失败后均弹窗提示，成功还刷新主界面，触发打包重新获取
+(ajax-flow {:call                   :package/delete
+            :is-post                true
+            :uri-fn                 #(str "/api/package/" % "/delete")
+            :clean                  :package/delete-data-clean
+            :success-notice         true
+            :success-callback-event [[:package/fetch] [:place/fetch] [:package/delete-data-clean]]
+            :failure-notice         true})
+
+;;;;;;;;;;;;;;;;;;;;;;;; 物品 ;;;;;;;;;;;;;;;;;;;;;;
 ;新建物品，失败后由对话框获取数据展示并自行清除
 (ajax-flow {:call    :good/new
             :is-post true
@@ -147,34 +167,46 @@
             :success-callback-event [:place/fetch]
             :failure-notice         true})
 
+;物品更改位置，数据库返回请求全部显示，如果成功还刷新主界面
+(ajax-flow {:call                   :good/move
+            :is-post                true
+            :data                   :good/move-data
+            :clean                  :good/move-data-clean
+            :uri-fn                 #(str "/api/good/" (first %) "/move/" (last %))
+            :success-notice         true
+            :success-callback-event [[:place/fetch] [:good/move-data-clean]]
+            :failure-notice         true})
+
 ;物品取消打包，数据库返回结果不论成功失败全部显示，并刷新主界面
-(ajax-flow {:call :good/unbox
-            :uri-fn #(str "/api/good/" (first %) "/unbox/" (second %))
-            :data :good/unbox-data
-            :clean :good/unbox-data-clean
-            :success-notice true
-            :success-callback-event [:place/fetch]
-            :failure-notice true})
+(ajax-flow {:call                   :good/unbox
+            :uri-fn                 #(str "/api/good/" (first %) "/unbox/" (second %))
+            :data                   :good/unbox-data
+            :clean                  :good/unbox-data-clean
+            :success-notice         true
+            :success-callback-event [[:place/fetch] [:good/unbox-data-clean]]
+            :failure-notice         true})
 
 ;物品确定打包，数据库返回结果失败显示，成功则刷新主界面
-(ajax-flow {:call :good/box
-            :uri-fn #(str "/api/good/" (first %) "/box/" (second %))
-            :data :good/box-data
-            :clean :good/box-data-clean
-            :success-callback-event [:place/fetch]
-            :failure-notice true})
+(ajax-flow {:call                   :good/box
+            :uri-fn                 #(str "/api/good/" (first %) "/box/" (second %))
+            :data                   :good/box-data
+            :clean                  :good/box-data-clean
+            :success-callback-event [[:place/fetch] [:good/box-data-clean]]
+            :failure-notice         true})
 
 ;物品准备打包，数据库返回结果失败显示，成功则刷新主界面
-(ajax-flow {:call :good/plan
-            :uri-fn #(str "/api/good/" (first %) "/plan/" (second %))
-            :data :good/plan-data
-            :clean :good/plan-data-clean
-            :success-callback-event [:place/fetch]
-            :failure-notice true})
+(ajax-flow {:call                   :good/plan
+            :uri-fn                 #(str "/api/good/" (first %) "/plan/" (second %))
+            :data                   :good/plan-data
+            :clean                  :good/plan-data-clean
+            :success-callback-event [[:place/fetch] [:good/plan-data-clean]]
+            :failure-notice         true})
 
-;;;; dispatch [:global/notice {:message :callback (may nil)}]
-;;;; show modal with :message
-;;;; click ok call :callback event if necessary
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; notice ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;dispatch [:global/notice {:message :callback (may nil)}]
+;show modal with :message
+;click ok call :callback event if necessary
 
 (rf/reg-event-db
   :global/notice
@@ -192,25 +224,31 @@
   (fn [db _]
     (:global/notice db)))
 
-;;;;;;;;;;;;;; fetch feature and features, update feature ;;;;;;;;;;;
 
-(rf/reg-event-fx
-  :fetch-features
-  (fn [_ _]
-    {:http-xhrio {:method          :get
-                  :uri             "/api/features"
-                  :response-format (ajax/json-response-format {:keywords? true})
-                  :on-success      [:set-features]}}))
-
-(rf/reg-event-db
-  :set-features
-  (fn [db [_ features]]
-    (assoc db :features features)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;; filter ;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rf/reg-sub
+  :all-location
+  (fn [db _]
+    (set (map #(get % :location) (get-in db [:place/fetch-data :data])))))
 
 (rf/reg-sub
-  :get-features
+  :all-label
   (fn [db _]
-    (:features db)))
+    (let [data-list (get-in db [:place/fetch-data :data])
+          item-list (map #(:items %) data-list)
+          item-list (flatten1 item-list)
+          labels-set (set (filter (comp not nil?) (flatten (map #(:labels %) item-list))))]
+      labels-set)))
+
+(rf/reg-sub
+  :all-status
+  (fn [db _]
+    (let [data-list (get-in db [:place/fetch-data :data])
+          item-list (map #(:items %) data-list)
+          item-list (flatten1 item-list)
+          status-set (set (map #(:status %) item-list))]
+      status-set)))
+
 
 (rf/reg-event-db
   :set-filter
@@ -222,88 +260,39 @@
   (fn [db _] (:filter db)))
 
 (rf/reg-sub
-  :get-filtered-features
+  :place/fetch-data-filtered
   (fn [db _]
-    (let [{:keys [version status contains]} (:filter db)]
-      (vec (filter (fn [f] (let [ver (:version f)
-                                 sta (-> f :info :status)
-                                 all-dev (-> f :info :developer)
-                                 all-dev (if (vector? all-dev) all-dev [all-dev])
-                                 dev (set (map :name all-dev))]
-                             (and (or (= version nil) (= version ver))
-                                  (or (= status nil) (= status sta))
-                                  (or (= contains nil) (contains? dev contains)))))
-                   (:features db))))))
-
-(rf/reg-sub
-  :all-version
-  (fn [db _]
-    (set (map #(get % :version) (get db :features [])))))
-
-(rf/reg-sub
-  :all-status
-  (fn [db _]
-    (set (map #(get-in % [:info :status]) (get db :features [])))))
-
-(rf/reg-sub
-  :all-developer
-  (fn [db _]
-    (set (remove nil?
-                 (flatten
-                   (map (fn [{{:keys [developer]} :info}]
-                          (map #(get % :name) developer))
-                        (get db :features [])))))))
-
-(rf/reg-event-fx
-  :fetch-feature
-  (fn [_ [_ rs-id-lower]]
-    {:http-xhrio {:method          :get
-                  :uri             (str "/api/feature/" rs-id-lower)
-                  :response-format (ajax/json-response-format {:keywords? true})
-                  :on-success      [:set-feature]}}))
-
-(rf/reg-event-fx
-  :update-feature
-  (fn [_ [_ id data]]
-    {:http-xhrio {:method          :post
-                  :params          data
-                  :uri             (str "/api/feature/" id)
-                  :format          (ajax/json-request-format)
-                  :response-format (ajax/json-response-format {:keywords? true})
-                  :on-failure      [:set-update-feature-error]
-                  :on-success      [:set-update-feature-success]}}))
-
-(rf/reg-event-db
-  :set-feature
-  (fn [db [_ feature]]
-    (assoc db :current-feature feature)))
-
-(rf/reg-event-db
-  :set-update-feature-success
-  (fn [db [_ feature]]
-    (rf/dispatch [:app/show-modal :update-feature-notice])
-    (assoc db :current-feature feature)))
-
-(rf/reg-event-db
-  :set-update-feature-error
-  (fn [db [_ error]]
-    (rf/dispatch [:app/show-modal :update-feature-notice])
-    (assoc db :update-feature-error error)))
-
-(rf/reg-sub
-  :current-feature
-  (fn [db _]
-    (:current-feature db)))
-
-(rf/reg-event-db
-  :clean-current-feature
-  (fn [db _]
-    (dissoc db :current-feature)))
-
-(rf/reg-sub
-  :update-feature-error
-  (fn [db _]
-    (:update-feature-error db)))
+    (let [{:keys [status labels location search]} (:filter db)
+          labels (set (cond (nil? labels) (set [])
+                            (vector? labels) (set labels)
+                            :else (set (vector labels))))
+          all-place (get-in db [:place/fetch-data :data])
+          select-location-place
+          (filter (fn [place] (if (string/blank? location)
+                                true
+                                (= (:location place) location)))
+                  all-place)
+          right-status-fn #(or (string/blank? status)
+                               (= (:status %) status))
+          right-labels-fn (fn [item]
+                            (empty? (set/difference labels (set (:labels item)))))
+          fit-search-fn #(or (string/blank? search)
+                             (string/includes? (:name %) search))
+          right-s-l-place
+          (map (fn [place]
+                 (assoc place
+                   :items
+                   (filter #(and (right-labels-fn %)
+                                 (right-status-fn %)
+                                 (fit-search-fn %))
+                           (:items place))))
+               select-location-place)
+          hide-no-item-place (if (and (nil? status)
+                                      (empty? labels)
+                                      (string/blank? search))
+                               right-s-l-place
+                               (filter #(not-empty (:items %)) right-s-l-place))]
+      hide-no-item-place)))
 
 ;;;;;;;;;;;;;; usage ;;;;;;;;;;;
 
@@ -377,108 +366,3 @@
   :wishlist
   (fn [db _]
     (:wishlist db)))
-
-;;;;;;;;;;;;;; add feature ;;;;;;;;;;;
-
-(rf/reg-event-fx
-  :add-feature
-  (fn [_ [_ data]]
-    {:http-xhrio {:method          :post
-                  :params          data
-                  :uri             (str "/api/feature")
-                  :format          (ajax/json-request-format)
-                  :response-format (ajax/json-response-format {:keywords? true})
-                  :on-failure      [:set-add-feature-error]
-                  :on-success      [:set-add-feature-success]}}))
-
-(rf/reg-event-db
-  :set-add-feature-success
-  (fn [db [_ feature]]
-    (assoc db :add-feature-server-back
-              {:status  (if (:data feature) :success :fail)
-               :content (:message feature)})))
-
-(rf/reg-event-db
-  :set-add-feature-error
-  (fn [db [_ error]]
-    (assoc db :add-feature-server-back
-              {:status  :fail
-               :content (str "新建特性失败：" error)})))
-
-(rf/reg-event-db
-  :clean-add-feature-server-back
-  (fn [db _]
-    (dissoc db :add-feature-server-back)))
-
-(rf/reg-sub
-  :add-feature-server-back
-  (fn [db _]
-    (:add-feature-server-back db)))
-
-;;;;;;;;;;;;;; delete feature ;;;;;;;;;;;
-
-(rf/reg-event-fx
-  :delete-feature
-  (fn [_ [_ id]]
-    {:http-xhrio {:method          :post
-                  :uri             (str "/api/feature/" id "/delete")
-                  :format          (ajax/json-request-format)
-                  :response-format (ajax/json-response-format {:keywords? true})
-                  :on-failure      [:set-del-feature-error]
-                  :on-success      [:set-del-feature-success]}}))
-
-(rf/reg-event-db
-  :set-del-feature-success
-  (fn [db [_ return]]
-    (rf/dispatch [:app/show-modal :delete-feature-notice])
-    (assoc db :del-feature-server-back
-              {:status  (if (:data return) :success :fail)
-               :content (:message return)})))
-
-(rf/reg-event-db
-  :set-del-feature-error
-  (fn [db [_ error]]
-    (rf/dispatch [:app/show-modal :delete-feature-notice])
-    (assoc db :del-feature-server-back
-              {:status  :fail
-               :content (str "删除失败： " error)})))
-
-(rf/reg-event-db
-  :clean-del-feature-server-back
-  (fn [db _]
-    (dissoc db :del-feature-server-back)))
-
-(rf/reg-sub
-  :del-feature-server-back
-  (fn [db _]
-    (:del-feature-server-back db)))
-
-(rf/reg-event-db
-  :set-view-go
-  (fn [db [_ go]]
-    (assoc db :view-go go)))
-
-(rf/reg-sub
-  :view-go
-  (fn [db _] (:view-go db)))
-
-(rf/reg-event-db
-  :clean-view-go
-  (fn [db _]
-    (dissoc db :view-go)))
-
-;;;;;;;;;;;;;;;;;;
-(rf/reg-sub
-  :add-place-server-back
-  (fn [db _]
-    (:add-place-server-back db)))
-
-(rf/reg-sub
-  :add-package-server-back
-  (fn [db _]
-    (:add-package-server-back db)))
-
-(rf/reg-sub
-  :add-good-server-back
-  (fn [db _]
-    (:add-good-server-back db)))

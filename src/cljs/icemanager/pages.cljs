@@ -4,12 +4,10 @@
     [reagent.core :as r]
     [re-frame.core :as rf]
     [markdown.core :refer [md->html]]
-    [icemanager.events]
-    [icemanager.feature :as feature]
+    [icemanager.event.events]
     [icemanager.about :refer [log about-page]]
-    [icemanager.feature-view :as feature-view]
-    [icemanager.feature-edit :as feature-edit]
-    [icemanager.place :as place]
+    [icemanager.place.place-filter :as place-filter]
+    [icemanager.place.place :as place]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -21,32 +19,13 @@
      :reagent-render
      (fn [_] [:div ""])}))
 
-(defn home-page-old []
-  [:<>
-   [top-point]
-   [feature/home-filter]
-   (let [feature-filtered @(rf/subscribe [:get-filtered-features])
-         fetched-place @(rf/subscribe [:place/fetch-data])]
-     (if-not (empty? feature-filtered)
-       [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}
-        (for [data feature-filtered]
-          ^{:key (:id data)}
-          [place/place-card fetched-place])]
-       [:div.hero.is-small.pl-0.pr-0
-        [:div.hero-body
-         [:div.container.has-text-centered
-          [:h3.subtitle.mt-6
-           "Oops... 暂无符合条件的位置"]]]]))])
-
 (defn home-page []
-  ;;TODO 实现标签、位置和状态的存储、URL 更新和对应的数据变更
   [:<>
    [top-point]
-   [feature/home-filter]
-   (let [fetched-place-raw @(rf/subscribe [:place/fetch-data])
-         fetched-place-raw (:data fetched-place-raw)
+   [place-filter/home-filter]
+   (let [fetched-place-raw @(rf/subscribe [:place/fetch-data-filtered])
          fetched-place (sort-by :id fetched-place-raw)]
-     (if-not false
+     (if-not (empty? fetched-place)
        [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}
         (for [data fetched-place]
           ^{:key (:id data)}
@@ -55,23 +34,35 @@
         [:div.hero-body
          [:div.container.has-text-centered
           [:h3.subtitle.mt-6
-           "Oops... 暂无符合条件的位置"]]]]))])
+           "Oops... 暂无符合条件的选项"]]]]))
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
 
-(defn feature-page []
-  (let [feature-data @(rf/subscribe [:current-feature])]
-    [:<>
-     [top-point]
-     [:div {:style {:background-color :#48c774}}
-      [:div.hero.is-success.is-small.container.is-fullhd
-       {:style {:padding-left   :30px
-                :padding-bottom :30px}}
-       [feature/feature-card feature-data {:with-footer      false
-                                           :with-description true}]]]
-     [:section.section>div.container>div.content
-      [feature-edit/feature-form feature-data]]]))
+(defn good-page []
+  [:<>
+   [top-point]
+   [:selection.hero.is-large
+    [:div.hero-body.has-text-centered
+     [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
+     [:p.subtitle.is-family-code  "暂无迫切实现需求"]]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
 
-(defn feature-view-page []
-  (let [feature-data @(rf/subscribe [:current-feature])
-        go @(rf/subscribe [:view-go])]
-    [:<>
-     [feature-view/feature-view-content feature-data go]]))
+(defn package-page []
+  [:<>
+   [top-point]
+   [:selection.hero.is-danger.is-large
+    [:div.hero-body.has-text-centered
+     [:p.title.is-family-code  [:i.fa.fa-jpy] " 等待融资"]
+     [:p.subtitle.is-family-code  "暂无施工必要"]]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])

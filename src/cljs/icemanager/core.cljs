@@ -5,17 +5,17 @@
     [reagent.core :as r]
     [re-frame.core :as rf]
     [markdown.core :refer [md->html]]
-    [icemanager.ajax :as ajax]
-    [icemanager.events :as events]
-    [icemanager.request :as req]
     [reitit.core :as reitit]
     [reitit.frontend.easy :as rfe]
+    [icemanager.event.ajax :as ajax]
+    [icemanager.event.events :as events]
+    [icemanager.event.request :as req]
+    [icemanager.place.place-new :as place-new]
+    [icemanager.place.place-edit :as place-edit]
+    [icemanager.good.package-new :as package-new]
+    [icemanager.good.good-new :as good-new]
     [icemanager.about :refer [log about-page]]
-    [icemanager.place-new :as place-new]
-    [icemanager.package-new :as package-new]
-    [icemanager.good-new :as good-new]
     [icemanager.router :as share]
-    [icemanager.place-edit :as place-edit]
     [icemanager.modals :as modals])
   (:import goog.History))
 
@@ -33,8 +33,11 @@
       {:on-click (fn [_]
                    (rf/dispatch [:global/notice-clean])
                    (when-not (nil? callback)
-                     (do
-                       (rf/dispatch callback)))
+                     (if (vector? (first callback))
+                       (doseq [c callback]
+                         (rf/dispatch c))
+                       (do
+                         (rf/dispatch callback))))
                    (rf/dispatch [:app/hide-modal :notice]))}
       "确定"]
      #(rf/dispatch [:global/notice-clean])]))

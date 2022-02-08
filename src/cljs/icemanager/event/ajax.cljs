@@ -1,4 +1,4 @@
-(ns icemanager.ajax
+(ns icemanager.event.ajax
   (:require
     [ajax.core :as ajax]
     [luminus-transit.time :as time]

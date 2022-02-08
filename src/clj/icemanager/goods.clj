@@ -100,6 +100,24 @@
        :message (str "新建失败：" (.getMessage e))
        :data    nil})))
 
+(defn delete-package [{id :id}]
+  "删除打包(目前仅支持一个 good 一个 package，此方法会删除包含此 package 的 good 的所有 package 数据)"
+  (try
+    (jdbc/with-transaction
+      [t db/*db*]
+      (let [row (db/update-good-packages-by-packageId
+                  t {:packages []
+                     :packageIdMap
+                     {:packages [{:id (Integer/parseInt (str id))}]}})
+            _ (db/delete-package {:id (str id)})]
+        {:status  1
+         :message (str "删除成功，有 " row " 个项目被修改。")
+         :data    nil}))
+    (catch Exception e
+      {:status  0
+       :message (str "删除失败：" (.getMessage e))
+       :data    nil})))
+
 (defn get-packages [{:keys [day] :or {day 3}}]
   "获取最近的打包"
   (try
@@ -109,6 +127,22 @@
     (catch Exception e
       {:status  0
        :message (str "获取最近 " day " 天的打包失败：" (.getMessage e))
+       :data    nil})))
+
+(defn get-recent [{:keys [day] :or {day 3}}]
+  "获取最近的打包和位置，打包按照 day 进行过滤，位置不进行过滤"
+  (try
+    (jdbc/with-transaction
+      [t db/*db*]
+      (let [places (db/get-places t)
+            packages (db/get-packages t {:day day})]
+        {:status  1
+         :message (str "获取位置和打包成功。")
+         :data    {:places   places
+                   :packages packages}}))
+    (catch Exception e
+      {:status  0
+       :message (str "获取最近 " day " 天的位置和打包失败：" (.getMessage e))
        :data    nil})))
 
 (defn add-good [{:keys [uid name placeId] :as data}]
@@ -139,6 +173,18 @@
     (catch Exception e
       {:status  0
        :message (str "隐藏失败：" (.getMessage e))
+       :data    nil})))
+
+(defn move-good [{:keys [id placeId]}]                      ;id:string,placeId:string
+  "移动项目"
+  (try
+    (db/move-good {:id id :placeId placeId})
+    {:status  1
+     :message (str "移动 " id " 成功")
+     :data    nil}
+    (catch Exception e
+      {:status  0
+       :message (str "移动失败：" (.getMessage e))
        :data    nil})))
 
 (defn delete-good [id-map]                                  ;id:string

@@ -1,4 +1,4 @@
-(ns icemanager.events
+(ns icemanager.event.events
   (:require
     [re-frame.core :as rf]
     [ajax.core :as ajax]

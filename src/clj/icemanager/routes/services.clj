@@ -104,11 +104,18 @@
                                   (hr/response (goods/delete-place id-data)))}}]]
 
    ["/package"
-    {:auth/logged true
-     :post        {:summary    "添加新打包"
-                   :parameters {:body any?}
-                   :handler    (fn [{{body :body} :parameters}]
-                                 (hr/response (goods/add-package body)))}}]
+    [""
+     {:auth/logged true
+      :post        {:summary    "添加新打包"
+                    :parameters {:body any?}
+                    :handler    (fn [{{body :body} :parameters}]
+                                  (hr/response (goods/add-package body)))}}]
+    ["/:id/delete"
+     {:auth/logged true
+      :post        {:summary    "删除某个打包"
+                    :parameters {:path any?}
+                    :handler    (fn [{{data :path} :parameters}]
+                                  (hr/response (goods/delete-package data)))}}]]
 
    ["/packages"
     {:auth/logged true
@@ -116,6 +123,13 @@
                    :parameters {:query any?}
                    :handler    (fn [{{body :query} :parameters}]
                                  (hr/response (goods/get-packages body)))}}]
+
+   ["/recent"
+    {:auth/logged true
+     :get         {:summary    "获取最近打包和位置"
+                   :parameters {:query any?}
+                   :handler    (fn [{{body :query} :parameters}]
+                                 (hr/response (goods/get-recent body)))}}]
 
    ["/good"
     [""
@@ -136,6 +150,13 @@
                     :parameters {:path any?}
                     :handler    (fn [{{path :path} :parameters}]
                                   (hr/response (goods/hide-good path)))}}]
+
+    ["/:id/move/:placeId"
+     {:auth/logged true
+      :post        {:summary    "移动物品"
+                    :parameters {:path any?}
+                    :handler    (fn [{{path :path} :parameters}]
+                                  (hr/response (goods/move-good path)))}}]
 
     ["/:id/box/:box-id"
      {:auth/logged true

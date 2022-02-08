@@ -1,4 +1,4 @@
-(ns icemanager.package-new
+(ns icemanager.good.package-new
   (:require [re-frame.core :as rf]
             [icemanager.modals :as modals]
             [reagent.core :as r]
@@ -64,7 +64,7 @@
                             (reset! errors {})
                             (rf/dispatch [:package/new-clean-failure])
                             (rf/dispatch [:app/hide-modal :create-new-package])
-                            (rf/dispatch [:package/fetch]))
+                            (rf/dispatch [:recent/fetch]))
                           (fn [_] (submit-add)))}
              (if is-success-call "关闭" "新键打包")])
           fields errors #(rf/dispatch [:package/new-clean-failure]))))))

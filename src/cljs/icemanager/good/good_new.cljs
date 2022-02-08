@@ -1,4 +1,4 @@
-(ns icemanager.good-new
+(ns icemanager.good.good-new
   (:require [re-frame.core :as rf]
             [icemanager.modals :as modals]
             [reagent.core :as r]
@@ -6,6 +6,8 @@
             [clojure.string :as string]))
 
 (def good-status ["活跃","收纳","移除"])
+
+(def default-place-id "1")
 
 (defn validate-map-good-add [{:keys [name uid status note labels placeId]
                               :or {status (first good-status)} :as raw}]
@@ -52,17 +54,22 @@
                                 :on-change #(reset! v (.. % -target -value))}
                                (for [k selects]
                                  ^{:key k}
-                                 [:option {:value k} k])])]
+                                 [:<>
+                                  (if (vector? k)
+                                    [:option {:value (first k)} (second k)]
+                                    [:option {:value k} k])])])]
                            (when-let [message @e]
                              [:p.help.is-danger message])]))
             (submit-add []
               (let [raw-data @fields
-                    {:keys [data error]} (validate-map-good-add raw-data)
-                    _ (println "data:" data)
-                    _ (println "error:" error)]
+                    raw-data (if (string/blank? (:placeId raw-data))
+                               (assoc raw-data :placeId default-place-id) raw-data)
+                    {:keys [data error]} (validate-map-good-add raw-data)]
                 (if error (reset! errors error)
                           (rf/dispatch [:good/new data]))))]
-      (let [server-back @(rf/subscribe [:good/new-failure])]
+      (let [server-back @(rf/subscribe [:good/new-failure])
+            {{:keys [places]} :data} @(rf/subscribe [:recent/fetch-data])
+            places (sort-by :id places)]
         (modals/modal-button
           :create-new-good
           {:button {:class [:is-primary]}}
@@ -73,8 +80,7 @@
            [common-fields :status "状态 *" "物品所处的状态"
             {:type :select :selects good-status}]
            [common-fields :placeId "位置 *" "物品所处的位置"
-            {:type :select :selects ["位置 #1" "位置 #2"]}]
-           ;;TODO 实现位置数据注入，并测试
+            {:type :select :selects (map #(vector (:id %) (:place %)) places)}]
            [common-fields :uid "编号" "个人物品编码 ID，以 CM 开头，比如 CMPRO"]
            [common-fields :labels "标签" "可输入零个或多个，使用逗号分开"]
            [common-fields :note "概述" "简短的描述物品特征，比如保质期、存放条件等"
