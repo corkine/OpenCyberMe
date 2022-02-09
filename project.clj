@@ -46,7 +46,7 @@
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [thheller/shadow-cljs "2.11.5" :scope "provided"]]
 
-  :repositories [["central" "http://maven.aliyun.com/nexus/content/groups/public"]
+  :repositories [["central" "https://maven.aliyun.com/nexus/content/groups/public"]
                  ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]
 
   :min-lein-version "2.0.0"
