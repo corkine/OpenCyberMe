@@ -1,4 +1,4 @@
-(defproject icemanager "1.0.0-SNAPSHOT"
+(defproject icemanager "1.0.1-SNAPSHOT"
 
   :description "一个简单易用的家庭模块化物品管理系统"
   :url "https://mazhangjing.com"
