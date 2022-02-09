@@ -65,8 +65,8 @@
     (handler req)))
 
 (defn authenticated? [name pass]
-  (and (= name (or (:username env "admin")))
-       (= pass (or (:password env "admin")))))
+  (and (= name (or (:auth-user env) "admin"))
+       (= pass (or (:auth-pass env) "admin"))))
 
 (defn wrap-basic-auth [handler]
   (wrap-basic-authentication handler authenticated?))

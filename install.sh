@@ -62,5 +62,5 @@ echo "========================================================================="
 #  :nrepl-port 7002
 #  :database-url
 #  "postgresql://localhost:5432/ice?user=xxx&password=xxx&stringtype=unspecified"
-#  :username admin
-#  :password admin}
+#  :auth-user admin
+#  :auth-pass admin}
