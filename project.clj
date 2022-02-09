@@ -77,7 +77,7 @@
      :output-to "target/test/test.js"
      :autorun true}}}
   
-  :npm-deps []
+  :npm-deps [[xregexp "5.1.0"]]
   :npm-dev-deps [[xmlhttprequest "1.8.0"]]
 
   :profiles
