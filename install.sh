@@ -1,16 +1,16 @@
 echo "========================================================================="
 echo ""
 echo "Init boot sequence, you should install git, postgreSQL, jdk, npm,
-lein done and set prod-config.edn well."
+lein done and set dev-config.edn well."
 
+# 下载安装必须的软件包：git、jvm、npm
 # yum -y install git java-1.8.0-openjdk-devel.x86_64 npm
-# git config --global credential.helper store
-# git checkout -b cm-goods origin/cm-goods
-# git pull
 
+# 下载安装 lein
 # chmod +x lein.sh
 # ./lein.sh
 
+# 下载安装 postgreSQL 14
 # sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 # sudo yum install -y postgresql14-server
 # sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
@@ -29,11 +29,28 @@ lein done and set prod-config.edn well."
 # firewall-cmd --zone=public --add-port=5432/tcp --permanent
 # firewall-cmd --reload
 
-git pull
-kill $(ps axu | grep "lein run*" | grep -v grep | awk '{print $2}')
-./lein shadow release app
-nohup ./lein run 1>>/var/log/app.log 2>&1 &
+# 配置 git 密码存储，获取最新分支代码
+# git config --global credential.helper store
+# git checkout -b cm-goods origin/cm-goods
+# git pull
 
-echo "Server run on Port `ps aux | grep "lein run*" | grep -v grep | awk '{print $2}'`"
+# 配置数据库 schema
+# ./lein.sh repl
+# (start)
+# (migration)
+
+git pull
+kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
+./lein.sh shadow release app
+nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
+
+echo "Server run on Port `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
 echo ""
 echo "========================================================================="
+
+# example dev-config.edn:
+# {:dev true
+#  :port 3002
+#  :nrepl-port 7002
+#  :database-url
+#  "postgresql://localhost:5432/ice?user=xxx&password=xxx&stringtype=unspecified"}

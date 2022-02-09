@@ -20,3 +20,4 @@ shadow-cljs.edn
 .vscode
 .shadow-cljs
 package-lock.json
+nohup.out
