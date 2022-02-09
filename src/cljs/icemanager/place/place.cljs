@@ -86,19 +86,17 @@
                                                             :description description}])
                               (rf/dispatch [:app/show-modal :edit-place]))} place]
           [:span.tag.is-light.is-rounded
-           [:span.icon {:style {:margin-right :-4px
-                                :margin-left  :-9px}}
+           [:span.icon {:style {:margin-right :-4px :margin-left  :-9px}}
             [:i.fa.fa-map-marker {:aria-hidden "true"}]]
            [:span location]]]
-         [:p [:span.icon {:style {:margin-right :0px
-                                  :margin-left  :-3px}}
+         [:p [:span.icon {:style {:margin-right :0px :margin-left  :-3px}}
               [:i.fa.fa-info-circle {:aria-hidden "true"}]]
           [:span.has-text-dark-lighter (if (string/blank? description) "暂无描述" description)]]
-         [:p [:span.icon {:style {:margin-right :0px
-                                  :margin-left  :-3px}}
+         [:p [:span.icon {:style {:margin-right :0px :margin-left  :-3px}}
               [:i.fa.fa-clock-o {:aria-hidden "true"}]]
           [:span.has-text-dark-lighter (jvm->js-time-str updateAt)]]] ;;位置描述左半边
         (let [ss @select
+              _ (when-not (contains? (set labels) ss) (reset! ss :all))
               select-data (sort-by identity status-compare-fn (get data ss))
               data-size (count select-data)
               split-col 4

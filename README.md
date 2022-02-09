@@ -1,6 +1,6 @@
-# ICE Manager
+# 重力管家 - 模块化物品管理
 
-ICE 特性（文档和评审）管理器，使用 clojure 和 clojurescript 搭建。
+一个模块化管理物品的 Web 应用，使用 clojure 和 clojurescript 搭建。源代码使用 GPLv2 协议开放，禁止用于商业用途。
 
 ## Prerequisites
 
@@ -10,8 +10,9 @@ ICE 特性（文档和评审）管理器，使用 clojure 和 clojurescript 搭�
 
 ## Features
 
-- 使用 cljs 提供 “格式化 ICE 特性数据” 的前端交互接口：功能丰富，实用与美观并重。
-- 使用 clojure 基于 “格式化 ICE 特性数据” 生成丰富的展示：HTML 文档，DOCX 文档，PDF 文档，TR 和评审文档等。
+- 使用 ClojureScript 和 Message Bus 应对前端状态变化，将副作用从视图分离。
+- 使用 Clojure 的丰富表达能力、宏和动态特性实现鉴权并加快后端 API 开发。
+- 使用 PostgreSQL 的 JSON 特性提供从前端直接到数据库的业务变更快速支持。
 
 ## Running
     
@@ -21,4 +22,4 @@ ICE 特性（文档和评审）管理器，使用 clojure 和 clojurescript 搭�
     //frontend
     lein shadow watch app
 
-Copyright © 2022 Corkine Ma & Inspur Cisco Networking Technology Co.Ltd, Wuhan, China.
+Copyright © 2022 Marvin Studio, Wuhan, China.
