@@ -1,7 +1,6 @@
 echo "========================================================================="
 echo ""
-echo "Init boot sequence, you should install git, postgreSQL, jdk, npm,
-lein done and set dev-config.edn well."
+echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein done and set dev-config.edn well."
 
 # 下载安装必须的软件包：git、jvm、npm
 # yum -y install git java-1.8.0-openjdk-devel.x86_64 npm
@@ -39,12 +38,18 @@ lein done and set dev-config.edn well."
 # (start)
 # (migration)
 
+echo "1. Pull code from git"
 git pull
+echo "2. Kill exist app"
 kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
+echo "3. Release frontEnd resources"
 ./lein.sh shadow release app
+sleep 3
+echo "4. Run backEnd app"
 nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
-
-echo "Server run on Port `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
+sleep 5
+echo "5. Done deploy app"
+echo "server run on port `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
 echo ""
 echo "========================================================================="
 
