@@ -19,3 +19,4 @@ shadow-cljs.edn
 .idea
 .vscode
 .shadow-cljs
+package-lock.json
