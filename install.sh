@@ -40,8 +40,10 @@ echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein don
 
 echo "1. Pull code from git"
 git pull
+sleep 2
 echo "2. Kill exist app"
 kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
+sleep 2
 echo "3. Release frontEnd resources"
 ./lein.sh shadow release app
 sleep 3

@@ -5,7 +5,7 @@
             [goog.string :as gstring]
             [clojure.string :as string]))
 
-(def version "beta 1.0.0")
+(def version "beta 1.0.1")
 
 (def log (str "now: " version "
 [2022-02-03]

@@ -96,7 +96,7 @@
               [:i.fa.fa-clock-o {:aria-hidden "true"}]]
           [:span.has-text-dark-lighter (jvm->js-time-str updateAt)]]] ;;位置描述左半边
         (let [ss @select
-              _ (when-not (contains? (set labels) ss) (reset! ss :all))
+              _ (when-not (contains? (set labels) ss) (reset! select :all))
               select-data (sort-by identity status-compare-fn (get data ss))
               data-size (count select-data)
               split-col 4
