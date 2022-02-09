@@ -22,4 +22,8 @@
     //frontend
     lein shadow watch app
 
+界面示意图（默认密码 admin:admin）：
+
+![](resources/docs/demo.png)
+
 Copyright © 2022 Marvin Studio, Wuhan, China.
