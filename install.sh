@@ -17,7 +17,8 @@ echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein don
 # sudo systemctl start postgresql-14
 # su - postgres
 # psql -U postgres
-# alter user postgres with password 'xxxxx'
+# create role admin login password 'xxxxx' valid until 'infinity' superuser;
+# create database ice with owner = admin;
 # \q
 # exit
 # vi /var/lib/pgsql/14/data/postgresql.conf
