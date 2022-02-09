@@ -1,4 +1,4 @@
-(defproject icemanager "0.0.2-SNAPSHOT"
+(defproject icemanager "1.0.0-SNAPSHOT"
 
   :description "一个简单易用的家庭模块化物品管理系统"
   :url "https://mazhangjing.com"
@@ -46,6 +46,9 @@
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [thheller/shadow-cljs "2.11.5" :scope "provided"]]
 
+  :repositories [["central" "http://maven.aliyun.com/nexus/content/groups/public"]
+                 ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]
+
   :min-lein-version "2.0.0"
   
   :source-paths ["src/clj" "src/cljs" "src/cljc"]
@@ -83,13 +86,13 @@
              
              :aot :all
              :uberjar-name "icemanager.jar"
-             :source-paths ["env/prod/clj"  "env/prod/cljs" ]
+             :source-paths ["env/prod/clj"  "env/prod/cljs"]
              :resource-paths ["env/prod/resources"]}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
-   :project/dev  {:jvm-opts ["-Dconf=dev-config.edn" ]
+   :project/dev  {:jvm-opts ["-Dconf=dev-config.edn"]
                   :dependencies [[binaryage/devtools "1.0.2"]
                                  [cider/piggieback "0.5.2"]
                                  [pjstadig/humane-test-output "0.10.0"]
@@ -101,16 +104,16 @@
                                  [jonase/eastwood "0.3.5"]] 
                   
                   
-                  :source-paths ["env/dev/clj"  "env/dev/cljs" "test/cljs" ]
+                  :source-paths ["env/dev/clj"  "env/dev/cljs" "test/cljs"]
                   :resource-paths ["env/dev/resources"]
                   :repl-options {:init-ns user
                                  :timeout 120000}
                   :injections [(require 'pjstadig.humane-test-output)
                                (pjstadig.humane-test-output/activate!)]}
-   :project/test {:jvm-opts ["-Dconf=test-config.edn" ]
-                  :resource-paths ["env/test/resources"] 
+   :project/test {:jvm-opts ["-Dconf=test-config.edn"]
+                  :resource-paths ["env/test/resources"]}
                   
                   
-                  }
+
    :profiles/dev {}
    :profiles/test {}})

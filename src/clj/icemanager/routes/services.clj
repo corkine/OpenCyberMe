@@ -9,12 +9,8 @@
     [reitit.ring.middleware.parameters :as parameters]
     [icemanager.middleware.formats :as formats]
     [ring.util.response :as hr]
-    [icemanager.feature :as feature]
     [ring.util.http-response :refer :all]
-    [clojure.java.io :as io]
-    [clojure.tools.logging :as log]
     [icemanager.auth :as auth]
-    [icemanager.doc :as doc]
     [icemanager.db.core :as db]
     [icemanager.goods :as goods]))
 
@@ -53,27 +49,6 @@
      {:get (swagger-ui/create-swagger-ui-handler
              {:url    "/api/swagger.json"
               :config {:validator-url nil}})}]]
-
-   ["/ping"
-    {:get (constantly (ok {:message "pong"}))}]
-
-
-   ["/math"
-    {:swagger {:tags ["math"]}}
-
-    ["/plus"
-     {:get  {:summary    "plus with spec query parameters"
-             :parameters {:query {:x int?, :y int?}}
-             :responses  {200 {:body {:total pos-int?}}}
-             :handler    (fn [{{{:keys [x y]} :query} :parameters}]
-                           {:status 200
-                            :body   {:total (+ x y)}})}
-      :post {:summary    "plus with spec body parameters"
-             :parameters {:body {:x int?, :y int?}}
-             :responses  {200 {:body {:total pos-int?}}}
-             :handler    (fn [{{{:keys [x y]} :body} :parameters}]
-                           {:status 200
-                            :body   {:total (+ x y)}})}}]]
 
    ["/places"
     {:auth/logged true
@@ -187,60 +162,9 @@
             :handler (fn [{{path :path} :parameters}]
                        (hr/response (goods/unbox-good path)))}}]]
 
-   ["/feature"
-    [""
-     {:auth/logged true
-      :post        {:summary    "添加特性"
-                    :parameters {:body any?}
-                    :handler    (fn [{{body :body} :parameters}]
-                                  #_(log/info "body: " body)
-                                  (hr/response (feature/add-feature body)))}}]
-    ["/:rs-id-lower"
-     {:auth/logged true
-      :get         {:summary    "获取特性特性信息"
-                    :parameters {:path {:rs-id-lower string?}}
-                    :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
-                                  (hr/response (feature/feature-by-rs-id rs-id-lower)))}
-      :post        {:summary    "特性更新"
-                    :parameters {:path {:rs-id-lower string?}
-                                 :body map?}
-                    :handler    (fn [{{body                  :body
-                                       {:keys [rs-id-lower]} :path} :parameters}]
-                                  #_(hr/not-found "Not Found")
-                                  (hr/response (feature/update-feature rs-id-lower body)))}}]
-
-    ["/:id/delete"
-     {:auth/logged true
-      :post        {:summary    "删除特性"
-                    :parameters {:path {:id string?}}
-                    :handler    (fn [{{data :path} :parameters}]
-                                  (hr/response (feature/delete-feature data)))}}]
-    ["/:rs-id-lower/tr.docx"
-     {:get {:summary    "下载 TR 文档"
-            :swagger    {:produces ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"]}
-            :parameters {:path {:rs-id-lower string?}}
-            :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
-                          {:status  200
-                           :headers {"Content-Type"
-                                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
-                           :body    (doc/resp-tr-doc rs-id-lower)
-                           #_(-> "public/img/warning_clojure.png"
-                                 (io/resource)
-                                 (io/input-stream))})}}]
-    ["/:rs-id-lower/review.pdf"
-     {:get {:summary    "下载 Review 文档"
-            :swagger    {:produces ["application/pdf"]}
-            :parameters {:path {:rs-id-lower string?}}
-            :handler    (fn [{{{:keys [rs-id-lower]} :path} :parameters}]
-                          (doc/resp-review-pdf rs-id-lower))}}]]
-   ["/features"
-    {:auth/logged true
-     :get         {:summary "获取所有特性"
-                   :handler (fn [_]
-                              (hr/response (feature/all-features)))}}]
    ["/usage"
     {:get {:handler (fn [_]
-                      (hr/response (feature/fetch-usage)))}}]
+                      (hr/response (goods/fetch-usage)))}}]
    ["/wishlist"
     {:auth/logged true
      :post        {:parameters {:body any?}
@@ -248,24 +172,24 @@
                                  (hr/response (db/insert-wishlist body)))}
      :get         {:handler (fn [_]
                               (hr/response (db/find-all-wish)))}}]
-   ["/files"
-    {:swagger {:tags ["files"]}}
+   #_["/files"
+      {:swagger {:tags ["files"]}}
 
-    ["/upload"
-     {:post {:summary    "upload a file"
-             :parameters {:multipart {:file multipart/temp-file-part}}
-             :responses  {200 {:body {:name string?, :size int?}}}
-             :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
-                           {:status 200
-                            :body   {:name (:filename file)
-                                     :size (:size file)}})}}]
+      ["/upload"
+       {:post {:summary    "upload a file"
+               :parameters {:multipart {:file multipart/temp-file-part}}
+               :responses  {200 {:body {:name string?, :size int?}}}
+               :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
+                             {:status 200
+                              :body   {:name (:filename file)
+                                       :size (:size file)}})}}]
 
-    ["/download"
-     {:get {:summary "downloads a file"
-            :swagger {:produces ["image/png"]}
-            :handler (fn [_]
-                       {:status  200
-                        :headers {"Content-Type" "image/png"}
-                        :body    (-> "public/img/warning_clojure.png"
-                                     (io/resource)
-                                     (io/input-stream))})}}]]])
+      ["/download"
+       {:get {:summary "downloads a file"
+              :swagger {:produces ["image/png"]}
+              :handler (fn [_]
+                         {:status  200
+                          :headers {"Content-Type" "image/png"}
+                          :body    (-> "public/img/warning_clojure.png"
+                                       (io/resource)
+                                       (io/input-stream))})}}]]])
