@@ -23,6 +23,7 @@
                  [metosin/reitit "0.5.10"]
                  [metosin/ring-swagger-ui "2.2.10"]
                  [metosin/ring-http-response "0.9.1"]
+                 [ring-basic-authentication "1.1.1"]
                  [mount "0.1.16"]
                  [nrepl "0.8.3"]
                  [lt.tokenmill/docx-utils "1.0.3"]

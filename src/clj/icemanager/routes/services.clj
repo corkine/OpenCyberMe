@@ -19,7 +19,8 @@
    {:coercion   spec-coercion/coercion
     :muuntaja   formats/instance
     :swagger    {:id ::api}
-    :middleware [;; query-params & form-params
+    :middleware [auth/wrap-basic-auth
+                 ;; query-params & form-params
                  parameters/parameters-middleware
                  ;; content-negotiation
                  muuntaja/format-negotiate-middleware
@@ -143,24 +144,24 @@
 
     ["/:id/box/:box-id"
      {:auth/logged true
-      :get {:summary "打包"
-            :parameters {:path any?}
-            :handler (fn [{{path :path} :parameters}]
-                       (hr/response (goods/box-good path)))}}]
+      :get         {:summary    "打包"
+                    :parameters {:path any?}
+                    :handler    (fn [{{path :path} :parameters}]
+                                  (hr/response (goods/box-good path)))}}]
 
     ["/:id/plan/:box-id"
      {:auth/logged true
-      :get {:summary "准备打包"
-            :parameters {:path any?}
-            :handler (fn [{{path :path} :parameters}]
-                       (hr/response (goods/box-good (assoc path :is-plan true))))}}]
+      :get         {:summary    "准备打包"
+                    :parameters {:path any?}
+                    :handler    (fn [{{path :path} :parameters}]
+                                  (hr/response (goods/box-good (assoc path :is-plan true))))}}]
 
     ["/:id/unbox/:box-id"
      {:auth/logged true
-      :get {:summary "取消打包"
-            :parameters {:path any?}
-            :handler (fn [{{path :path} :parameters}]
-                       (hr/response (goods/unbox-good path)))}}]]
+      :get         {:summary    "取消打包"
+                    :parameters {:path any?}
+                    :handler    (fn [{{path :path} :parameters}]
+                                  (hr/response (goods/unbox-good path)))}}]]
 
    ["/usage"
     {:get {:handler (fn [_]

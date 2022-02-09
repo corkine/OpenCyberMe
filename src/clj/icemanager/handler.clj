@@ -33,6 +33,7 @@
         {:path "/"})
       (wrap-content-type
         (wrap-webjars (constantly nil)))
+
       (ring/create-default-handler
         {:not-found
          (constantly (error-page {:status 404, :title "404 - Page not found"}))

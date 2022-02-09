@@ -1,7 +1,9 @@
 (ns icemanager.auth
   (:require [reitit.ring :as ring]
             [clojure.tools.logging :as log]
-            [icemanager.db.core :as db]))
+            [icemanager.db.core :as db]
+            [icemanager.config :refer [env]]
+            [ring.middleware.basic-authentication :refer [wrap-basic-authentication]]))
 
 ;(defn identity->roles [identity]
 ;  (cond-> #{:any}
@@ -61,3 +63,10 @@
                                                              :session/key])})
         (catch Exception e (log/error "log req error: " (str e)))))
     (handler req)))
+
+(defn authenticated? [name pass]
+  (and (= name (or (:username env "admin")))
+       (= pass (or (:password env "admin")))))
+
+(defn wrap-basic-auth [handler]
+  (wrap-basic-authentication handler authenticated?))
