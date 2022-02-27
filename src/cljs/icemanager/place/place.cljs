@@ -205,17 +205,17 @@
                     (rf/dispatch [:good/current (assoc good :placeId placeId)])
                     (rf/dispatch [:app/show-modal :edit-good]))}
        [:i.fa.faa.fa-pencil]]                               ;修改按钮
-      (if-not have-package
-        [:span.icon
-         {:on-click
-          #(rf/dispatch [:global/notice
-                         {:message  "此操作会将此物品标记为删除，但保留数据库条目，是否继续？"
-                          :callback [:good/hide id]}])}
-         [:i.fa.faa.fa-ban]])                               ;删除按钮
-      (if-not have-package
-        [:span.icon.has-text-danger
-         {:on-click
-          #(rf/dispatch [:global/notice
-                         {:message  "此操作会将此物品从数据库彻底移除，是否继续？"
-                          :callback [:good/delete id]}])}
-         [:i.fa.faa.fa-trash]])]]))
+      #_(if-not have-package
+          [:span.icon
+           {:on-click
+            #(rf/dispatch [:global/notice
+                           {:message  "此操作会将此物品标记为删除，但保留数据库条目，是否继续？"
+                            :callback [:good/hide id]}])}
+           [:i.fa.faa.fa-ban]])                               ;删除按钮
+      #_(if-not have-package
+          [:span.icon.has-text-danger
+           {:on-click
+            #(rf/dispatch [:global/notice
+                           {:message  "此操作会将此物品从数据库彻底移除，是否继续？"
+                            :callback [:good/delete id]}])}
+           [:i.fa.faa.fa-trash]])]]))

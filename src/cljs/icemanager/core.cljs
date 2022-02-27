@@ -64,8 +64,10 @@
                 [:div#nav-menu.navbar-menu
                  {:class (when @expanded? :is-active)}
                  [:div.navbar-start
-                  [nav-link "/" "位置" :home]
-                  [nav-link "/good" "物品" :good]
+                  [nav-link "/" "资产" :home]
+                  [nav-link "/clothes" "衣物" :clothes]
+                  [nav-link "/foods" "食品耗材" :foods]
+                  [nav-link "/goods" "所有物品" :goods]
                   [nav-link "/package" "打包" :package]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}

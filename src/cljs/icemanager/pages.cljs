@@ -41,13 +41,57 @@
           "Marvin Studio."
           " All Right Reserved.")]]])
 
-(defn good-page []
+(defn clothes-page []
+  [:<>
+   [top-point]
+   [place-filter/home-filter]
+   (let [fetched-place-raw @(rf/subscribe [:place/fetch-data-filtered])
+         fetched-place (sort-by :id fetched-place-raw)]
+     (if-not (empty? fetched-place)
+       [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}
+        (for [data fetched-place]
+          ^{:key (:id data)}
+          [place/place-card data])]
+       [:div.hero.is-small.pl-0.pr-0
+        [:div.hero-body
+         [:div.container.has-text-centered
+          [:h3.subtitle.mt-6
+           "Oops... 暂无符合条件的选项"]]]]))
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn foods-page []
+  [:<>
+   [top-point]
+   [place-filter/home-filter]
+   (let [fetched-place-raw @(rf/subscribe [:place/fetch-data-filtered])
+         fetched-place (sort-by :id fetched-place-raw)]
+     (if-not (empty? fetched-place)
+       [:div.container>div.content.mx-3.is-full {:style {:margin-top "0px"}}
+        (for [data fetched-place]
+          ^{:key (:id data)}
+          [place/place-card data])]
+       [:div.hero.is-small.pl-0.pr-0
+        [:div.hero-body
+         [:div.container.has-text-centered
+          [:h3.subtitle.mt-6
+           "Oops... 暂无符合条件的选项"]]]]))
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn goods-page []
   [:<>
    [top-point]
    [:selection.hero.is-large
     [:div.hero-body.has-text-centered
      [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
-     [:p.subtitle.is-family-code  "暂无迫切实现需求"]]]
+     [:p.subtitle.is-family-code  "正在施工"]]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "
@@ -57,10 +101,10 @@
 (defn package-page []
   [:<>
    [top-point]
-   [:selection.hero.is-danger.is-large
+   [:selection.hero.is-large
     [:div.hero-body.has-text-centered
-     [:p.title.is-family-code  [:i.fa.fa-jpy] " 等待融资"]
-     [:p.subtitle.is-family-code  "暂无施工必要"]]]
+     [:p.title.is-family-code  [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
+     [:p.subtitle.is-family-code  "正在施工"]]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "

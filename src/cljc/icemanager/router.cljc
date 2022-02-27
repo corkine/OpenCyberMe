@@ -20,9 +20,27 @@
                                                   (rf/dispatch [:recent/fetch])
                                                   (rf/dispatch [:set-filter query]))}]}))]
 
-   ["/good"
-    (merge {:name :good}
-           #?(:cljs {:view        #'core/good-page
+   ["/foods"
+    (merge {:name :foods}
+           #?(:cljs {:view        #'core/foods-page
+                     :controllers [{:parameters {:query [:status :location :labels]}
+                                    :start      (fn [{query :query}]
+                                                  (rf/dispatch [:place/fetch])
+                                                  (rf/dispatch [:recent/fetch])
+                                                  (rf/dispatch [:set-filter query]))}]}))]
+
+   ["/clothes"
+    (merge {:name :clothes}
+           #?(:cljs {:view        #'core/clothes-page
+                     :controllers [{:parameters {:query [:status :location :labels]}
+                                    :start      (fn [{query :query}]
+                                                  (rf/dispatch [:place/fetch])
+                                                  (rf/dispatch [:recent/fetch])
+                                                  (rf/dispatch [:set-filter query]))}]}))]
+
+   ["/goods"
+    (merge {:name :goods}
+           #?(:cljs {:view        #'core/goods-page
                      :controllers [{:start (fn [_])}]}))]
 
    ["/package"
