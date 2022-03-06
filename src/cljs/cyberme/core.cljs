@@ -55,7 +55,7 @@
                 [:div.navbar-brand
                  [:a.icon-text.navbar-item.has-text-white {:href "/"}
                   [:span.icon [:i.fa.fa-ravelry.mr-1]]
-                  [:span.is-family-monospace.has-text-bold.is-size-4.has-text-white "管家"]]
+                  [:span.has-text-bold.is-size-5.has-text-white "CyberMe"]]
                  [:span.navbar-burger.burger
                   {:data-target :nav-menu
                    :on-click    #(swap! expanded? not)
