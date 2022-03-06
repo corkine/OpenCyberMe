@@ -1,14 +1,14 @@
 (ns user
   "Userspace functions you can run by default in your local REPL."
   (:require
-    [icemanager.config :refer [env]]
+    [cyberme.config :refer [env]]
     [clojure.pprint]
     [clojure.spec.alpha :as s]
     [expound.alpha :as expound]
     [mount.core :as mount]
-    [icemanager.core :refer [start-app]]
-    [icemanager.db.core]
-    [icemanager.handler]
+    [cyberme.core :refer [start-app]]
+    [cyberme.db.core]
+    [cyberme.handler]
     [conman.core :as conman]
     [luminus-migrations.core :as migrations]))
 
@@ -20,12 +20,12 @@
   "Starts application.
   You'll usually want to run this on startup."
   []
-  (mount/start-without #'icemanager.core/repl-server))
+  (mount/start-without #'cyberme.core/repl-server))
 
 (defn stop
   "Stops application."
   []
-  (mount/stop-except #'icemanager.core/repl-server))
+  (mount/stop-except #'cyberme.core/repl-server))
 
 (defn restart
   "Restarts application."
@@ -36,15 +36,15 @@
 (defn restart-db
   "Restarts database."
   []
-  (mount/stop #'icemanager.db.core/*db*)
-  (mount/start #'icemanager.db.core/*db*)
-  (binding [*ns* (the-ns 'icemanager.db.core)]
-    (conman/bind-connection icemanager.db.core/*db* "sql/queries.sql")))
+  (mount/stop #'cyberme.db.core/*db*)
+  (mount/start #'cyberme.db.core/*db*)
+  (binding [*ns* (the-ns 'cyberme.db.core)]
+    (conman/bind-connection cyberme.db.core/*db* "sql/queries.sql")))
 
 (defn bind []
-  (binding [*ns* (the-ns 'icemanager.db.core)]
-    (conman/bind-connection icemanager.db.core/*db* "sql/queries.sql" "sql/goods.sql"))
-  (mount/start #'icemanager.handler/app-routes))
+  (binding [*ns* (the-ns 'cyberme.db.core)]
+    (conman/bind-connection cyberme.db.core/*db* "sql/queries.sql" "sql/goods.sql"))
+  (mount/start #'cyberme.handler/app-routes))
 
 (defn reset-db
   "Resets database."

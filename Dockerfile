@@ -1,7 +1,7 @@
 FROM openjdk:8-alpine
 
-COPY target/uberjar/icemanager.jar /icemanager/app.jar
+COPY target/uberjar/cyberme.jar /cyberme/app.jar
 
 EXPOSE 3000
 
-CMD ["java", "-jar", "/icemanager/app.jar"]
+CMD ["java", "-jar", "/cyberme/app.jar"]

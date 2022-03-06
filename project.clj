@@ -1,4 +1,4 @@
-(defproject icemanager "1.0.1-SNAPSHOT"
+(defproject cyberme "1.0.1-SNAPSHOT"
 
   :description "一个简单易用的家庭模块化物品管理系统"
   :url "https://mazhangjing.com"
@@ -56,7 +56,7 @@
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
-  :main ^:skip-aot icemanager.core
+  :main ^:skip-aot cyberme.core
 
   :plugins [[lein-shadow "0.2.0"]] 
   :clean-targets ^{:protect false}
@@ -68,7 +68,7 @@
     {:target :browser
      :output-dir "target/cljsbuild/public/js"
      :asset-path "/js"
-     :modules {:app {:entries [icemanager.app]}}
+     :modules {:app {:entries [cyberme.app]}}
      :devtools
      {:watch-dir "resources/public" :preloads [re-frisk.preload]}
      :dev
@@ -86,7 +86,7 @@
              :prep-tasks ["compile" ["shadow" "release" "app"]]
              
              :aot :all
-             :uberjar-name "icemanager.jar"
+             :uberjar-name "cyberme.jar"
              :source-paths ["env/prod/clj"  "env/prod/cljs"]
              :resource-paths ["env/prod/resources"]}
 
