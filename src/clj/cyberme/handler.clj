@@ -5,6 +5,7 @@
     [cyberme.routes.home :refer [home-routes]]
     [cyberme.router :as share]
     [cyberme.routes.services :refer [service-routes]]
+    [cyberme.routes.cyber :refer [cyber-routes]]
     [reitit.swagger-ui :as swagger-ui]
     [reitit.ring :as ring]
     [ring.middleware.content-type :refer [wrap-content-type]]
@@ -22,7 +23,8 @@
     (ring/router
       [#_(home-routes)
        (share/share-router)
-       (service-routes)]
+       (service-routes)
+       (cyber-routes)]
       {:conflict nil})
     (ring/routes
       (swagger-ui/create-swagger-ui-handler

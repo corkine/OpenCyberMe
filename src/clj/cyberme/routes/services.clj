@@ -40,7 +40,7 @@
 
    ;; swagger documentation
    ["" {:no-doc  true
-        :swagger {:info {:title       "cyberme-api"
+        :swagger {:info {:title       "cyberme-goods-api"
                          :description "https://mazhangjing.com"}}}
 
     ["/swagger.json"
