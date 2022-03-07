@@ -39,11 +39,11 @@
   (mount/stop #'cyberme.db.core/*db*)
   (mount/start #'cyberme.db.core/*db*)
   (binding [*ns* (the-ns 'cyberme.db.core)]
-    (conman/bind-connection cyberme.db.core/*db* "sql/queries.sql")))
+    (conman/bind-connection cyberme.db.core/*db* "sql/queries.sql" "sql/goods.sql" "sql/cyber.sql")))
 
 (defn bind []
   (binding [*ns* (the-ns 'cyberme.db.core)]
-    (conman/bind-connection cyberme.db.core/*db* "sql/queries.sql" "sql/goods.sql"))
+    (conman/bind-connection cyberme.db.core/*db* "sql/queries.sql" "sql/goods.sql" "sql/cyber.sql"))
   (mount/start #'cyberme.handler/app-routes))
 
 (defn reset-db

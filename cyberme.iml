@@ -78,6 +78,11 @@
     <orderEntry type="library" name="Leiningen: com.layerware/hugsql-adapter:0.5.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.layerware/hugsql-core:0.5.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.layerware/hugsql:0.5.1" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/carmine:3.1.0" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/encore:3.9.2" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/nippy:3.1.1" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/timbre:5.1.0" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/truss:1.6.0" level="project" />
     <orderEntry type="library" name="Leiningen: com.wsscode/pathom:2.2.31" level="project" />
     <orderEntry type="library" name="Leiningen: com.wsscode/spec-inspec:1.0.0-alpha2" level="project" />
     <orderEntry type="library" name="Leiningen: com.zaxxer/HikariCP:3.4.5" level="project" />
@@ -100,6 +105,7 @@
     <orderEntry type="library" name="Leiningen: hiccup:1.0.5" level="project" />
     <orderEntry type="library" name="Leiningen: hikari-cp:2.13.0" level="project" />
     <orderEntry type="library" name="Leiningen: http-kit:2.5.0" level="project" />
+    <orderEntry type="library" name="Leiningen: io.aviso/pretty:0.1.37" level="project" />
     <orderEntry type="library" name="Leiningen: io.github.classgraph/classgraph:4.8.64" level="project" />
     <orderEntry type="library" name="Leiningen: io.undertow/undertow-core:2.1.3.Final" level="project" />
     <orderEntry type="library" name="Leiningen: javax.servlet/javax.servlet-api:3.1.0" level="project" />
@@ -147,6 +153,7 @@
     <orderEntry type="library" name="Leiningen: ns-tracker:0.4.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.commons/commons-collections4:4.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.commons/commons-lang3:3.8.1" level="project" />
+    <orderEntry type="library" name="Leiningen: org.apache.commons/commons-pool2:2.9.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpasyncclient:4.1.4" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpclient:4.5.6" level="project" />
     <orderEntry type="library" name="Leiningen: org.apache.httpcomponents/httpcore-nio:4.4.10" level="project" />
@@ -207,12 +214,14 @@
     <orderEntry type="library" name="Leiningen: org.graalvm.regex/regex:20.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.graalvm.sdk/graal-sdk:20.1.0" level="project" />
     <orderEntry type="library" name="Leiningen: org.graalvm.truffle/truffle-api:20.1.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.iq80.snappy/snappy:0.4" level="project" />
     <orderEntry type="library" name="Leiningen: org.javassist/javassist:3.18.1-GA" level="project" />
     <orderEntry type="library" name="Leiningen: org.jboss.logging/jboss-logging:3.4.1.Final" level="project" />
     <orderEntry type="library" name="Leiningen: org.jboss.threads/jboss-threads:3.1.0.Final" level="project" />
     <orderEntry type="library" name="Leiningen: org.jboss.xnio/xnio-api:3.8.0.Final" level="project" />
     <orderEntry type="library" name="Leiningen: org.jboss.xnio/xnio-nio:3.8.0.Final" level="project" />
     <orderEntry type="library" name="Leiningen: org.jfree/jfreechart:1.5.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.lz4/lz4-java:1.7.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.msgpack/msgpack:0.6.12" level="project" />
     <orderEntry type="library" name="Leiningen: org.ow2.asm/asm-analysis:7.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.ow2.asm/asm-commons:7.1" level="project" />
@@ -222,6 +231,7 @@
     <orderEntry type="library" name="Leiningen: org.postgresql/postgresql:42.2.18" level="project" />
     <orderEntry type="library" name="Leiningen: org.slf4j/slf4j-api:1.7.25" level="project" />
     <orderEntry type="library" name="Leiningen: org.tobereplaced/lettercase:1.0.0" level="project" />
+    <orderEntry type="library" name="Leiningen: org.tukaani/xz:1.8" level="project" />
     <orderEntry type="library" name="Leiningen: org.webjars.npm/bulma:0.9.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.webjars.npm/material-icons:0.3.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.webjars/webjars-locator-core:0.44" level="project" />

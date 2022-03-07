@@ -5,6 +5,7 @@
 
   :dependencies [[ch.qos.logback/logback-classic "1.2.3"]
                  [cheshire "5.10.0"]
+                 [com.taoensso/carmine "3.1.0"]
                  [cljs-ajax "0.8.1"]
                  [clojure.java-time "0.3.2"]
                  [com.cognitect/transit-clj "1.0.324"]
