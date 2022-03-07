@@ -2,7 +2,7 @@
 <module type="JAVA_MODULE" version="4">
   <component name="BuildSystem">
     <option name="buildSystemId" value="LEININGEN" />
-    <option name="displayName" value="icemanager:1.0.0-SNAPSHOT" />
+    <option name="displayName" value="cyberme:1.0.1-SNAPSHOT" />
   </component>
   <component name="NewModuleRootManager">
     <output url="file://$MODULE_DIR$/target/default/classes" />
@@ -21,7 +21,6 @@
       <sourceFolder url="file://$MODULE_DIR$/test/clj" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/test/cljs" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target/default" />
-      <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
