@@ -47,3 +47,32 @@ where no = :no;
 select * from express
 where no = :no
 limit 1;
+
+-- :name all-to-do :? :*
+select * from todo;
+-- :name to-do-modify-in-2-days :? :*
+select id, title from todo
+where (info->>'lastModifiedDateTime')::timestamptz >
+      (current_timestamp - '2 day'::interval);
+-- :name to-do-all :? :*
+select title, info->'listInfo'->>'name' as list, info->>'status' as status,
+       info->>'importance' as importance, info->>'createdDateTime' as create_at,
+       info->>'lastModifiedDateTime' as modified_at
+from todo
+order by (info->>'lastModifiedDateTime')::timestamptz desc ;
+-- :name to-do-recent-day :? :*
+select title, info->'listInfo'->>'name' as list, info->>'status' as status,
+       info->>'importance' as importance, info->>'createdDateTime' as create_at,
+       info->>'lastModifiedDateTime' as modified_at
+from todo
+where (info->>'createdDateTime')::timestamptz >
+      (current_timestamp -  (:day || ' day')::interval)
+order by (info->>'lastModifiedDateTime')::timestamptz desc;
+-- :name delete-by-id :! :1
+delete from todo
+where id = :id;
+-- :name insert-to-do :! :1
+insert into todo (id, title, info, last_update)
+values (:id, :title, :info, current_timestamp)
+on conflict (id) do update set title = :title,
+                               info = :info;
