@@ -361,7 +361,7 @@
     时长计算不请求 HCM 服务器，仅从缓存数据中推算，因此需要保证缓存数据包含了所有目标日期的数据。"
         :Note "使用最近一个月数据计算得出, ?showDetails=true 显示详情"
         :CurrentDate (.format (LocalDate/now) DateTimeFormatter/ISO_LOCAL_DATE)
-        :WeekWorkHour week-work-hour
+        :WeekWorkHour (Double/parseDouble (format "%.2f" week-work-hour))
         :MonthWorkHour (Double/parseDouble (format "%.2f" month-work-hour))
         :AllWorkHour (Double/parseDouble (format "%.2f" all-work-hour))
         :AvgDayWorkHour (Double/parseDouble
