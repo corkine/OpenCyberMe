@@ -15,6 +15,7 @@
     [cyberme.goods :as goods]
     [clojure.spec.alpha :as s]
     [cyberme.cyber.inspur :as inspur]
+    [cyberme.cyber.express :as express]
     [cyberme.cyber.slack :as slack]))
 
 (s/def :global/user string?)
@@ -31,6 +32,9 @@
 (s/def :slack/from string?)
 (s/def :slack/channel string?)
 (s/def :slack/message string?)
+(s/def :express/no string?)
+(s/def :express/type string?)
+(s/def :express/note string?)
 
 (defn not-impl [_] (hr/content-type (hr/not-found "没有实现。") "plain/text"))
 
@@ -141,13 +145,24 @@
                             "plain/text"))}}]
 
    ["/express"
-    {:tags #{"快递查询"}
-     :get  {:summary    "快递信息查询"
-            :parameters {:query (s/keys :req-un [:global/user :global/secret]
-                                        :opt-un [:hcm/token :hcm/adjust])}
-            :handler    todo
-            #_(fn [{{query :query} :parameters}]
-                (hr/response (inspur/handle-serve-day query)))}}]
+    {:tags #{"快递查询"}}
+    ["/check"
+     {:get {:summary    "快递信息查询"
+            :parameters {:query (s/keys :req-un [:global/user :global/secret :express/no]
+                                        :opt-un [:express/type])}
+            :handler    (fn [{{query :query} :parameters}]
+                          (hr/response (express/simple-check query)))}}]
+    ["/track"
+     {:get {:summary    "新增快递追踪"
+            :parameters {:query (s/keys :req-un [:global/user :global/secret :express/no]
+                                        :opt-un [:express/type :express/note])}
+            :handler    (fn [{{query :query} :parameters}]
+                          (hr/response (express/simple-track query)))}}]
+    ["/routine"
+     {:get {:summary    "手动执行数据库快递追踪数据检查"
+            :parameters {:query (s/keys :req-un [:global/user :global/secret])}
+            :handler    (fn [_] (hr/response (express/track-routine)))}}]]
+
    ["/note"
     {:tags #{"笔记记录"}
      :get  {:summary    "便签信息查询"

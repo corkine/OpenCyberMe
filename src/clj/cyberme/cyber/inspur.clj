@@ -5,7 +5,7 @@
             [clojure.string :as str]
             [cyberme.db.core :as db]
             [taoensso.carmine :as car :refer (wcar)])
-  (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration Period)
+  (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)))
 
 (def date-time (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss"))
@@ -16,9 +16,14 @@
 
 (def example-token "2|1:0|10:1646563780|5:token|56:NTgyNmExMDY2YzA5NDBhMTQ0NzBmZWQyNTViMTA1MjU5M2UwYzA1Yw==|1cf208bbc7baf4be4f6a9a976c7566bc55a30e478e6fb2ae14df00e81475920f")
 
-(defonce cache (atom {}))
-
 (def cache-expire-seconds 1000)
+
+(def normal-work-hour
+  (let [start (LocalTime/of 8 30)
+        end (LocalTime/of 17 30)]
+    (/ (.toMinutes (Duration/between start end)) 60.0)))
+
+(defonce cache (atom {}))
 
 (declare signin-data)
 
@@ -219,11 +224,6 @@
                               (let [info (get-hcm-info {:time (.atStartOfDay day) :token token})]
                                 [(keyword (.format day DateTimeFormatter/ISO_LOCAL_DATE))
                                  (:data info)])) before-now))))))
-
-(def normal-work-hour
-  (let [start (LocalTime/of 8 30)
-        end (LocalTime/of 17 30)]
-    (/ (.toMinutes (Duration/between start end)) 60.0)))
 
 (defn overtime-hint [kpi token]
   "返回每月的加班信息"
