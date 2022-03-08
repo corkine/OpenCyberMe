@@ -3,7 +3,9 @@
             [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
             [cyberme.config :refer [env]]
-            [ring.middleware.basic-authentication :refer [wrap-basic-authentication]]))
+            [clojure.string :as s]
+            [ring.middleware.basic-authentication :refer [authentication-failure]])
+  (:import java.util.Base64))
 
 ;(defn identity->roles [identity]
 ;  (cond-> #{:any}
@@ -65,8 +67,51 @@
     (handler req)))
 
 (defn authenticated? [name pass]
-  (and (= name (or (:auth-user env) "admin"))
-       (= pass (or (:auth-pass env) "admin"))))
+  (let [n (:auth-user env)
+        p (:auth-pass env)]
+    (and (not (nil? n)) (not (nil? p))
+         (= name n) (= pass p))))
+
+(defn auth-in-query [query-param]
+  (let [u (get query-param "user")
+        s (get query-param "secret")
+        n (:auth-user env)
+        p (:auth-pass env)]
+    (and (not (nil? n)) (not (nil? p)) (= u n) (= s p))))
+
+(defn byte-transform
+  [direction-fn string]
+  (try
+    (s/join (map char (direction-fn (.getBytes ^String string))))
+    (catch Exception _)))
+
+(defn encode-base64
+  [^String string]
+  (byte-transform #(.encode (Base64/getEncoder) ^bytes %) string))
+
+(defn decode-base64
+  [^String string]
+  (byte-transform #(.decode (Base64/getDecoder) ^bytes %) string))
+
+(defn basic-authentication-request
+  [request auth-fn]
+  (let [auth ((:headers request) "authorization")
+        cred (and auth (decode-base64 (last (re-find #"^Basic (.*)$" auth))))
+        [user pass] (and cred (s/split (str cred) #":" 2))]
+    (assoc request :basic-authentication (and cred (auth-fn (str user) (str pass))))))
+
+(defn wrap-basic-authentication
+  [app authenticate & [realm denied-response]]
+  (fn [{:keys [request-method] :as req}]
+    (let [auth-req (basic-authentication-request req authenticate)]
+      #_(clojure.pprint/pprint req)
+      (if (or (:basic-authentication auth-req)
+              (auth-in-query (:query-params req)))
+        (app auth-req)
+        (authentication-failure realm
+                                (into denied-response
+                                      (when (= request-method :head)
+                                        {:body nil})))))))
 
 (defn wrap-basic-auth [handler]
   (wrap-basic-authentication handler authenticated?))
