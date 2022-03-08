@@ -139,6 +139,22 @@
       (in time [:weekend]) false
       :else true)))
 
+(defn compute-work-hour [hcm-info]
+  (let [hcm-info (sort-by :time hcm-info)]
+    ;;工作时长计算：无数据返回 0，有数据则开始计算。
+    ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
+    (if (empty? hcm-info)
+      0.0
+      (let [start (:time (first hcm-info))
+            end (:time (last hcm-info))
+            day (.toLocalDate start)
+            end (if (.isBefore end (.atTime day 17 30))
+                  (.atTime day (LocalTime/now)) end)]
+        (Double/parseDouble
+          (format "%.2f"
+                  (/ (.toMinutes (Duration/between start end))
+                     60.0)))))))
+
 (defn signin-hint [hcm-info]
   "根据 HCM 服务器返回的打卡信息 - [{}] 生成统计信息
   因为允许多次打卡，所以可能有 0 - n 条打卡信息"
@@ -157,17 +173,7 @@
         morning-check (and need-work (empty? hcm-info))
         ;;工作时长计算：无数据返回 0，有数据则开始计算。
         ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
-        work-hour (if (empty? hcm-info)
-                    0.0
-                    (let [start (:time (first hcm-info))
-                          end (:time (last hcm-info))
-                          day (.toLocalDate start)
-                          end (if (.isBefore end (.atTime day 17 30))
-                                (.atTime day (LocalTime/now)) end)]
-                      (Double/parseDouble
-                        (format "%.2f"
-                                (/ (.toMinutes (Duration/between start end))
-                                   60.0)))))]
+        work-hour (compute-work-hour hcm-info)]
     (array-map
       :needWork need-work
       :offWork off-work
@@ -237,7 +243,7 @@
         (fn [date]
           (let [info (get-hcm-info {:time (.atStartOfDay date) :token token})
                 signin (signin-data info)
-                {:keys [workHour]} (signin-hint signin)
+                workHour (compute-work-hour signin)
                 needWork (do-need-work (.atStartOfDay date))
                 ;;工作日加班 - 正常时间，非工作日加班计算所有时间
                 overHour (if needWork (- workHour normal-work-hour) workHour)
@@ -266,13 +272,13 @@
         (fn [date]
           (let [info (get-hcm-info {:time (.atStartOfDay date) :token token})
                 signin (signin-data info)
-                {:keys [workHour]} (signin-hint signin)
+                workHour (compute-work-hour signin)
                 needWork (do-need-work (.atStartOfDay date))
                 ;;工作日加班 - 正常时间，非工作日加班计算所有时间
                 overHour (if needWork (- workHour normal-work-hour) workHour)
                 ;;今日的不纳入加班计算，明日起开始计算
                 overHour (if (.isEqual date (LocalDate/now)) 0 overHour)]
-            (println "for " date "workHour " workHour " needWork " needWork " overHour " overHour)
+            #_(println "for " date "workHour " workHour " needWork " needWork " overHour " overHour)
             overHour))
         overtime-list (mapv overtime-day-fn month-days)
         overtime-month-all (reduce + overtime-list)]
@@ -293,9 +299,8 @@
   "所有工作情况统计，Go API 兼容"
   (let [work-hour #(mapv (fn [day]
                            (let [info (get-hcm-info {:time (.atStartOfDay day) :token token})
-                                 signin (signin-data info)
-                                 {:keys [workHour]} (signin-hint signin)]
-                             workHour)) %)
+                                 signin (signin-data info)]
+                             (compute-work-hour signin))) %)
         raw-data #(mapv (fn [day]
                           (:data (get-hcm-info {:time (.atStartOfDay day) :token token}))) %)
         week-date (week-days 0 true)
