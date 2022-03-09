@@ -45,14 +45,21 @@ sleep 2
 echo "2. Kill exist app"
 kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
 sleep 2
-echo "3. Release frontEnd resources"
-./lein.sh shadow release app
-sleep 3
+if [ $# -ge 1 ]
+then
+  echo "3. Release frontEnd resources"
+  echo "skip step 3..."
+  sleep 3
+else
+  echo "3. Release frontEnd resources"
+  ./lein.sh shadow release app
+  sleep 3
+fi
 echo "4. Run backEnd app"
 nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
 sleep 5
 echo "5. Done deploy app"
-echo "server run on port `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
+echo "server run on thread `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
 echo ""
 echo "========================================================================="
 
