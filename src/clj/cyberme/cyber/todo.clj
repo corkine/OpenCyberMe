@@ -4,8 +4,9 @@
             [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
             [clojure.set :as set]
-            [clojure.java.io :as io])
-  (:import (java.time LocalDateTime)))
+            [clojure.java.io :as io]
+            [cheshire.generate :refer [add-encoder encode-str]])
+  (:import (java.time LocalDateTime LocalDate LocalTime)))
 
 ;访问 mazhangjing.com/todologin 登录微软账户，然后其回调 mazhangjing.com/todocheck
 ;跳转到 ip/t odo/setcode?code=xxxx，这里保存 code 参数并触发更新缓存操作：/t odo/today。
@@ -164,6 +165,18 @@
     (catch Exception e
       (log/error "[backup-todo-cache] failed: " (.getMessage e)))))
 
+(add-encoder LocalDateTime
+             (fn [c jsonGenerator]
+               (.writeString jsonGenerator (.toString c))))
+
+(add-encoder LocalDate
+             (fn [c jsonGenerator]
+               (.writeString jsonGenerator (.toString c))))
+
+(add-encoder LocalTime
+             (fn [c jsonGenerator]
+               (.writeString jsonGenerator (.toString c))))
+
 (defn read-token []
   (try
     (let [data (slurp "cache.json")
@@ -180,7 +193,7 @@
         (try
           (log/info "[todo-service] starting sync with ms-server...")
           (todo-sync-routine)
-          (future (backup-token))
+          #_(future (backup-token))
           (log/info "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
           (catch Exception e
             (log/info "[todo-service] sync with ms-server failed: " (.getMessage e))))
