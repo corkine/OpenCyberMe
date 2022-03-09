@@ -56,14 +56,20 @@ where (info->>'lastModifiedDateTime')::timestamptz >
       (current_timestamp - '2 day'::interval);
 -- :name to-do-all :? :*
 select title, info->'listInfo'->>'name' as list, info->>'status' as status,
-       info->>'importance' as importance, info->>'createdDateTime' as create_at,
-       info->>'lastModifiedDateTime' as modified_at
+       info->>'importance' as importance,
+       (info->>'createdDateTime')::timestamptz as create_at,
+       ((info->'completedDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
+       ((info->'dueDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as due_at,
+       (info->>'lastModifiedDateTime')::timestamptz as modified_at
 from todo
 order by (info->>'lastModifiedDateTime')::timestamptz desc ;
 -- :name to-do-recent-day :? :*
 select title, info->'listInfo'->>'name' as list, info->>'status' as status,
-       info->>'importance' as importance, info->>'createdDateTime' as create_at,
-       info->>'lastModifiedDateTime' as modified_at
+       info->>'importance' as importance,
+       (info->>'createdDateTime')::timestamptz as create_at,
+       ((info->'completedDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
+       ((info->'dueDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as due_at,
+       (info->>'lastModifiedDateTime')::timestamptz as modified_at
 from todo
 where (info->>'createdDateTime')::timestamptz >
       (current_timestamp -  (:day || ' day')::interval)

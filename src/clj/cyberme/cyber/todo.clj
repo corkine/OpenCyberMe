@@ -84,10 +84,12 @@
           {:keys [status body] :as all} @req]
       (if (= status 200)
         (let [{data :value} (json/parse-string body true)
+              ;_ (when (= displayName "\uD83C\uDFAF 技术") (println data))
               data (mapv #(assoc
                             (select-keys % [:title :status :lastModifiedDateTime
                                             :createdDateTime :importance
-                                            :id :isReminderOn :completedDateTime])
+                                            :id :isReminderOn :completedDateTime
+                                            :dueDateTime])
                             :listInfo {:name displayName :id id}) data)]
           data)
         (do (log/warn "[todo-list-task] error because req failed: " all)
@@ -118,9 +120,9 @@
   "将同步的数据整合到数据库，其中有很多重复数据，要小心处理"
   (doseq [{:keys [title id] :as all} tasks]
     (try
-      (let [res (db/insert-to-do {:id id :title title :info all})
+      (let [res (db/insert-to-do {:id id :title title :info all})])
             ;_ (println res)
-            ])
+
       (catch Exception e
         (log/error "[todo-merge] insert into db error: " (.getMessage e))))))
 
@@ -146,7 +148,7 @@
 (defn todo-sync-routine []
   (let [{:keys [access-token refresh-token]} (fetch-cache)]
     (cond (and (nil? access-token) (nil? refresh-token))
-          (do (log/info "[todo-sync] no at and rt in cache，pls login mazhangjing.com/todologin to set code"))
+          (do (log/info "[todo-sync] no at and rt in cache, pls login mazhangjing.com/todologin to set code"))
           (nil? access-token)
           (do (log/info "[todo-sync] not find at，use rt to refresh at")
               (refresh-code refresh-token))
@@ -159,7 +161,7 @@
   (todo-sync-routine)
   {:message "Sync Done."})
 
-(defn handle-today [{:keys [focus]}]
+(defn handle-today [{:keys [focus showCompleted]}]
   "返回今日任务，Go API 兼容：{:startCount :tasks []}
   这里 startCount 表示优先级为 high 且状态为 notStarted 的
   focus 是尽力而为的服务，即如果无法获取到 access-token 则不执行同步，
@@ -174,9 +176,10 @@
                     "may not enable by todologin or not refresh token frequently."))))
     (let [all (db/to-do-recent-day {:day 15})
           recent (filterv #(and (= (:importance %) "high")
-                                (= (:status %) "notStarted")) all)]
+                                (= (:status %) "notStarted")) all)
+          recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)]
       {:starCount (count recent)
-       :tasks recent})
+       :tasks (if showCompleted recent-start-and-not-start recent)})
     (catch Exception e
       {:starCount -1
        :tasks []
@@ -194,5 +197,4 @@
   (db/insert-to-do {:id "WR" :title "HELLO A" :info {:a "HELLO"}})
   (db/to-do-recent-day {:day 15})
   (take 10 (db/to-do-all))
-  (take 10 (db/to-do-modify-in-2-days))
-  )
+  (take 10 (db/to-do-modify-in-2-days)))
