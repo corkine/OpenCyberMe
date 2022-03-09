@@ -154,6 +154,21 @@
               (refresh-code refresh-token))
           :else (sync-server-to-db access-token))))
 
+(defn backend-todo-service []
+  (while true
+    (try
+      (let [sleep-sec (* 60 5)]
+        (try
+          (log/info "[todo-service] starting sync with ms-server...")
+          (todo-sync-routine)
+          (log/info "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
+          (Thread/sleep (* 1000 sleep-sec))
+          (catch Exception e
+            (log/info "[todo-service] sync with ms-server failed: " (.getMessage e)))))
+      (catch Exception e
+        (log/info "[todo-service] todo-service routine failed: " (.getMessage e))))))
+
+
 (defn handle-set-code [{:keys [code]}]
   (set-code code))
 

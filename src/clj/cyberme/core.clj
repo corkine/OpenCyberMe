@@ -7,7 +7,9 @@
     [cyberme.config :refer [env]]
     [clojure.tools.cli :refer [parse-opts]]
     [clojure.tools.logging :as log]
-    [mount.core :as mount])
+    [mount.core :as mount]
+    [cyberme.cyber.todo :as todo]
+    [cyberme.cyber.express :as express])
   (:gen-class))
 
 ;; log uncaught exceptions in threads
@@ -41,6 +43,14 @@
   (when repl-server
     (nrepl/stop repl-server)))
 
+(mount/defstate ^{:on-reload :noop} backend-loop
+                :start
+                (do
+                  (log/info "[backend] starting all backend service...")
+                  (future (todo/backend-todo-service))
+                  (future (express/backend-express-service)))
+                :stop
+                (log/info "[backend] stopped all backend service..."))
 
 (defn stop-app []
   (doseq [component (:stopped (mount/stop))]

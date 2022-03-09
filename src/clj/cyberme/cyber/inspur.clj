@@ -412,8 +412,8 @@
                   :DayCountNow 2
                   :LastUpdate "2022-03-07T08:48:02.804888789+08:00"
                   :MaxDayCount 13
-                  :MaxDayLastUpdate "2022-03-07T08:48:02.804888789+08:00"
-                  )
+                  :MaxDayLastUpdate "2022-03-07T08:48:02.804888789+08:00")
+
         :Blue (array-map
                 :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
                 :IsTodayBlue false

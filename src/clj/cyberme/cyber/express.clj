@@ -4,7 +4,8 @@
             [cyberme.db.core :as db]
             [clojure.tools.logging :as l]
             [cyberme.cyber.slack :as slack]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import (java.time LocalDateTime)))
 
 (def kuai-di100 "https://kuaidi100.market.alicloudapi.com/getExpress?NO=%s&TYPE=%s")
 
@@ -16,9 +17,9 @@
     (let [req (client/request {:url     (format kuai-di100 no kind)
                                :method  :get
                                :headers {"Authorization" (str "APPCODE " code)}})
-          resp @req
+          resp @req]
           ;_ (clojure.pprint/pprint resp)
-          ]
+
       {:message "检查成功。"
        :data    (json/parse-string (:body resp) true)
        :status  1})
@@ -73,9 +74,9 @@
             kind (if (str/blank? kind) "AUTO" kind)
             old-list (get track :list [])
             {:keys [message status data]}
-            (simple-check {:no no :kind kind})
+            (simple-check {:no no :kind kind})]
             ;_ (println "data: " data)
-            ]
+
         (if (= status 0)
           (l/warn (str "[express-track] failed for check " no ", msg: " message))
           (do
@@ -94,6 +95,25 @@
                                   :info {:note note :kind kind :status track-id}}))))))
     (catch Exception e
       (l/info "[express-track] exception: " (.getMessage e)))))
+
+(defn backend-express-service []
+  (while true
+    (try
+      (let [sleep-sec (* 60 30)]
+        (try
+          (l/info "[express-service] starting sync with server...")
+          (let [now (LocalDateTime/now)
+                hour (.getHour now)
+                is-night? (and (> hour 23) (< hour 7))]
+            (if-not is-night?
+              (track-routine)
+              (l/info "[express-service] skip night check express...")))
+          (l/info "[express-service] end sync with server, try to sleep sec: " sleep-sec)
+          (Thread/sleep (* 1000 sleep-sec))
+          (catch Exception e
+            (l/info "[express-service] sync with ms-server failed: " (.getMessage e)))))
+      (catch Exception e
+        (l/info "[express-service] express-service routine failed: " (.getMessage e))))))
 
 (comment
   (count nil)
