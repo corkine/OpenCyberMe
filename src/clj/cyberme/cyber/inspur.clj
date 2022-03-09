@@ -156,16 +156,17 @@
             ;如果 end < 17:30 的，则 - 午休时间
             ;如果 end < 18:30 的，则 - 0
             ;如果 end > 18:30 的，则减去晚饭时间
+            endLT (.toLocalTime end)
             minusMinutes
-            (cond (.isBefore end (LocalTime/of 11 30))
+            (cond (.isBefore endLT (LocalTime/of 11 30))
                   0
-                  (.isBefore end (LocalTime/of 13 10))
-                  (.toMinutes (Duration/between (LocalTime/of 11 30) end))
-                  (.isBefore end (LocalTime/of 17 30))
+                  (.isBefore endLT (LocalTime/of 13 10))
+                  (.toMinutes (Duration/between (LocalTime/of 11 30) endLT))
+                  (.isBefore endLT (LocalTime/of 17 30))
                   (.toMinutes (Duration/between (LocalTime/of 11 30)
                                                 (LocalTime/of 13 10)))
-                  (.isBefore end (LocalTime/of 18 30))
-                  (.toMinutes (Duration/between (LocalTime/of 17 30) end))
+                  (.isBefore endLT (LocalTime/of 18 30))
+                  (.toMinutes (Duration/between (LocalTime/of 17 30) endLT))
                   :else
                   (.toMinutes (Duration/between (LocalTime/of 17 30)
                                                 (LocalTime/of 18 30))))]
