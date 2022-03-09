@@ -109,9 +109,9 @@
               (track-routine)
               (l/info "[express-service] skip night check express...")))
           (l/info "[express-service] end sync with server, try to sleep sec: " sleep-sec)
-          (Thread/sleep (* 1000 sleep-sec))
           (catch Exception e
-            (l/info "[express-service] sync with ms-server failed: " (.getMessage e)))))
+            (l/info "[express-service] sync with ms-server failed: " (.getMessage e))))
+        (Thread/sleep (* 1000 sleep-sec)))
       (catch Exception e
         (l/info "[express-service] express-service routine failed: " (.getMessage e))))))
 

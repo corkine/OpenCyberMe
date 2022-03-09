@@ -39,6 +39,8 @@ Basic Auth 保护 API。
 [2022-03-09]
 实现了 CyberMe 大部分 API。
 完善了 TODO 返回数据的日期时区问题，完善了 user 和 secret 登录限制。
+添加了 TODO Token 的内存持久化读写。
+实现了 TODO 和 Express 后台轮询，处理了轮询 Sleep 的逻辑错误。
 
 ================================================
 TODO:

@@ -3,7 +3,8 @@
             [cheshire.core :as json]
             [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [clojure.java.io :as io])
   (:import (java.time LocalDateTime)))
 
 ;访问 mazhangjing.com/todologin 登录微软账户，然后其回调 mazhangjing.com/todocheck
@@ -162,12 +163,29 @@
           (log/info "[todo-service] starting sync with ms-server...")
           (todo-sync-routine)
           (log/info "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
-          (Thread/sleep (* 1000 sleep-sec))
           (catch Exception e
-            (log/info "[todo-service] sync with ms-server failed: " (.getMessage e)))))
+            (log/info "[todo-service] sync with ms-server failed: " (.getMessage e))))
+        (Thread/sleep (* 1000 sleep-sec)))
       (catch Exception e
         (log/info "[todo-service] todo-service routine failed: " (.getMessage e))))))
 
+(defn backup-token []
+  (try
+    (let [cache-data @cache]
+      (with-open [w (io/writer "cache.json" :append false)]
+        (.write w (json/generate-string cache-data)))
+      (log/info "[backup-todo] saving cache to cache.json done."))
+    (catch Exception e
+      (log/error "[backup-todo-cache] failed: " (.getMessage e)))))
+
+(defn read-token []
+  (try
+    (let [data (slurp "cache.json")
+          data-j (json/parse-string data true)]
+      (reset! cache data-j)
+      (log/info "[read-todo-cache] reading cache from cache.json done."))
+    (catch Exception e
+      (log/error "[read-todo-cache] failed: " (.getMessage e)))))
 
 (defn handle-set-code [{:keys [code]}]
   (set-code code))

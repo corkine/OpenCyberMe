@@ -48,9 +48,12 @@
                 (do
                   (log/info "[backend] starting all backend service...")
                   (future (todo/backend-todo-service))
-                  (future (express/backend-express-service)))
+                  (future (express/backend-express-service))
+                  (future (todo/read-token)))
                 :stop
-                (log/info "[backend] stopped all backend service..."))
+                (do
+                  (todo/backup-token)
+                  (log/info "[backend] stopped all backend service...")))
 
 (defn stop-app []
   (doseq [component (:stopped (mount/stop))]

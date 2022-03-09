@@ -140,6 +140,43 @@
       :else true)))
 
 (defn compute-work-hour [hcm-info]
+  "计算工作时长，精确计算，用于自我统计"
+  (let [hcm-info (sort-by :time hcm-info)]
+    ;;工作时长计算：无数据返回 0，有数据则开始计算。
+    ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
+    (if (empty? hcm-info)
+      0.0
+      (let [start (:time (first hcm-info))
+            end (:time (last hcm-info))
+            day (.toLocalDate start)
+            end (if (.isBefore end (.atTime day 17 30))
+                  (.atTime day (LocalTime/now)) end)
+            ;如果 end < 11:30 的，则 - 0
+            ;如果 end < 13:10 的，则 - 当前时间-11:30 的时间
+            ;如果 end < 17:30 的，则 - 午休时间
+            ;如果 end < 18:30 的，则 - 0
+            ;如果 end > 18:30 的，则减去晚饭时间
+            minusMinutes
+            (cond (.isBefore end (LocalTime/of 11 30))
+                  0
+                  (.isBefore end (LocalTime/of 13 10))
+                  (.toMinutes (Duration/between (LocalTime/of 11 30) end))
+                  (.isBefore end (LocalTime/of 17 30))
+                  (.toMinutes (Duration/between (LocalTime/of 11 30)
+                                                (LocalTime/of 13 10)))
+                  (.isBefore end (LocalTime/of 18 30))
+                  (.toMinutes (Duration/between (LocalTime/of 17 30) end))
+                  :else
+                  (.toMinutes (Duration/between (LocalTime/of 17 30)
+                                                (LocalTime/of 18 30))))]
+        (Double/parseDouble
+          (format "%.1f"
+                  (/ (- (.toMinutes (Duration/between start end))
+                        minusMinutes)
+                     60.0)))))))
+
+(defn compute-work-hour-duration [hcm-info]
+  "计算工作时长，从起点计算到终点，包括午休和下班时间，用于计算加班时间 - 从8：30-17：30 的时间"
   (let [hcm-info (sort-by :time hcm-info)]
     ;;工作时长计算：无数据返回 0，有数据则开始计算。
     ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
@@ -151,7 +188,7 @@
             end (if (.isBefore end (.atTime day 17 30))
                   (.atTime day (LocalTime/now)) end)]
         (Double/parseDouble
-          (format "%.2f"
+          (format "%.1f"
                   (/ (.toMinutes (Duration/between start end))
                      60.0)))))))
 
@@ -243,7 +280,7 @@
         (fn [date]
           (let [info (get-hcm-info {:time (.atStartOfDay date) :token token})
                 signin (signin-data info)
-                workHour (compute-work-hour signin)
+                workHour (compute-work-hour-duration signin)
                 needWork (do-need-work (.atStartOfDay date))
                 ;;工作日加班 - 正常时间，非工作日加班计算所有时间
                 overHour (if needWork (- workHour normal-work-hour) workHour)
@@ -258,7 +295,7 @@
      :OverTimePassed         overtime-month-all
      :OverTimeAlsoNeed       (- kpi overtime-month-all)
      :AvgDayNeedOvertimeWork (Double/parseDouble
-                               (format "%.2f"
+                               (format "%.1f"
                                        (/ (* 1.0 (- kpi overtime-month-all)) rest-work-days-count)))}))
 
 (defn overtime-hint-for-pre-month [kpi token]
@@ -272,7 +309,7 @@
         (fn [date]
           (let [info (get-hcm-info {:time (.atStartOfDay date) :token token})
                 signin (signin-data info)
-                workHour (compute-work-hour signin)
+                workHour (compute-work-hour-duration signin)
                 needWork (do-need-work (.atStartOfDay date))
                 ;;工作日加班 - 正常时间，非工作日加班计算所有时间
                 overHour (if needWork (- workHour normal-work-hour) workHour)
@@ -284,8 +321,8 @@
         overtime-month-all (reduce + overtime-list)]
     {:MonthNeedKPI           kpi
      :WorkDayLeft            0
-     :OverTimePassed         (Double/parseDouble (format "%.2f" overtime-month-all))
-     :OverTimeAlsoNeed       (Double/parseDouble (format "%.2f" (- kpi overtime-month-all)))
+     :OverTimePassed         (Double/parseDouble (format "%.1f" overtime-month-all))
+     :OverTimeAlsoNeed       (Double/parseDouble (format "%.1f" (- kpi overtime-month-all)))
      :AvgDayNeedOvertimeWork 0}))
 
 (defn handle-serve-summary [{:keys [user secret kpi token
@@ -361,16 +398,16 @@
     时长计算不请求 HCM 服务器，仅从缓存数据中推算，因此需要保证缓存数据包含了所有目标日期的数据。"
         :Note "使用最近一个月数据计算得出, ?showDetails=true 显示详情"
         :CurrentDate (.format (LocalDate/now) DateTimeFormatter/ISO_LOCAL_DATE)
-        :WeekWorkHour (Double/parseDouble (format "%.2f" week-work-hour))
-        :MonthWorkHour (Double/parseDouble (format "%.2f" month-work-hour))
-        :AllWorkHour (Double/parseDouble (format "%.2f" all-work-hour))
+        :WeekWorkHour (Double/parseDouble (format "%.1f" week-work-hour))
+        :MonthWorkHour (Double/parseDouble (format "%.1f" month-work-hour))
+        :AllWorkHour (Double/parseDouble (format "%.1f" all-work-hour))
         :AvgDayWorkHour (Double/parseDouble
-                          (format "%.2f"
+                          (format "%.1f"
                                   (or avg-work-hour-by-all
                                       avg-work-hour-by-month2
                                       avg-work-hour-by-month)))
         :AvgWeekWorkHour (Double/parseDouble
-                           (format "%.2f"
+                           (format "%.1f"
                                    (or avg-week-work-hour-by-all
                                        avg-week-work-hour-by-month2
                                        avg-week-work-hour-by-month)))
@@ -489,7 +526,7 @@
 
 (comment
   (def server1-conn {:pool {} :spec
-                     {:uri "redis://admin:mi960032@ct.mazhangjing.com:6379/"}})
+                     {:uri "redis://admin:???@ct.mazhangjing.com:6379/"}})
   (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
   (defn merge-from-redis []
     "Redis 数据迁移工具，开发时使用"

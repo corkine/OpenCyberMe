@@ -21,3 +21,4 @@ shadow-cljs.edn
 .shadow-cljs
 package-lock.json
 nohup.out
+cache.json
