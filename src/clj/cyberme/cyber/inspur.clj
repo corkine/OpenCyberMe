@@ -293,8 +293,10 @@
         overtime-month-all (reduce + overtime-list)]
     {:MonthNeedKPI           kpi
      :WorkDayLeft            rest-work-days-count
-     :OverTimePassed         overtime-month-all
-     :OverTimeAlsoNeed       (- kpi overtime-month-all)
+     :OverTimePassed         (Double/parseDouble
+                               (format "%.1f" overtime-month-all))
+     :OverTimeAlsoNeed       (Double/parseDouble
+                               (format "%.1f" (- kpi overtime-month-all)))
      :AvgDayNeedOvertimeWork (Double/parseDouble
                                (format "%.1f"
                                        (/ (* 1.0 (- kpi overtime-month-all)) rest-work-days-count)))}))
