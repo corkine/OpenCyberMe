@@ -47,9 +47,11 @@
                 :start
                 (do
                   (log/info "[backend] starting all backend service...")
-                  (future (todo/backend-todo-service))
-                  (future (express/backend-express-service))
-                  (future (todo/read-token)))
+                  (future (todo/read-token))
+                  (future
+                    (Thread/sleep 2000)
+                    (todo/backend-todo-service))
+                  (future (express/backend-express-service)))
                 :stop
                 (do
                   (todo/backup-token)

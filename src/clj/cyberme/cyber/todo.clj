@@ -6,7 +6,8 @@
             [clojure.set :as set]
             [clojure.java.io :as io]
             [cheshire.generate :refer [add-encoder encode-str]])
-  (:import (java.time LocalDateTime LocalDate LocalTime)))
+  (:import (java.time LocalDateTime LocalDate LocalTime)
+           (java.time.format DateTimeFormatter)))
 
 ;访问 mazhangjing.com/todologin 登录微软账户，然后其回调 mazhangjing.com/todocheck
 ;跳转到 ip/t odo/setcode?code=xxxx，这里保存 code 参数并触发更新缓存操作：/t odo/today。
@@ -31,6 +32,16 @@
   (let [{:keys [access-token at-expired
                 refresh-token rt-expired]} @cache
         now (LocalDateTime/now)
+        at-expired (if (string? at-expired)
+                     (LocalDateTime/parse
+                       at-expired
+                       (DateTimeFormatter/ISO_LOCAL_DATE_TIME))
+                     at-expired)
+        rt-expired (if (string? rt-expired)
+                     (LocalDateTime/parse
+                       rt-expired
+                       (DateTimeFormatter/ISO_LOCAL_DATE_TIME))
+                     rt-expired)
         at-out? (or (nil? at-expired) (.isBefore at-expired now))
         rt-out? (or (nil? rt-expired) (.isBefore rt-expired now))]
     {:access-token  (if at-out? nil access-token)
@@ -123,7 +134,7 @@
   (doseq [{:keys [title id] :as all} tasks]
     (try
       (let [res (db/insert-to-do {:id id :title title :info all})])
-            ;_ (println res)
+      ;_ (println res)
 
       (catch Exception e
         (log/error "[todo-merge] insert into db error: " (.getMessage e))))))
@@ -167,15 +178,7 @@
 
 (add-encoder LocalDateTime
              (fn [c jsonGenerator]
-               (.writeString jsonGenerator (.toString c))))
-
-(add-encoder LocalDate
-             (fn [c jsonGenerator]
-               (.writeString jsonGenerator (.toString c))))
-
-(add-encoder LocalTime
-             (fn [c jsonGenerator]
-               (.writeString jsonGenerator (.toString c))))
+               (.writeString jsonGenerator (.format c (DateTimeFormatter/ISO_LOCAL_DATE_TIME)))))
 
 (defn read-token []
   (try
@@ -226,11 +229,11 @@
                                 (= (:status %) "notStarted")) all)
           recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)]
       {:starCount (count recent)
-       :tasks (if showCompleted recent-start-and-not-start recent)})
+       :tasks     (if showCompleted recent-start-and-not-start recent)})
     (catch Exception e
       {:starCount -1
-       :tasks []
-       :message (str "获取 Today 消息失败：" (.getMessage e))})))
+       :tasks     []
+       :message   (str "获取 Today 消息失败：" (.getMessage e))})))
 
 (comment
   (user/start)
