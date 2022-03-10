@@ -66,18 +66,36 @@
         (catch Exception e (log/error "log req error: " (str e)))))
     (handler req)))
 
-(defn authenticated? [name pass]
-  (let [n (:auth-user env)
-        p (:auth-pass env)]
-    (and (not (nil? n)) (not (nil? p))
-         (= name n) (= pass p))))
+#_(defn authenticated? [name pass]
+    (let [n (:auth-user env)
+          p (:auth-pass env)]
+      (and (not (nil? n)) (not (nil? p))
+           (= name n) (= pass p))))
+
+(defn authenticated? [name pass role]
+  (let [auth-info (or (:auth-info env) [])
+        filter-fn #(if (nil? role)
+                     (and (= name (:user %)) (= pass (:pass %)))
+                     (and (= name (:user %)) (= pass (:pass %)) (= role (:role %))))
+        pass? (some? (some filter-fn auth-info))]
+    ;_ (log/info "for " name ", pass: " pass ", role: " role " passed.")
+    pass?))
+
+#_(defn auth-in-query [query-param]
+    (let [u (get query-param "user")
+          s (get query-param "secret")
+          n (:auth-user env)
+          p (:auth-pass env)]
+      (and (not (nil? n)) (not (nil? p)) (= u n) (= s p))))
 
 (defn auth-in-query [query-param]
-  (let [u (get query-param "user")
-        s (get query-param "secret")
-        n (:auth-user env)
-        p (:auth-pass env)]
-    (and (not (nil? n)) (not (nil? p)) (= u n) (= s p))))
+  (let [name (get query-param "user")
+        pass (get query-param "secret")
+        auth-info (or (:auth-info env) [])
+        filter-fn #(and (= name (:user %)) (= pass (:pass %)))
+        pass? (some? (some filter-fn auth-info))]
+    ;_ (log/info "for " name ", pass: " pass ", role: " role " passed.")
+    pass?))
 
 (defn byte-transform
   [direction-fn string]
@@ -114,4 +132,4 @@
                                         {:body nil})))))))
 
 (defn wrap-basic-auth [handler]
-  (wrap-basic-authentication handler authenticated?))
+  (wrap-basic-authentication handler #(authenticated? %1 %2 nil)))

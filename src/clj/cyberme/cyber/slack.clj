@@ -2,16 +2,13 @@
   (:require [clojure.string :as str]
             [org.httpkit.client :as client]
             [cheshire.core :as json]
+            [cyberme.config :refer [edn-in]]
             [clojure.tools.logging :as l]))
-
-(def pixel-slack "https://hooks.slack.com/services/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")
-
-(def inspur-slack "https://hooks.slack.com/services/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")
 
 (defn notify [message to]
   (try
     (let [url (if (str/includes? (str/upper-case to) "PIXEL")
-                pixel-slack inspur-slack)
+                (edn-in [:slack :pixel]) (edn-in [:slack :server]))
           req (client/request {:url url
                                :method :post
                                :headers {"Content-Type" "application/json"}

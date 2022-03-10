@@ -4,19 +4,28 @@
             [clojure.tools.logging :as log]
             [clojure.string :as str]
             [cyberme.db.core :as db]
-            [taoensso.carmine :as car :refer (wcar)])
+            [taoensso.carmine :as car :refer (wcar)]
+            [cyberme.config :refer [edn-in edn]]
+            [cyberme.cyber.slack :as slack])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)))
 
 (def date-time (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss"))
 
-(def data-url "https://wx56b5ebcd0c7759e2.hcmcloud.cn/api/attend.view.employee.day")
+(defonce token-cache (atom {}))
 
-(def login-url "https://wx56b5ebcd0c7759e2.hcmcloud.cn/login?v=1624152319627&next=%2Fservice%23%2Fattend%2Fview&app_type=service")
+(defn set-cache [token]
+  (swap! token-cache merge {:token   token
+                            :expired (.plusDays (LocalDateTime/now) 15)}))
 
-(def example-token "2|1:0|10:1646563780|5:token|56:NTgyNmExMDY2YzA5NDBhMTQ0NzBmZWQyNTViMTA1MjU5M2UwYzA1Yw==|1cf208bbc7baf4be4f6a9a976c7566bc55a30e478e6fb2ae14df00e81475920f")
-
-(def cache-expire-seconds 1000)
+(defn fetch-cache []
+  (let [{:keys [token expired]} @token-cache
+        now (LocalDateTime/now)
+        expired (if (string? expired)
+                  (LocalDateTime/parse expired (DateTimeFormatter/ISO_LOCAL_DATE_TIME))
+                  expired)
+        out? (or (str/blank? (str expired)) (.isBefore expired now))]
+    {:token (if out? nil token)}))
 
 (def normal-work-hour
   (let [start (LocalTime/of 8 30)
@@ -60,7 +69,7 @@
               (log/info "[signin-cache] failed to save to db: " (.getMessage e))))
           (log/info "[signin-cache] set cache! " date))
       (do (log/info "[signin-cache] miss because info <= 2 and last before 15:00")
-          (let [expired-time (.plusSeconds (LocalDateTime/now) cache-expire-seconds)]
+          (let [expired-time (.plusSeconds (LocalDateTime/now) (edn-in [:hcm :l2-cache-seconds]))]
             (log/info "[signin-cache-l2] set l2 temp cache for " date
                       ", expired after " expired-time)
             (swap! cache assoc (keyword date) (assoc info :expired expired-time)))))))
@@ -73,8 +82,13 @@
     (if-not cache-res
       (try
         (log/info "[hcm-request] cache miss! " time)
-        (let [token (if (str/blank? token) example-token token)
-              req (client/request {:url     data-url
+        (let [token (if (str/blank? token)
+                      (let [cache-token (:token (fetch-cache))
+                            _ (when-not cache-token
+                                (slack/notify "HCM Token 过期！" "SERVER")
+                                (throw (RuntimeException. "HCM Token 过期且没有 Token 参数传入！")))]
+                        cache-token) token)
+              req (client/request {:url     (edn-in [:hcm :check-url])
                                    :method  :post
                                    :body    (format "{\"employee_id\":\"\",\"date\":\"%s\"}" time)
                                    :headers {"Cookie" (str "token=\"" token "\"")}})
@@ -526,6 +540,11 @@
       (if in-range "YES" "NO"))
     (catch Exception e
       (str "解析数据时出现异常：可能是传入的时间无法解析或者不存在数据库表。" (.getMessage e)))))
+
+(defn handle-set-cache [{:keys [token]}]
+  (set-cache token)
+  {:message (str "成功写入 Token： " token)
+   :status 1})
 
 (comment
   (def server1-conn {:pool {} :spec

@@ -4,17 +4,16 @@
             [cyberme.db.core :as db]
             [clojure.tools.logging :as l]
             [cyberme.cyber.slack :as slack]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [cyberme.config :refer [edn edn-in]])
   (:import (java.time LocalDateTime)))
 
-(def kuai-di100 "https://kuaidi100.market.alicloudapi.com/getExpress?NO=%s&TYPE=%s")
-
-(def app-code "bc5cf43ec23e40ccbf7424ec8774252c")
-
 (defn simple-check [{:keys [no kind code]
-                     :or   {kind "AUTO" code app-code}}]
+                     :or   {kind "AUTO"}}]
   (try
-    (let [req (client/request {:url     (format kuai-di100 no kind)
+    (let [code (or code (edn-in [:express :code]))
+          kuai-di100 (edn-in [:express :api])
+          req (client/request {:url     (format kuai-di100 no kind)
                                :method  :get
                                :headers {"Authorization" (str "APPCODE " code)}})
           resp @req]
@@ -36,16 +35,18 @@
       {:message (str "追踪设置失败。 " (.getMessage e)) :status 0})))
 
 (defn simple-track [{:keys [no kind note code]
-                     :or   {kind "AUTO" code app-code}}]
+                     :or   {kind "AUTO"}}]
   "快递追踪，先查找数据库，找到即返回（不更新数据库数据），找不到则查询 API，并将结果保存到数据库：
   如果当前状态为运输中，则标记为运输，如果当前状态为已完毕或未找到则保存到数据库并标记为已完毕。"
   (try
-    (let [{:keys [track] :as exist} (db/find-express {:no no})]
+    (let [code (or code (edn-in [:express :code]))
+          {:keys [track] :as exist} (db/find-express {:no no})]
       (if exist
         {:message (str "追踪的快递已经存在: " no)
          :data    track
          :status  0}
-        (let [req (client/request {:url     (format kuai-di100 no kind)
+        (let [kuai-di100 (edn-in [:express :api])
+              req (client/request {:url     (format kuai-di100 no kind)
                                    :method  :get
                                    :headers {"Authorization" (str "APPCODE " code)}})
               resp @req
@@ -87,7 +88,7 @@
                   new-data? (> (count list) (count old-list))
                   {:keys [time content]} (first list)]
               (when new-data?
-                (let [msg (str "您的快递 [" (or note no) "] 有更新：" time " " content)]
+                (let [msg (str "快递 [" (or note no) "] 有更新：" time " " content)]
                   (l/info (str "[express-track] new state: " msg))
                   (slack/notify msg "EXPRESS")))
               (l/info "[express-track] update express for " (or note no) " set status: " track-id)

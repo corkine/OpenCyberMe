@@ -9,8 +9,14 @@
     [clojure.tools.logging :as log]
     [mount.core :as mount]
     [cyberme.cyber.todo :as todo]
-    [cyberme.cyber.express :as express])
-  (:gen-class))
+    [cyberme.cyber.express :as express]
+    [clojure.java.io :as io]
+    [cheshire.core :as json]
+    [cheshire.generate :refer [add-encoder encode-str]]
+    [cyberme.cyber.inspur :as inspur])
+  (:gen-class)
+  (:import (java.time LocalDateTime)
+           (java.time.format DateTimeFormatter)))
 
 ;; log uncaught exceptions in threads
 (Thread/setDefaultUncaughtExceptionHandler
@@ -43,18 +49,45 @@
   (when repl-server
     (nrepl/stop repl-server)))
 
+(defn backup-token []
+  (try
+    (let [todo-cache @todo/cache
+          hcm-cache @inspur/token-cache]
+      (with-open [w (io/writer "cache.json" :append false)]
+        (.write w (json/generate-string {:todo todo-cache
+                                         :hcm hcm-cache})))
+      (log/info "[backup-cache] saving cache to cache.json done."))
+    (catch Exception e
+      (log/error "[backup-cache] failed: " (.getMessage e)))))
+
+(add-encoder LocalDateTime
+             (fn [c jsonGenerator]
+               (.writeString jsonGenerator (.format c (DateTimeFormatter/ISO_LOCAL_DATE_TIME)))))
+
+(defn read-token []
+  (try
+    (let [data (slurp "cache.json")
+          data-j (json/parse-string data true)]
+      (reset! todo/cache (or (:todo data-j) {}))
+      (reset! inspur/token-cache (or (:hcm data-j) {}))
+      (log/info "[read-cache] reading cache from cache.json done."))
+    (catch Exception e
+      (log/error "[read-cache] failed: " (.getMessage e)))))
+
 (mount/defstate ^{:on-reload :noop} backend-loop
                 :start
                 (do
                   (log/info "[backend] starting all backend service...")
-                  (future (todo/read-token))
+                  (read-token)
                   (future
                     (Thread/sleep 2000)
                     (todo/backend-todo-service))
-                  (future (express/backend-express-service)))
+                  (future
+                    (Thread/sleep 2000)
+                    (express/backend-express-service)))
                 :stop
                 (do
-                  (todo/backup-token)
+                  (backup-token)
                   (log/info "[backend] stopped all backend service...")))
 
 (defn stop-app []

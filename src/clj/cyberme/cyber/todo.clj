@@ -5,19 +5,16 @@
             [cyberme.db.core :as db]
             [clojure.set :as set]
             [clojure.java.io :as io]
-            [cheshire.generate :refer [add-encoder encode-str]])
+            [cyberme.config :refer [edn edn-in]]
+            [cyberme.cyber.slack :as slack])
   (:import (java.time LocalDateTime LocalDate LocalTime)
            (java.time.format DateTimeFormatter)))
 
 ;访问 mazhangjing.com/todologin 登录微软账户，然后其回调 mazhangjing.com/todocheck
 ;跳转到 ip/t odo/setcode?code=xxxx，这里保存 code 参数并触发更新缓存操作：/t odo/today。
-(def client-id "f0272f58-462f-4ee9-a404-be8bf2e64379")
-(def scope "tasks.readWrite,offline_access")
-(def secret "DmjH10wqCmRIT4mIT~14W5k5GviOw-z.l~")
 (def token-url "https://login.microsoftonline.com/common/oauth2/v2.0/token")
 (def redirect-url "https://mazhangjing.com/todocheck")
 (def list-url "https://graph.microsoft.com/v1.0/me/todo/lists")
-(def todo-timeout-ms 20000)
 (def task-in-list-url "https://graph.microsoft.com/v1.0/me/todo/lists/%s/tasks")
 
 (defonce cache (atom {}))
@@ -50,12 +47,12 @@
 (defn set-code [code]
   (let [req (client/request {:url         token-url
                              :method      :post
-                             :form-params {"client_id"     client-id
-                                           "scope"         scope
+                             :form-params {"client_id"     (edn-in [:todo :client-id])
+                                           "scope"         (edn-in [:todo :scope])
                                            "code"          code
                                            "redirect_uri"  redirect-url
                                            "grant_type"    "authorization_code"
-                                           "client_secret" secret}})
+                                           "client_secret" (edn-in [:todo :secret])}})
         {:keys [status body] :as all} @req]
     (if (= status 200)
       (let [{:keys [access_token refresh_token] :as body-s}
@@ -74,11 +71,11 @@
 (defn refresh-code [refresh-token]
   (let [req (client/request {:url         token-url
                              :method      :post
-                             :form-params {"client_id"     client-id
-                                           "scope"         scope
+                             :form-params {"client_id"     (edn-in [:todo :client-id])
+                                           "scope"         (edn-in [:todo :scope])
                                            "redirect_uri"  redirect-url
                                            "grant_type"    "refresh_token"
-                                           "client_secret" secret
+                                           "client_secret" (edn-in [:todo :secret])
                                            "refresh_token" refresh-token}})
         {:keys [status body] :as all} @req]
     (if (= status 200)
@@ -93,7 +90,7 @@
     (let [req (client/request {:url     (format task-in-list-url id)
                                :method  :get
                                :headers {"Authorization" (str "Bearer " access-token)}
-                               :timeout todo-timeout-ms})
+                               :timeout (edn-in [:todo :timeout-ms])})
           {:keys [status body] :as all} @req]
       (if (= status 200)
         (let [{data :value} (json/parse-string body true)
@@ -117,7 +114,7 @@
     (let [req (client/request {:url     list-url
                                :method  :get
                                :headers {"Authorization" (str "Bearer " access-token)}
-                               :timeout todo-timeout-ms})
+                               :timeout (edn-in [:todo :timeout-ms])})
           {:keys [status body] :as all} @req]
       (if (= status 200)
         (let [{data :value} (json/parse-string body true)
@@ -161,33 +158,13 @@
 (defn todo-sync-routine []
   (let [{:keys [access-token refresh-token]} (fetch-cache)]
     (cond (and (nil? access-token) (nil? refresh-token))
-          (do (log/info "[todo-sync] no at and rt in cache, pls login mazhangjing.com/todologin to set code"))
+          (do
+            (slack/notify "TODO Token 过期！" "SERVER")
+            (log/info "[todo-sync] no at and rt in cache, pls login mazhangjing.com/todologin to set code"))
           (nil? access-token)
-          (do (log/info "[todo-sync] not find at，use rt to refresh at")
+          (do (log/info "[todo-sync] not find at, use rt to refresh at")
               (refresh-code refresh-token))
           :else (sync-server-to-db access-token))))
-
-(defn backup-token []
-  (try
-    (let [cache-data @cache]
-      (with-open [w (io/writer "cache.json" :append false)]
-        (.write w (json/generate-string cache-data)))
-      (log/info "[backup-todo] saving cache to cache.json done."))
-    (catch Exception e
-      (log/error "[backup-todo-cache] failed: " (.getMessage e)))))
-
-(add-encoder LocalDateTime
-             (fn [c jsonGenerator]
-               (.writeString jsonGenerator (.format c (DateTimeFormatter/ISO_LOCAL_DATE_TIME)))))
-
-(defn read-token []
-  (try
-    (let [data (slurp "cache.json")
-          data-j (json/parse-string data true)]
-      (reset! cache data-j)
-      (log/info "[read-todo-cache] reading cache from cache.json done."))
-    (catch Exception e
-      (log/error "[read-todo-cache] failed: " (.getMessage e)))))
 
 (defn backend-todo-service []
   (while true
@@ -196,7 +173,6 @@
         (try
           (log/info "[todo-service] starting sync with ms-server...")
           (todo-sync-routine)
-          #_(future (backup-token))
           (log/info "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
           (catch Exception e
             (log/info "[todo-service] sync with ms-server failed: " (.getMessage e))))

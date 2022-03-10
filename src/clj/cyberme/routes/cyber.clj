@@ -131,6 +131,14 @@
             :handler    (fn [{{query :query} :parameters}]
                           (hr/response (inspur/handle-serve-summary query)))}}]
 
+    ["/set_token"
+     {:get {:summary    "写入默认 Token"
+            :description "写入默认的 Token 信息"
+            :parameters {:query (s/keys :req-un [:hcm/token]
+                                        :opt-un [:global/user :global/secret])}
+            :handler    (fn [{{query :query} :parameters}]
+                          (hr/response (inspur/handle-set-cache query)))}}]
+
     ["/overtime_bot_conf"
      {:get {:summary "加班机器人配置信息（废弃）" :handler not-impl}}]
 
