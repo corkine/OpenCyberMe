@@ -113,6 +113,14 @@
                                                   :hcm/token])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (inspur/handle-serve-hint query)))}}]
+    ["/hint_summary"
+     {:get {:summary     "当日生活提醒服务：HCM、健身、饮食和刷牙"
+            :description "返回当日生活信息，比如 HCM 打卡，健身，饮食和刷牙情况
+            此外包括 Summary API 信息"
+            :parameters  {:query (s/keys :req-un []
+                                         :opt-un [:hcm/token :hcm/kpi])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (inspur/handle-serve-hint-summary query)))}}]
     ["/now"
      {:get {:summary     "获取当前打卡情况 (Pixel)"
             :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法"

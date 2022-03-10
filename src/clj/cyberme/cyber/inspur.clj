@@ -505,6 +505,12 @@
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
+(defn handle-serve-hint-summary [{:keys [kpi token]}]
+  (let [hint (handle-serve-hint {:token token})
+        summary (handle-serve-summary {:useAllData true
+                                       :kpi kpi :token token})]
+    (assoc hint :Summary summary)))
+
 (defn handle-serve-today [{:keys [user secret token plainText] :as all}]
   "Google Pixel 服务，根据打卡信息返回一句话"
   (let [now (LocalDateTime/now)
