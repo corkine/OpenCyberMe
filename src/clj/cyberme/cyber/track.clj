@@ -50,7 +50,7 @@
                   :note1              formatted_address
                   :note2              business}
             _ (save-track-to-db by data)]
-        (if-not (some #(str/includes? % by) (or allow-devices []))
+        (if (some #(= % by) (or allow-devices []))
           (let [resp (req-report ak service-id by la lo)
                 body-data (json/parse-string (:body resp) true)
                 {:keys [_ message]} body-data]

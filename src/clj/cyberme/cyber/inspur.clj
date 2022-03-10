@@ -580,7 +580,8 @@
 (defn handle-serve-auto [{:keys [user secret needCheckAt] :as all}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件"
   (try
-    (let [needCheckAt (str/trim (str/replace needCheckAt "：" ":"))
+    (log/info "[hcm-auto] req by pixel for " needCheckAt)
+    (let [needCheckAt (str/trim (str/replace (str/replace needCheckAt ": " ":") "：" ":"))
           [_ h m] (re-find #"(\d+):(\d+)" (or needCheckAt ""))
           needCheck (LocalTime/of (Integer/parseInt h) (Integer/parseInt m))
           ;_ (println "need check at: " needCheck)
@@ -593,6 +594,7 @@
           in-range (or (and existR1? (inR1? needCheck)) (and existR2? (inR2? needCheck)))]
       (if in-range "YES" "NO"))
     (catch Exception e
+      (log/error "[hcm-auto] error: " (.getMessage e))
       (str "解析数据时出现异常：可能是传入的时间无法解析或者不存在数据库表。" (.getMessage e)))))
 
 (defn handle-set-cache [{:keys [token]}]
