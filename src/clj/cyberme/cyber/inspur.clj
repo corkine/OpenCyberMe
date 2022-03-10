@@ -523,6 +523,50 @@
       {:status  1
        :message "今日无需工作。"})))
 
+(defn handle-serve-set-auto [{:keys [date start end]}]
+  "新增 Pixel 打卡条件，day 格式为 20220202 格式，card1/2 格式为 10:30-11:40"
+  (try
+    (let [[_ y m d] (re-find #"(\d\d\d\d)(\d\d)(\d\d)" date)
+          [_ c1f1 c1f2 c1e1 c1e2] (re-find #"(\d\d):(\d\d)-(\d\d):(\d\d)" start)
+          [_ c2f1 c2f2 c2e1 c2e2] (re-find #"(\d\d):(\d\d)-(\d\d):(\d\d)" end)]
+      (if (some nil? [y m d c1f1 c1f2 c1e1 c1e2 c2f1 c2f2 c2e1 c2e2])
+        {:message "传入参数解析失败。" :status 0}
+        (let [pi (fn [^String in] (Integer/parseInt in))
+              day (LocalDate/of (Integer/parseInt y) (Integer/parseInt m) (Integer/parseInt d))
+              c1f (LocalTime/of (pi c1f1) (pi c1f2))
+              c1e (LocalTime/of (pi c1e1) (pi c1e2))
+              c2f (LocalTime/of (pi c2f1) (pi c2f2))
+              c2e (LocalTime/of (pi c2e1) (pi c2e2))
+              ok-c1? (.isAfter c1e c1f)
+              ok-c2? (.isAfter c2e c2f)]
+          (if-not (and ok-c1? ok-c2?)
+            {:message (str "传入的日期范围不合法。") :status 0}
+            (let [res (db/set-auto {:start1 c1f :end1 c1e
+                                    :start2 c2f :end2 c2e
+                                    :day    day})]
+              {:message (str "设置成功： " res) :status 1})))))
+    (catch Exception e
+      (log/info e)
+      {:message (str "传入参数解析失败：" (.getMessage e)) :status 0})))
+
+(defn handle-serve-delete-auto [{:keys [date]}]
+  (try
+    (let [[_ y m d] (re-find #"(\d\d\d\d)(\d\d)(\d\d)" date)
+          day (LocalDate/of (Integer/parseInt y) (Integer/parseInt m) (Integer/parseInt d))]
+      {:message (str "删除成功！" date)
+       :data    (db/delete-auto {:day day})
+       :status  1})
+    (catch Exception e
+      {:message (str "删除失败：" (.getMessage e)) :status 0})))
+
+(defn handle-serve-list-auto [{:keys [day] :or {day 6}}]
+  (try
+    {:message "列出成功！"
+     :data    (db/list-auto-recent {:day day})
+     :status  1}
+    (catch Exception e
+      {:message (str "列出失败：" (.getMessage e)) :status 0})))
+
 (defn handle-serve-auto [{:keys [user secret needCheckAt] :as all}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件"
   (try
@@ -544,7 +588,7 @@
 (defn handle-set-cache [{:keys [token]}]
   (set-cache token)
   {:message (str "成功写入 Token： " token)
-   :status 1})
+   :status  1})
 
 (comment
   (def server1-conn {:pool {} :spec

@@ -28,6 +28,10 @@
 (s/def :hcm/adjust int?)
 (s/def :hcm/needCheckAt string?)
 (s/def :hcm/kpi int?)
+(s/def :auto/day int?)
+(s/def :auto/date string?)
+(s/def :auto/start string?)
+(s/def :auto/end string?)
 (s/def :summary/todayFirst boolean?)
 (s/def :summary/use2MonthData boolean?)
 (s/def :summary/useAllData boolean?)
@@ -175,8 +179,9 @@
      {:get {:summary "本周计划加班信息（废弃）" :handler not-impl}}]]
 
    ["/auto"
-    {:tags #{"HCM 相关"}
-     :get  {:summary     "上班状态自动检查 (Pixel)"
+    {:tags #{"HCM 相关"}}
+    [""
+     {:get {:summary     "上班状态自动检查 (Pixel)"
             :description "供 PIXEL 使用的内部接口，检查当前时间是否需要自动执行计划。"
             :parameters  {:query (s/keys :req-un [:hcm/needCheckAt]
                                          :opt-un [:global/user :global/secret])}
@@ -184,6 +189,25 @@
                            (hr/content-type
                              (hr/response (inspur/handle-serve-auto query))
                              "plain/text"))}}]
+    ["/info"
+     {:get  {:summary     "最近上班状态条件"
+             :description "返回最近上班状态标记。"
+             :parameters  {:query (s/keys :opt-un [:global/user :global/secret :auto/day])}
+             :handler     (fn [{{query :query} :parameters}]
+                            (hr/response (inspur/handle-serve-list-auto query)))}
+      :post {:summary     "最近上班状态添加"
+             :description "添加某天的状态标记，其中 date 格式为 20220101，start 和 end 格式为 10:01-10:22"
+             :parameters  {:query (s/keys :req-un [:auto/date :auto/start :auto/end]
+                                          :opt-un [:global/user :global/secret])}
+             :handler     (fn [{{query :query} :parameters}]
+                            (hr/response (inspur/handle-serve-set-auto query)))}}]
+    ["/:date/delete"
+     {:post {:summary     "删除某个上班状态"
+             :description "删除某天的状态标记，日期格式必须为 20220101"
+             :parameters  {:path {:date string?}
+                           :query (s/keys :opt-un [:global/user :global/secret])}
+             :handler     (fn [{{data :path} :parameters}]
+                            (hr/response (inspur/handle-serve-delete-auto data)))}}]]
 
    ["/express"
     {:tags #{"快递追踪"}}
@@ -213,14 +237,14 @@
 
    ["/location"
     {:tags #{"快递追踪"}
-     :get {:summary     "鹰眼追踪"
-           :description "上报 GPS 信息。"
-           :parameters  {:query (s/keys :req-un [:location/by :location/lo :location/la]
-                                        :opt-un [:location/al
-                                                 :location/ve
-                                                 :location/ho])}
-           :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (track/handle-track query)))}}]
+     :get  {:summary     "鹰眼追踪"
+            :description "上报 GPS 信息。"
+            :parameters  {:query (s/keys :req-un [:location/by :location/lo :location/la]
+                                         :opt-un [:location/al
+                                                  :location/ve
+                                                  :location/ho])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (track/handle-track query)))}}]
 
    ["/note"
     {:tags #{"笔记记录"}
@@ -248,15 +272,15 @@
                                          :req-un [:movie/name :movie/url])}
              :handler    (fn [{{query :query} :parameters}]
                            (hr/response (mini4k/handle-add-movie query)))}
-      :get {:summary "获取跟踪列表"
-            :parameters {:query (s/keys :opt-un [:global/user :global/secret])}
-            :handler (fn [_] (hr/response (mini4k/handle-list-movie)))}}]
+      :get  {:summary    "获取跟踪列表"
+             :parameters {:query (s/keys :opt-un [:global/user :global/secret])}
+             :handler    (fn [_] (hr/response (mini4k/handle-list-movie)))}}]
     ["/:id/delete"
-     {:post {:summary "删除此跟踪电影"
-             :parameters {:path {:id int?}
+     {:post {:summary    "删除此跟踪电影"
+             :parameters {:path  {:id int?}
                           :query (s/keys :opt-un [:global/user :global/secret])}
-             :handler (fn [{{path :path} :parameters}]
-                        (hr/response (mini4k/handle-delete-movie path)))}}]]
+             :handler    (fn [{{path :path} :parameters}]
+                           (hr/response (mini4k/handle-delete-movie path)))}}]]
 
    ["/notice"
     {:tags #{"Slack 消息通知"}

@@ -45,7 +45,7 @@
         (do (log/info "[mini4k-check] no data need to merge, go on...")
             #{})
         (do (future (slack/notify (str "Series " name " Updated: "
-                                       (str/join " " need-add-series))
+                                       (str/join " " (sort (vec need-add-series))))
                                   "MOVIE"))
             (db/update-movie {:id id :info (merge info {:series web-series})})
             need-add-series)))

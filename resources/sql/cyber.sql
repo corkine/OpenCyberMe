@@ -1,6 +1,15 @@
 -- :name set-today-auto :! :1
 insert into auto (r1start, r1end, r2start, r2end)
 values (:start1, :end1, :start2, :end2);
+-- :name set-auto :! :1
+insert into auto (day, r1start, r1end, r2start, r2end)
+values (:day, :start1, :end1, :start2, :end2);
+-- :name list-auto-recent :? :*
+select * from auto
+where day::date > (current_date - (:day || ' day')::interval);
+-- :name delete-auto :! :1
+delete from auto
+where day = :day;
 -- :name get-today-auto :? :1
 select *
 from auto
