@@ -62,9 +62,9 @@
 (s/def :movie/url string?)
 
 
-(defn not-impl [_] (hr/content-type (hr/not-found "没有实现。") "plain/text"))
+(defn not-impl [_] (hr/content-type (hr/not-found "没有实现。") "text/plain"))
 
-(defn todo [_] (hr/content-type (hr/not-found "正在施工。") "plain/text"))
+(defn todo [_] (hr/content-type (hr/not-found "正在施工。") "text/plain"))
 
 (defn cyber-routes []
   ["/cyber"
@@ -122,7 +122,7 @@
             :handler     (fn [{{{:keys [plainText] :as query} :query} :parameters}]
                            (let [res (inspur/handle-serve-today query)]
                              (if plainText
-                               (hr/content-type (hr/response (:message res)) "plain/text")
+                               (hr/content-type (hr/response (:message res)) "text/plain")
                                (hr/response res))))}}]
     ["/today"
      {:get {:summary     "HCM 每日信息统计"
@@ -188,7 +188,7 @@
             :handler     (fn [{{query :query} :parameters}]
                            (hr/content-type
                              (hr/response (inspur/handle-serve-auto query))
-                             "plain/text"))}}]
+                             "text/plain"))}}]
     ["/info"
      {:get  {:summary     "最近上班状态条件"
              :description "返回最近上班状态标记。"
@@ -256,7 +256,7 @@
             :handler    (fn [{{query :query} :parameters}]
                           (let [just-content (:justContent query)
                                 resp (hr/response (note/handle-fetch-note query))]
-                            (if just-content (content-type resp "plain/text") resp)))}
+                            (if just-content (content-type resp "text/plain") resp)))}
      :post {:summary    "便签信息新建"
             :parameters {:query (s/keys :opt-un [:global/user :global/secret])
                          :body  (s/keys :req-un [:note/from :note/content]
