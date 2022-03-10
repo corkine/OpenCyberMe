@@ -6,7 +6,8 @@
             [cyberme.db.core :as db]
             [taoensso.carmine :as car :refer (wcar)]
             [cyberme.config :refer [edn-in edn]]
-            [cyberme.cyber.slack :as slack])
+            [cyberme.cyber.slack :as slack]
+            [cyberme.cyber.todo :as todo])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)))
 
@@ -505,11 +506,14 @@
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
-(defn handle-serve-hint-summary [{:keys [kpi token]}]
+(defn handle-serve-hint-summary [{:keys [kpi token focus]}]
   (let [hint (handle-serve-hint {:token token})
         summary (handle-serve-summary {:useAllData true
-                                       :kpi kpi :token token})]
-    (assoc hint :Summary summary)))
+                                       :kpi kpi :token token})
+        todo (todo/handle-today {:focus focus
+                                 :showCompleted false})]
+    (assoc hint :Summary summary
+                :Todo todo)))
 
 (defn handle-serve-today [{:keys [user secret token plainText] :as all}]
   "Google Pixel 服务，根据打卡信息返回一句话"
