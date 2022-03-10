@@ -44,41 +44,86 @@ set track = :track,
     info  = :info
 where no = :no;
 -- :name find-express :? :1
-select * from express
+select *
+from express
 where no = :no
 limit 1;
 
 -- :name all-to-do :? :*
-select * from todo;
+select *
+from todo;
 -- :name to-do-modify-in-2-days :? :*
-select id, title from todo
-where (info->>'lastModifiedDateTime')::timestamptz >
+select id, title
+from todo
+where (info ->> 'lastModifiedDateTime')::timestamptz >
       (current_timestamp - '2 day'::interval);
 -- :name to-do-all :? :*
-select title, info->'listInfo'->>'name' as list, info->>'status' as status,
-       info->>'importance' as importance,
-       (info->>'createdDateTime')::timestamptz as create_at,
-       ((info->'completedDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
-       ((info->'dueDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as due_at,
-       (info->>'lastModifiedDateTime')::timestamptz as modified_at
+select title,
+       info -> 'listInfo' ->> 'name'                                                    as list,
+       info ->> 'status'                                                                as status,
+       info ->> 'importance'                                                            as importance,
+       (info ->> 'createdDateTime')::timestamptz                                        as create_at,
+       ((info -> 'completedDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
+       ((info -> 'dueDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval)       as due_at,
+       (info ->> 'lastModifiedDateTime')::timestamptz                                   as modified_at
 from todo
-order by (info->>'lastModifiedDateTime')::timestamptz desc ;
+order by (info ->> 'lastModifiedDateTime')::timestamptz desc;
 -- :name to-do-recent-day :? :*
-select title, info->'listInfo'->>'name' as list, info->>'status' as status,
-       info->>'importance' as importance,
-       (info->>'createdDateTime')::timestamptz as create_at,
-       ((info->'completedDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
-       ((info->'dueDateTime'->>'dateTime')::timestamptz + '8 hour'::interval) as due_at,
-       (info->>'lastModifiedDateTime')::timestamptz as modified_at
+select title,
+       info -> 'listInfo' ->> 'name'                                                    as list,
+       info ->> 'status'                                                                as status,
+       info ->> 'importance'                                                            as importance,
+       (info ->> 'createdDateTime')::timestamptz                                        as create_at,
+       ((info -> 'completedDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
+       ((info -> 'dueDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval)       as due_at,
+       (info ->> 'lastModifiedDateTime')::timestamptz                                   as modified_at
 from todo
-where (info->>'createdDateTime')::timestamptz >
-      (current_timestamp -  (:day || ' day')::interval)
-order by (info->>'lastModifiedDateTime')::timestamptz desc;
+where (info ->> 'createdDateTime')::timestamptz >
+      (current_timestamp - (:day || ' day')::interval)
+order by (info ->> 'lastModifiedDateTime')::timestamptz desc;
 -- :name delete-by-id :! :1
-delete from todo
+delete
+from todo
 where id = :id;
 -- :name insert-to-do :! :1
 insert into todo (id, title, info, last_update)
 values (:id, :title, :info, current_timestamp)
 on conflict (id) do update set title = :title,
-                               info = :info;
+                               info  = :info;
+
+-- :name all-track :? :*
+select *
+from track;
+-- :name set-track :! :1
+insert into track (by, info)
+values (:by, :info);
+
+-- :name all-note :? :*
+select *
+from note;
+-- :name insert-note :! :1
+insert into note (id, "from", content, info)
+values (:id, :from, :content, :info)
+on conflict (id) do update set "from"  = :from,
+                               content = :content,
+                               info    = :info;
+-- :name note-by-id :? :1
+select * from note
+where id = :id
+limit 1;
+-- :name note-last :? :1
+select * from note
+order by create_at desc limit 1;
+
+-- :name all-movie :? :*
+select * from movie;
+-- :name insert-movie :! :1
+insert into movie (name, url)
+values (:name, :url)
+on conflict (name) do nothing;
+-- :name update-movie :! :1
+update movie set info = :info
+where id = :id;
+-- :name delete-movie :! :1
+delete from movie
+where id = :id;

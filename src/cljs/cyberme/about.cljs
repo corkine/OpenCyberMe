@@ -45,6 +45,8 @@ Basic Auth 保护 API。
 可变数据通过 edn 配置文件加载。
 TODO 和 HCM Token 均使用本地文件保存机制进行处理。
 支持多用户鉴权。
+实现了基于 REPL、Swagger 和测试的开发流程，增强 DevOps 开发效率。
+实现了 Mini4K、Note 和 Track 功能的实现。
 
 ================================================
 TODO:

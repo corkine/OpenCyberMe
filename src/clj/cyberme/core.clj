@@ -13,7 +13,8 @@
     [clojure.java.io :as io]
     [cheshire.core :as json]
     [cheshire.generate :refer [add-encoder encode-str]]
-    [cyberme.cyber.inspur :as inspur])
+    [cyberme.cyber.inspur :as inspur]
+    [cyberme.cyber.mini4k :as mini4k])
   (:gen-class)
   (:import (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)))
@@ -84,7 +85,10 @@
                     (todo/backend-todo-service))
                   (future
                     (Thread/sleep 2000)
-                    (express/backend-express-service)))
+                    (express/backend-express-service))
+                  (future
+                    (Thread/sleep 2000)
+                    (mini4k/backend-mini4k-routine)))
                 :stop
                 (do
                   (backup-token)
