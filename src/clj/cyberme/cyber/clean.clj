@@ -45,7 +45,7 @@
           (:info today-db-data)
           keep-in (clean-count this-year)
           hint-suffix (today-info today-data)
-          full-hint (str "\uD83C\uDF80" keep-in hint-suffix)]
+          full-hint (str "" keep-in hint-suffix)]
       {:MorningBrushTeeth  (boolean MorningBrushTeeth)
        :NightBrushTeeth    (boolean NightBrushTeeth)
        :MorningCleanFace   (boolean MorningCleanFace)
@@ -60,7 +60,7 @@
        :MorningCleanFace   false
        :NightCleanFace     false
        :HabitCountUntilNow 0
-       :HabitHint          "\uD83C\uDF80?+1!"               ;🎀13-1?? 🎀13-1? 🎀13+1? 🎀13+1!
+       :HabitHint          "?+1!"               ;🎀13-1?? 🎀13-1? 🎀13+1? 🎀13+1!
        })))
 
 (defn handle-clean-update [{:keys [merge mt nt mf nf]
