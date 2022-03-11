@@ -1,3 +1,4 @@
+------------------------ auto ----------------------
 -- :name set-today-auto :! :1
 insert into auto (r1start, r1end, r2start, r2end)
 values (:start1, :end1, :start2, :end2);
@@ -16,6 +17,8 @@ where day = :day;
 select *
 from auto
 where day = :day;
+
+------------------------ signin ----------------------
 -- :name get-today-signin :? :1
 select *
 from signin
@@ -33,6 +36,8 @@ values (:day, :hcm);
 update signin
 set hcm = :hcm
 where day = :day;
+
+------------------------ express ----------------------
 -- :name all-express :? :*
 select *
 from express;
@@ -60,6 +65,7 @@ from express
 where no = :no
 limit 1;
 
+------------------------ to-do ----------------------
 -- :name all-to-do :? :*
 select *
 from todo;
@@ -102,6 +108,7 @@ values (:id, :title, :info, current_timestamp)
 on conflict (id) do update set title = :title,
                                info  = :info;
 
+------------------------ track ----------------------
 -- :name all-track :? :*
 select *
 from track;
@@ -109,6 +116,7 @@ from track;
 insert into track (by, info)
 values (:by, :info);
 
+------------------------ note ----------------------
 -- :name all-note :? :*
 select *
 from note;
@@ -129,6 +137,7 @@ from note
 order by create_at desc
 limit 1;
 
+------------------------ movie ----------------------
 -- :name all-movie :? :*
 select *
 from movie;
@@ -145,6 +154,7 @@ delete
 from movie
 where id = :id;
 
+------------------------ days ----------------------
 -- :name today :? :1
 select *
 from days
@@ -173,3 +183,37 @@ from days
 where day >= :from
   and day <= :to
 order by day desc;
+
+------------------------ fitness ----------------------
+-- :name delete-fitness :! :1
+delete from fitness
+where id = :id;
+-- :name details-fitness :? :1
+select * from fitness
+where id = :id
+limit 1;
+-- :name all-fitness :? :*
+select * from fitness
+limit :limit;
+-- :name all-fitness-after :? :*
+select * from fitness
+where start >= :day;
+-- :name all-fitness-after-limit :? :*
+select * from fitness
+where start >= :day
+limit :limit;
+-- :name all-fitness-by-cat-after-limit :? :*
+select * from fitness
+where start >= :day and category = :category
+limit :limit;
+-- :name insert-fitness-batch :! :*
+insert into fitness (category, value, unit, start, "end", duration, hash)
+values :tuple*:records
+on conflict (hash) do nothing;
+-- :name remote-all-fitness :! :*
+delete from fitness
+where 1 = 1;
+
+
+select distinct category
+from fitness;

@@ -21,7 +21,8 @@
     [cyberme.cyber.todo :as todo]
     [cyberme.cyber.note :as note]
     [cyberme.cyber.mini4k :as mini4k]
-    [cyberme.cyber.clean :as clean]))
+    [cyberme.cyber.clean :as clean]
+    [cyberme.cyber.fitness :as fitness]))
 
 (s/def :global/user string?)
 (s/def :global/secret string?)
@@ -69,6 +70,10 @@
 (s/def :clean/nf boolean?)
 (s/def :blue/blue boolean?)
 (s/def :blue/day string?)
+(s/def :fitness/data any?)
+(s/def :fitness/category string?)
+(s/def :fitness/lastDays int?)
+(s/def :fitness/limit int?)
 
 
 (defn not-impl [_] (hr/content-type (hr/not-found "没有实现。") "text/plain"))
@@ -221,7 +226,7 @@
     ["/:date/delete"
      {:post {:summary     "删除某个上班状态"
              :description "删除某天的状态标记，日期格式必须为 20220101"
-             :parameters  {:path {:date string?}
+             :parameters  {:path  {:date string?}
                            :query (s/keys :opt-un [:global/user :global/secret])}
              :handler     (fn [{{data :path} :parameters}]
                             (hr/response (inspur/handle-serve-delete-auto data)))}}]]
@@ -313,31 +318,69 @@
    ["/clean"
     {:tags #{"清洁情况"}}
     ["/show"
-     {:get {:summary "展示清洁情况"
+     {:get {:summary     "展示清洁情况"
             :description ""
-            :parameters {:query (s/keys :opt-un [:global/user :global/secret])}
-            :handler (fn [{{query :query} :parameters}]
-                       (hr/response (clean/handle-clean-show query)))}}]
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (clean/handle-clean-show query)))}}]
     ["/update"
-     {:get {:summary "更新清洁情况"
+     {:get {:summary     "更新清洁情况"
             :description "merge 用于和数据库数据整合，mt 早刷牙，nt 晚刷牙，mf 早用药，nf 晚用药，
             如果使用 merge，参数只有为 true 的才改写为 true，否者保持数据库记录。如果不适用 merge，
             未传递的参数看做 false 强行写入。"
-            :parameters {:query (s/keys :opt-un [:global/user :global/secret
-                                                 :clean/merge :clean/mt :clean/nt
-                                                 :clean/mf :clean/nf])}
-            :handler (fn [{{query :query} :parameters}]
-                       (hr/response (clean/handle-clean-update query)))}}]]
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret
+                                                  :clean/merge :clean/mt :clean/nt
+                                                  :clean/mf :clean/nf])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (clean/handle-clean-update query)))}}]]
+
+   ["/fitness"
+    {:tags #{"健康数据管理"}}
+    ["/iOSUpload"
+     {:post {:summary     "上传健康样本"
+             :description "IOS 健康 App 上传最近样本"
+             :parameters  {:formData (s/keys :req-un [:fitness/data])}
+             :handler     (fn [{data :form-params}]
+                            (hr/response (fitness/handle-upload (get data "data"))))}}]
+    ["/data"
+     {:get {:summary     "最近健康样本"
+            :description "查看最近的健康样本"
+            :parameters  {:query (s/keys :req-un []
+                                         :opt-un [:global/user
+                                                  :global/secret
+                                                  :fitness/category
+                                                  :fitness/lastDays
+                                                  :fitness/limit])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (fitness/handle-list query)))}}]
+    ["/:id/delete"
+     {:post {:summary     "删除健康样本"
+             :description "删除健康样本"
+             :parameters  {:query (s/keys :req-un []
+                                          :opt-un [:global/user
+                                                   :global/secret])
+                           :path  {:id int?}}
+             :handler     (fn [{{data :path} :parameters}]
+                            (hr/response (fitness/handle-delete data)))}}]
+    ["/:id/details"
+     {:get {:summary     "查看健康样本详情"
+            :description "查看健康样本详情"
+            :parameters  {:query (s/keys :req-un []
+                                         :opt-un [:global/user
+                                                  :global/secret])
+                          :path  {:id int?}}
+            :handler     (fn [{{data :path} :parameters}]
+                           (hr/response (fitness/handle-details data)))}}]]
 
    ["/blue"
     {:tags #{"清洁情况"}}
     ["/update"
-     {:get {:summary "更新清洁情况 2"
+     {:get {:summary     "更新清洁情况 2"
             :description "blue=true/false 返回 updated 结果"
-            :parameters {:query (s/keys :opt-un [:global/user :global/secret :blue/day]
-                                        :req-un [:blue/blue])}
-            :handler (fn [{{query :query} :parameters}]
-                       (hr/response (clean/handle-blue-set query)))}}]]
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret :blue/day]
+                                         :req-un [:blue/blue])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (clean/handle-blue-set query)))}}]]
 
    ["/todo"
     {:tags #{"TODO 同步"}}
