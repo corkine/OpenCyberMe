@@ -33,6 +33,11 @@
       (log/info "[mini4k-parse] failed because: " (.getMessage e))
       nil)))
 
+(defn call-slack-async [name need-add-series]
+  (future (slack/notify (str "Series " name " Updated: "
+                             (str/join " " (sort (vec need-add-series))))
+                        "MOVIE")))
+
 (defn fetch-and-merge [{:keys [id name url info]}]
   (try
     (log/info "[mini4k-check] start checking " name)
@@ -44,9 +49,7 @@
       (if (empty? need-add-series)
         (do (log/info "[mini4k-check] no data need to merge, go on...")
             #{})
-        (do (future (slack/notify (str "Series " name " Updated: "
-                                       (str/join " " (sort (vec need-add-series))))
-                                  "MOVIE"))
+        (do (call-slack-async name need-add-series)
             (db/update-movie {:id id :info (merge info {:series web-series})})
             need-add-series)))
     (catch Exception e

@@ -37,7 +37,7 @@
 (defn decode [response]
   (m/decode-response-body response))
 
-(deftest test-cyber
+(deftest test-track
   (testing "API route /track/handle-track"
     (with-redefs [track/req-loc (fn [& _] {:status 200
                                            :body   (json/generate-string

@@ -75,27 +75,33 @@
                       ", expired after " expired-time)
             (swap! cache assoc (keyword date) (assoc info :expired expired-time)))))))
 
-(defn get-hcm-info [{:keys [^LocalDateTime time ^String token]}]
+(defn call-hcm [time token]
+  @(client/request {:url     (edn-in [:hcm :check-url])
+                    :method  :post
+                    :body    (format "{\"employee_id\":\"\",\"date\":\"%s\"}" time)
+                    :headers {"Cookie" (str "token=\"" token "\"")}}))
+
+(defn notice-expired-async []
+  (future (slack/notify "HCM Token 过期！" "SERVER")))
+
+(defn get-hcm-info [{:keys [^LocalDateTime time ^String token notUseCache]}]
   "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}"
   (let [time (if (nil? time) (-> (LocalDateTime/now) (.format DateTimeFormatter/ISO_LOCAL_DATE))
                              (.format time DateTimeFormatter/ISO_LOCAL_DATE))
-        cache-res (hcm-info-from-cache time)]
+        cache-res (if notUseCache nil (hcm-info-from-cache time))]
     (if-not cache-res
       (try
         (log/info "[hcm-request] cache miss! " time)
         (let [token (if (str/blank? token)
                       (let [cache-token (:token (fetch-cache))
                             _ (when-not cache-token
-                                (slack/notify "HCM Token 过期！" "SERVER")
+                                (notice-expired-async)
                                 (throw (RuntimeException. "HCM Token 过期且没有 Token 参数传入！")))]
                         cache-token) token)
-              req (client/request {:url     (edn-in [:hcm :check-url])
-                                   :method  :post
-                                   :body    (format "{\"employee_id\":\"\",\"date\":\"%s\"}" time)
-                                   :headers {"Cookie" (str "token=\"" token "\"")}})
-              {:keys [status body] :as full-resp} @req
+              {:keys [status body] :as full-resp} (call-hcm time token)
               _ (when (not= status 200)
                   (do (log/info "[hcm-request] response: " full-resp)
+                      (notice-expired-async)
                       (throw (RuntimeException. "服务器未正确返回数据，可能是登录过期"))))
               info {:data    (json/parse-string body true)
                     :message "获取 HCM INFO 数据成功"
@@ -577,7 +583,7 @@
     (catch Exception e
       {:message (str "列出失败：" (.getMessage e)) :status 0})))
 
-(defn handle-serve-auto [{:keys [user secret needCheckAt] :as all}]
+(defn ^String handle-serve-auto [{:keys [user secret needCheckAt] :as all}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件"
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt)

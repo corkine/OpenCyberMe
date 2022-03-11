@@ -44,7 +44,7 @@
 (deftest test-mini4k
   (testing "merge movie data"
     (with-redefs [mi/parse-data (fn [_] #{"S01E01" "S01E02" "S01E03"})
-                  slack/notify (fn [& _] :done)
+                  mi/call-slack-async (fn [& _] :done)
                   db/update-movie (fn [& _] :done)]
       (let [data {:id 1234
                   :name "TEST"
@@ -55,7 +55,7 @@
 
   (testing "merge movie data - 2"
     (with-redefs [mi/parse-data (fn [_] #{"S01E01" "S01E02" "S01E03"})
-                  slack/notify (fn [& _] :done)
+                  mi/call-slack-async (fn [& _] :done)
                   db/update-movie (fn [& _] :done)]
       (let [data {:id 1234
                   :name "TEST"
@@ -66,7 +66,7 @@
 
   (testing "merge movie data - 2"
     (with-redefs [mi/parse-data (fn [_] #{})
-                  slack/notify (fn [& _] :done)
+                  mi/call-slack-async (fn [& _] :done)
                   db/update-movie (fn [& _] :done)]
       (let [data {:id 1234
                   :name "TEST"
