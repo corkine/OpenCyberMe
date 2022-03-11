@@ -14,6 +14,7 @@
     [cheshire.core :as json]
     [cheshire.generate :refer [add-encoder encode-str]]
     [cyberme.cyber.inspur :as inspur]
+    [cyberme.config :refer [edn]]
     [cyberme.cyber.mini4k :as mini4k])
   (:gen-class)
   (:import (java.time LocalDateTime)
@@ -77,18 +78,21 @@
 
 (mount/defstate ^{:on-reload :noop} backend-loop
                 :start
-                (do
-                  (log/info "[backend] starting all backend service...")
+                (let [enable-services (set (edn :enable-service))]
+                  (log/info "[backend] starting all backend service " enable-services)
                   (read-token)
-                  (future
-                    (Thread/sleep 2000)
-                    (todo/backend-todo-service))
-                  (future
-                    (Thread/sleep 2000)
-                    (express/backend-express-service))
-                  (future
-                    (Thread/sleep 2000)
-                    (mini4k/backend-mini4k-routine)))
+                  (when (contains? enable-services :todo)
+                    (future
+                      (Thread/sleep 2000)
+                      (todo/backend-todo-service)))
+                  (when (contains? enable-services :express)
+                    (future
+                      (Thread/sleep 2000)
+                      (express/backend-express-service)))
+                  (when (contains? enable-services :movie)
+                    (future
+                      (Thread/sleep 2000)
+                      (mini4k/backend-mini4k-routine))))
                 :stop
                 (do
                   (backup-token)
