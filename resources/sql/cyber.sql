@@ -213,7 +213,3 @@ on conflict (hash) do nothing;
 -- :name remote-all-fitness :! :*
 delete from fitness
 where 1 = 1;
-
-
-select distinct category
-from fitness;

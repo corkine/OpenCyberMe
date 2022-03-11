@@ -9,26 +9,31 @@
 
 (defn json->data [json-data return-map?]
   (let [data (json/parse-string json-data true)
-        need-keys [:activeactivity
-                   :distance
-                   :restactivity
-                   :floor
-                   :heart
-                   :restheart
-                   :walkheart
-                   :heartvariability]
+        need-keys (keys data)
+        #_[:activeactivity
+           :distance
+           :restactivity
+           :floor
+           :heart
+           :restheart
+           :walkheart
+           :heartvariability]
         _ (Locale/setDefault (Locale/SIMPLIFIED_CHINESE))
         str->time #(try
-                     (LocalDateTime/parse (str %) (DateTimeFormatter/ofPattern "yyyy年M月d日 ah:mm"))
+                     (if (str/blank? %)
+                       (LocalDateTime/now)
+                       (LocalDateTime/parse (str %) (DateTimeFormatter/ofPattern "yyyy年M月d日 ah:mm")))
                      (catch Exception e
                        (log/warn "can't parse " (str %) ", e: " (.getMessage e))
                        (LocalDateTime/now)))
         value->double #(try
-                         (Double/parseDouble %)
+                         (cond (= % "未指定") 0.01
+                               (str/blank? %) 0.0
+                               :else (Double/parseDouble %))
                          (catch Exception e
                            (log/warn (str "error parse " % ", exception: " (.getMessage e)))
                            0.01))
-        duration->seconds #(try
+        duration->seconds #(try                             ;空
                              (let [line (str/split % #":")]
                                (cond (= (count line) 1) 0
                                      (= (count line) 2)
@@ -61,7 +66,9 @@
                                               (str (.hashCode (str category (str s))))]))
                                          (lines start) (lines value)
                                          (lines end) (lines unit) (lines duration)))) [] need-keys)]
-    full-data))
+    (if return-map?
+      (filter #(not= 0.0 (:value %)) full-data)
+      (filter #(not= 0.0 (second %)) full-data))))
 
 (defn handle-upload [json-data]
   (try
@@ -118,4 +125,5 @@
   (db/insert-fitness-batch
     {:records [["test1" "seconds" (LocalDateTime/now)
                 (LocalDateTime/now) 1000 "HASHTEST"]]})
-  (user/create-migration "fitness"))
+  (user/create-migration "fitness")
+  (filter #(= (:category %) :sex) (json->data raw true)))
