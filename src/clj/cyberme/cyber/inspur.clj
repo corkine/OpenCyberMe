@@ -7,7 +7,8 @@
             [taoensso.carmine :as car :refer (wcar)]
             [cyberme.config :refer [edn-in edn]]
             [cyberme.cyber.slack :as slack]
-            [cyberme.cyber.todo :as todo])
+            [cyberme.cyber.todo :as todo]
+            [cyberme.cyber.clean :as clean])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)))
 
@@ -502,13 +503,7 @@
           :TodayNetCalories 0
           :TodayCutCalories 0
           :AchievedCutGoal false)
-        :Clean (array-map
-                 :MorningBrushTeeth false
-                 :NightBrushTeeth false
-                 :MorningCleanFace false
-                 :NightCleanFace false
-                 :HabitCountUntilNow 0
-                 :HabitHint "0-1?")))
+        :Clean (clean/handle-clean-show {})))
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
@@ -516,6 +511,7 @@
   (let [hint (handle-serve-hint {:token token})
         summary (handle-serve-summary {:useAllData true
                                        :kpi kpi :token token})
+        summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
         todo (todo/handle-today {:focus focus
                                  :showCompleted false})]
     (assoc hint :Summary summary

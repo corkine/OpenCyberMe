@@ -77,7 +77,6 @@
                      :NightBrushTeeth   (boolean nt)
                      :MorningCleanFace  (boolean mf)
                      :NightCleanFace    (boolean nf)})
-        _ (println "origin data: " info ", new data: " full-data)
         changed? (not= {:MorningBrushTeeth MorningBrushTeeth
                         :NightBrushTeeth   NightBrushTeeth
                         :MorningCleanFace  MorningCleanFace
