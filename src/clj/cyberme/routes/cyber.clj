@@ -38,6 +38,7 @@
 (s/def :summary/useAllData boolean?)
 (s/def :summary/showDetails boolean?)
 (s/def :device/plainText boolean?)
+(s/def :device/useCache boolean?)
 (s/def :slack/from string?)
 (s/def :slack/channel string?)
 (s/def :slack/message string?)
@@ -66,6 +67,8 @@
 (s/def :clean/nt boolean?)
 (s/def :clean/mf boolean?)
 (s/def :clean/nf boolean?)
+(s/def :blue/blue boolean?)
+(s/def :blue/day string?)
 
 
 (defn not-impl [_] (hr/content-type (hr/not-found "没有实现。") "text/plain"))
@@ -129,10 +132,10 @@
                            (hr/response (inspur/handle-serve-hint-summary query)))}}]
     ["/now"
      {:get {:summary     "获取当前打卡情况 (Pixel)"
-            :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法"
+            :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法，默认不使用缓存。"
             :parameters  {:query (s/keys :req-un []
                                          :opt-un [:global/user :global/secret
-                                                  :hcm/token :device/plainText])}
+                                                  :hcm/token :device/plainText :device/useCache])}
             :handler     (fn [{{{:keys [plainText] :as query} :query} :parameters}]
                            (let [res (inspur/handle-serve-today query)]
                              (if plainText
@@ -325,6 +328,16 @@
                                                  :clean/mf :clean/nf])}
             :handler (fn [{{query :query} :parameters}]
                        (hr/response (clean/handle-clean-update query)))}}]]
+
+   ["/blue"
+    {:tags #{"清洁情况"}}
+    ["/update"
+     {:get {:summary "更新清洁情况 2"
+            :description "blue=true/false 返回 updated 结果"
+            :parameters {:query (s/keys :opt-un [:global/user :global/secret :blue/day]
+                                        :req-un [:blue/blue])}
+            :handler (fn [{{query :query} :parameters}]
+                       (hr/response (clean/handle-blue-set query)))}}]]
 
    ["/todo"
     {:tags #{"TODO 同步"}}

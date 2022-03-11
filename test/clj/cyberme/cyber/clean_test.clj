@@ -80,7 +80,7 @@
                         :MorningCleanFace true
                         :NightCleanFace true}}]
           count (clean/clean-count year)]
-      (is (= count 1))))
+      (is (= count 0))))
 
   (testing "clean-count"
     (let [year [{:day (LocalDate/now)

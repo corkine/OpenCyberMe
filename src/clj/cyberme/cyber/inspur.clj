@@ -85,14 +85,16 @@
 (defn notice-expired-async []
   (future (slack/notify "HCM Token 过期！" "SERVER")))
 
-(defn get-hcm-info [{:keys [^LocalDateTime time ^String token notUseCache]}]
+(defn get-hcm-info [{:keys [^LocalDateTime time ^String token notUseCache]
+                     :or {notUseCache false}}]
   "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}"
   (let [time (if (nil? time) (-> (LocalDateTime/now) (.format DateTimeFormatter/ISO_LOCAL_DATE))
                              (.format time DateTimeFormatter/ISO_LOCAL_DATE))
         cache-res (if notUseCache nil (hcm-info-from-cache time))]
     (if-not cache-res
       (try
-        (log/info "[hcm-request] cache miss! " time)
+        (if notUseCache (log/info "[hcm-request] ignore cache! " time)
+                        (log/info "[hcm-request] cache miss! " time))
         (let [token (if (str/blank? token)
                       (let [cache-token (:token (fetch-cache))
                             _ (when-not cache-token
@@ -107,8 +109,9 @@
               info {:data    (json/parse-string body true)
                     :message "获取 HCM INFO 数据成功"
                     :status  1}
-              _ (do (log/info "[hcm-request] cached data")
-                    (set-hcm-cache time info))]
+              _ (when-not notUseCache
+                  (log/info "[hcm-request] cached data")
+                  (set-hcm-cache time info))]
           info)
         (catch Exception e
           {:message (str "get-hcm-info failed：" (.getMessage e))
@@ -476,13 +479,7 @@
                   :MaxDayCount 13
                   :MaxDayLastUpdate "2022-03-07T08:48:02.804888789+08:00")
 
-        :Blue (array-map
-                :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
-                :IsTodayBlue false
-                :WeekBlueCount 0
-                :MonthBlueCount 1
-                :MaxNoBlueDay 6
-                :MaxNoBlueDayLastDay "2022-03-07T08:48:02.804888789+08:00")
+        :Blue (clean/handle-blue-show)
         :FitnessEnergy
         (array-map
           :Fitness (array-map
@@ -517,11 +514,12 @@
     (assoc hint :Summary summary
                 :Todo todo)))
 
-(defn handle-serve-today [{:keys [user secret token plainText] :as all}]
+(defn handle-serve-today [{:keys [user secret token useCache]
+                           :or {useCache false} :as all}]
   "Google Pixel 服务，根据打卡信息返回一句话"
   (let [now (LocalDateTime/now)
         is-morning (< (.getHour now) 12)
-        info (get-hcm-info {:time now :token token})
+        info (get-hcm-info {:time now :token token :notUseCache (not useCache)})
         signin (signin-data info)
         {:keys [needWork offWork needMorningCheck workHour]} (signin-hint signin)]
     (if needWork

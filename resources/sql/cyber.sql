@@ -149,6 +149,10 @@ where id = :id;
 select *
 from days
 where day = current_date;
+-- :name someday :? :1
+select *
+from days
+where day = :day;
 -- :name set-today :! :1
 insert into days (day, info, update_at)
 values (current_date, :info, current_timestamp)
@@ -160,9 +164,12 @@ values (:day, :info, current_timestamp)
 on conflict (day) do update set info      = :info,
                                 update_at = current_timestamp;
 -- :name delete-day :! :1
-delete from days
+delete
+from days
 where day = :day;
 -- :name day-range :? :*
-select * from days
-where day >= :from and day <= :to
-order by day desc ;
+select *
+from days
+where day >= :from
+  and day <= :to
+order by day desc;
