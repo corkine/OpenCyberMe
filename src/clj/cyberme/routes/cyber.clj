@@ -20,7 +20,8 @@
     [cyberme.cyber.track :as track]
     [cyberme.cyber.todo :as todo]
     [cyberme.cyber.note :as note]
-    [cyberme.cyber.mini4k :as mini4k]))
+    [cyberme.cyber.mini4k :as mini4k]
+    [cyberme.cyber.clean :as clean]))
 
 (s/def :global/user string?)
 (s/def :global/secret string?)
@@ -60,6 +61,11 @@
 (s/def :note/liveSeconds int?)
 (s/def :movie/name string?)
 (s/def :movie/url string?)
+(s/def :clean/merge boolean?)
+(s/def :clean/mt boolean?)
+(s/def :clean/nt boolean?)
+(s/def :clean/mf boolean?)
+(s/def :clean/nf boolean?)
 
 
 (defn not-impl [_] (hr/content-type (hr/not-found "没有实现。") "text/plain"))
@@ -300,6 +306,25 @@
                                                   :slack/channel :slack/from])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (slack/serve-notice query)))}}]
+
+   ["/clean"
+    {:tags #{"清洁情况"}}
+    ["/show"
+     {:get {:summary "展示清洁情况"
+            :description ""
+            :parameters {:query (s/keys :opt-un [:global/user :global/secret])}
+            :handler (fn [{{query :query} :parameters}]
+                       (hr/response (clean/handle-clean-show query)))}}]
+    ["/update"
+     {:get {:summary "更新清洁情况"
+            :description "merge 用于和数据库数据整合，mt 早刷牙，nt 晚刷牙，mf 早用药，nf 晚用药，
+            如果使用 merge，参数只有为 true 的才改写为 true，否者保持数据库记录。如果不适用 merge，
+            未传递的参数看做 false 强行写入。"
+            :parameters {:query (s/keys :opt-un [:global/user :global/secret
+                                                 :clean/merge :clean/mt :clean/nt
+                                                 :clean/mf :clean/nf])}
+            :handler (fn [{{query :query} :parameters}]
+                       (hr/response (clean/handle-clean-update query)))}}]]
 
    ["/todo"
     {:tags #{"TODO 同步"}}

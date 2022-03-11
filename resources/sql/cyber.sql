@@ -5,10 +5,12 @@ values (:start1, :end1, :start2, :end2);
 insert into auto (day, r1start, r1end, r2start, r2end)
 values (:day, :start1, :end1, :start2, :end2);
 -- :name list-auto-recent :? :*
-select * from auto
+select *
+from auto
 where day::date > (current_date - (:day || ' day')::interval);
 -- :name delete-auto :! :1
-delete from auto
+delete
+from auto
 where day = :day;
 -- :name get-today-auto :? :1
 select *
@@ -117,22 +119,50 @@ on conflict (id) do update set "from"  = :from,
                                content = :content,
                                info    = :info;
 -- :name note-by-id :? :1
-select * from note
+select *
+from note
 where id = :id
 limit 1;
 -- :name note-last :? :1
-select * from note
-order by create_at desc limit 1;
+select *
+from note
+order by create_at desc
+limit 1;
 
 -- :name all-movie :? :*
-select * from movie;
+select *
+from movie;
 -- :name insert-movie :! :1
 insert into movie (name, url)
 values (:name, :url)
 on conflict (name) do nothing;
 -- :name update-movie :! :1
-update movie set info = :info
+update movie
+set info = :info
 where id = :id;
 -- :name delete-movie :! :1
-delete from movie
+delete
+from movie
 where id = :id;
+
+-- :name today :? :1
+select *
+from days
+where day = current_date;
+-- :name set-today :! :1
+insert into days (day, info, update_at)
+values (current_date, :info, current_timestamp)
+on conflict (day) do update set info      = :info,
+                                update_at = current_timestamp;
+-- :name set-someday :! :1
+insert into days (day, info, update_at)
+values (:day, :info, current_timestamp)
+on conflict (day) do update set info      = :info,
+                                update_at = current_timestamp;
+-- :name delete-day :! :1
+delete from days
+where day = :day;
+-- :name day-range :? :*
+select * from days
+where day >= :from and day <= :to
+order by day desc ;
