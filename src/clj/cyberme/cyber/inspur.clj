@@ -179,22 +179,25 @@
             ;如果 end < 11:30 的，则 - 0
             ;如果 end < 13:10 的，则 - 当前时间-11:30 的时间
             ;如果 end < 17:30 的，则 - 午休时间
-            ;如果 end < 18:30 的，则 - 0
-            ;如果 end > 18:30 的，则减去晚饭时间
+            ;如果 end < 18:30 的，则 - 当前时间-17:30 的时间和午休时间
+            ;如果 end > 18:30 的，则减去晚饭时间和午休时间
             endLT (.toLocalTime end)
+            noon-time (.toMinutes (Duration/between (LocalTime/of 11 30)
+                                                    (LocalTime/of 13 10)))
+            diner-time (.toMinutes (Duration/between (LocalTime/of 17 30)
+                                                     (LocalTime/of 18 30)))
             minusMinutes
             (cond (.isBefore endLT (LocalTime/of 11 30))
                   0
                   (.isBefore endLT (LocalTime/of 13 10))
                   (.toMinutes (Duration/between (LocalTime/of 11 30) endLT))
                   (.isBefore endLT (LocalTime/of 17 30))
-                  (.toMinutes (Duration/between (LocalTime/of 11 30)
-                                                (LocalTime/of 13 10)))
+                  noon-time
                   (.isBefore endLT (LocalTime/of 18 30))
-                  (.toMinutes (Duration/between (LocalTime/of 17 30) endLT))
+                  (+ (.toMinutes (Duration/between (LocalTime/of 17 30) endLT))
+                     noon-time)
                   :else
-                  (.toMinutes (Duration/between (LocalTime/of 17 30)
-                                                (LocalTime/of 18 30))))]
+                  (+ noon-time diner-time))]
         (Double/parseDouble
           (format "%.1f"
                   (/ (- (.toMinutes (Duration/between start end))
