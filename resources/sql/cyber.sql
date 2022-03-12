@@ -31,7 +31,8 @@ where day = :day
 limit 1;
 -- :name set-signin :! :1
 insert into signin (day, hcm)
-values (:day, :hcm);
+values (:day, :hcm)
+on conflict (day) do update set hcm = :hcm;
 -- :name update-signin-hcm :! :1
 update signin
 set hcm = :hcm

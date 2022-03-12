@@ -109,7 +109,7 @@
               info {:data    (json/parse-string body true)
                     :message "获取 HCM INFO 数据成功"
                     :status  1}
-              _ (when-not notUseCache
+              _ (do
                   (log/info "[hcm-request] cached data")
                   (set-hcm-cache time info))]
           info)

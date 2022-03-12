@@ -137,7 +137,7 @@
                            (hr/response (inspur/handle-serve-hint-summary query)))}}]
     ["/now"
      {:get {:summary     "获取当前打卡情况 (Pixel)"
-            :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法，默认不使用缓存。"
+            :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法，默认不使用缓存，但设置缓存。"
             :parameters  {:query (s/keys :req-un []
                                          :opt-un [:global/user :global/secret
                                                   :hcm/token :device/plainText :device/useCache])}

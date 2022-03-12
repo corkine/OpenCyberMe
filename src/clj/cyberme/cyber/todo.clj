@@ -195,6 +195,7 @@
   写入 access-token 才能在下次调用时生效"
   (try
     (when focus
+      (log/info "[today] focusing to handle-today!!")
       (let [{:keys [access-token]} (fetch-cache)]
         (if-not (nil? access-token)
           (sync-server-to-db access-token)
