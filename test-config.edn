@@ -1,0 +1,23 @@
+{:dev true
+ :port 3000
+ :nrepl-port 7000
+ :database-url "postgresql://localhost:5432/your_db?user=your_user&password=your_pass&stringtype=unspecified"
+ :express {:api "https://kuaidi100.market.alicloudapi.com/getExpress?NO=%s&TYPE=%s"
+           :code "token_here"}
+ :hcm {:login-url ""
+       :check-url ""
+       :l2-cache-seconds 1000}
+ :slack {:pixel ""
+         :server ""}
+ :todo {:client-id "ms_client_id"
+        :scope "scope_here"
+        :secret "secret_here"
+        :timeout-ms 20000}
+ :location {:ak "location_here"
+            :service-id "baidu_service"
+            :allow-devices ["device_name_here"]}
+ :movie {:sleep-seconds 1800}
+ :enable-service1 [:express :todo :movie]
+ :test-user "test_user"
+ :test-pass "test_secret"
+ :auth-info [{:user "test_user" :pass "test_secret" :role :superuser}]}

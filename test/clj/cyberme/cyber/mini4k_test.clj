@@ -28,8 +28,7 @@
   :once
   (fn [f]
     (mount/start #'cyberme.config/env
-                 #'cyberme.handler/app-routes
-                 #'cyberme.db.core/*db*)
+                 #'cyberme.handler/app-routes)
     (f)))
 
 (defn prn-body [response]

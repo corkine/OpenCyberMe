@@ -1,6 +1,6 @@
-# 重力管家 - 模块化物品管理
+# 重力管家 - 状态数字化检测管理
 
-一个模块化管理物品的 Web 应用，使用 clojure 和 clojurescript 搭建。源代码使用 GPLv2 协议开放，禁止用于商业用途。
+一个模块化管理物品和个人状态的 Web 应用，使用 clojure 和 clojurescript 搭建。
 
 ## Prerequisites
 
@@ -21,9 +21,5 @@
 
     //frontend
     lein shadow watch app
-
-界面示意图（默认密码 admin:admin）：
-
-![](resources/docs/demo.png)
 
 Copyright © 2022 Marvin Studio, Wuhan, China.
