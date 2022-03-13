@@ -2,6 +2,10 @@
 
 一个模块化管理物品和个人状态的 Web 应用，使用 clojure 和 clojurescript 搭建。
 
+CI by Circle CI & Github Actions
+
+[![Clojure CI](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml/badge.svg)](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml)
+
 ## Prerequisites
 
 使用 [Leiningen][1] 构建，依赖 postgreSQL 数据库。
