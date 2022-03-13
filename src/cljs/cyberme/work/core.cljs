@@ -30,6 +30,8 @@
   (let [now (t/now)
         year (t/year now)
         month (t/month now)
+        today (t/day now)
+        after-noon? (> (t/hour now) 12)
         last_day (t/last-day-of-the-month now)
         date-format #(gstring/format "%02d-%02d-%02d" year month %)
         date-key #(keyword (date-format %))
@@ -38,7 +40,7 @@
         day-list (range 1 (+ 1 (t/day last_day)))
         month-list (mapv (fn [d]
                            [(date-format d)
-                            d
+                            (if (= d today) (if after-noon? (str d " ※") (str "※ " d) ) d)
                             (status-fn d)
                             (plan-fn d)]) day-list)
         work-list (mapv (fn [d]
@@ -102,7 +104,7 @@
                     :label            {:show      true
                                        :formatter (clj->js (fn [p]
                                                              (let [data (get (js->clj p) "data")]
-                                                               (str (second data) "\n\n"))))
+                                                               (str (second data) "\n"))))
                                        :color     "#000"}
                     :data             month-list}
                    {:type             "scatter"

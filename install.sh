@@ -42,22 +42,38 @@ echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein don
 echo "1. Pull code from git"
 git pull
 sleep 2
-echo "2. Kill exist app"
-kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
-sleep 2
-if [ $# -ge 1 ]
+if [ $1 = "frontend" ]
 then
-  echo "3. Release frontEnd resources"
-  echo "skip step 3..."
-  sleep 3
-else
+  echo "2. Kill exist app"
+  echo "skip step 2..."
+  sleep 2
   echo "3. Release frontEnd resources"
   ./lein.sh shadow release app
   sleep 3
+  echo "4. Run backEnd app"
+  echo "skip step 4..."
+  sleep 5
+elif [ $1 = "backend" ]
+  echo "2. Kill exist app"
+  kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
+  sleep 2
+  echo "3. Release frontEnd resources"
+  echo "skip step 3..."
+  sleep 3
+  echo "4. Run backEnd app"
+  nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
+  sleep 5
+else
+  echo "2. Kill exist app"
+  kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
+  sleep 2
+  echo "3. Release frontEnd resources"
+  ./lein.sh shadow release app
+  sleep 3
+  echo "4. Run backEnd app"
+  nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
+  sleep 5
 fi
-echo "4. Run backEnd app"
-nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
-sleep 5
 echo "5. Done deploy app"
 echo "server run on thread `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
 echo ""
