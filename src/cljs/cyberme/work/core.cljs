@@ -27,7 +27,7 @@
 (def colors ["#c4332b", "#16B644", "#6862FD", "#FDC763"])
 
 (defn hcm-calendar [data]
-  (let [now (t/now)
+  (let [now (t/time-now)
         year (t/year now)
         month (t/month now)
         today (t/day now)
