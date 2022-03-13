@@ -471,8 +471,7 @@
   (try
     (let [date-list (month-days 0 true)
           exist-policy? #(let [{:keys [r1start r1end r2start r2end] :as all}
-                               (db/get-today-auto {:day %})
-                               _ (println "res: " all)]
+                               (db/get-today-auto {:day %})]
                            (not (or (nil? r1start)
                                     (nil? r1end)
                                     (nil? r2start)
@@ -481,8 +480,7 @@
                            signin (signin-data info)
                            signin (sort-by :time signin)
                            workHour (compute-work-hour signin)
-                           work-day? (do-need-work (.atStartOfDay %))
-                           _ (println "checking: " %)]
+                           work-day? (do-need-work (.atStartOfDay %))]
                        {:work-hour   workHour
                         :check-start (first signin)
                         :check-end   (last signin)
