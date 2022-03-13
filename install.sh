@@ -54,6 +54,7 @@ then
   echo "skip step 4..."
   sleep 5
 elif [ $1 = "backend" ]
+then
   echo "2. Kill exist app"
   kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
   sleep 2
