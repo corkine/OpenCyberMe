@@ -222,6 +222,14 @@
 (rf/reg-event-db
   :good/current-clean (fn [db _] (dissoc db :good/current)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;; hcm ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(ajax-flow {:call :hcm/month
+            :data :hcm/month-data
+            :clean :hcm/month-data-clean
+            :uri-fn #(str "/cyber/check/month_summary")
+            :is-post false
+            :failure-notice true})
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; notice ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;dispatch [:global/notice {:message :callback (may nil)}]
 ;show modal with :message

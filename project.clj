@@ -49,8 +49,8 @@
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [thheller/shadow-cljs "2.11.5" :scope "provided"]]
 
-  ;:repositories [["central" "https://maven.aliyun.com/nexus/content/groups/public"]
-  ;               ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]
+  :repositories [["central" "https://maven.aliyun.com/nexus/content/groups/public"]
+                 ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]
 
   :min-lein-version "2.0.0"
   
@@ -80,7 +80,7 @@
      :output-to "target/test/test.js"
      :autorun true}}}
   
-  :npm-deps [[xregexp "5.1.0"]]
+  :npm-deps [[xregexp "5.1.0"] [echarts "^5.3.1"] [buffer "6.0.3"]]
   :npm-dev-deps [[xmlhttprequest "1.8.0"]]
 
   :profiles

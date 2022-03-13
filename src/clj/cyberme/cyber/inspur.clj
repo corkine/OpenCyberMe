@@ -86,7 +86,7 @@
   (future (slack/notify "HCM Token 过期！" "SERVER")))
 
 (defn get-hcm-info [{:keys [^LocalDateTime time ^String token notUseCache]
-                     :or {notUseCache false}}]
+                     :or   {notUseCache false}}]
   "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}"
   (let [time (if (nil? time) (-> (LocalDateTime/now) (.format DateTimeFormatter/ISO_LOCAL_DATE))
                              (.format time DateTimeFormatter/ISO_LOCAL_DATE))
@@ -279,6 +279,17 @@
         before-now (filter #(not (.isAfter % real-now)) list)]
     (if to-today before-now list)))
 
+(defn month-rest-days [adjust]
+  "返回一个月剩下的日期，adjust 用于按照月数往前调整，不包括今天"
+  (let [adjust (if adjust adjust 0)
+        real-now (LocalDate/now)
+        now (.plusMonths real-now adjust)
+        month-start (LocalDate/of (.getYear now) (.getMonth now) 1)
+        month-end (.minusDays (.plusMonths month-start 1) 1)
+        list (mapv #(.plusDays month-start %) (range 0 (.getDayOfMonth month-end)))
+        after-now (filter #(.isAfter % real-now) list)]
+    after-now))
+
 (defn fromYMD [^long y ^long m ^long d]
   (let [now (LocalDate/now)
         list (take-while #(not (.isAfter % now))
@@ -453,6 +464,50 @@
         :Month2RawData (if showDetails month2-raw nil)
         :AllRawData (if showDetails all-raw nil)))))
 
+(defn handle-serve-month-summary [{:keys [user secret] :as all}]
+  "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
+  [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
+                :work-day true :policy true}]"
+  (try
+    (let [date-list (month-days 0 true)
+          exist-policy? #(let [{:keys [r1start r1end r2start r2end] :as all}
+                               (db/get-today-auto {:day %})
+                               _ (println "res: " all)]
+                           (not (or (nil? r1start)
+                                    (nil? r1end)
+                                    (nil? r2start)
+                                    (nil? r2end))))
+          calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
+                           signin (signin-data info)
+                           signin (sort-by :time signin)
+                           workHour (compute-work-hour signin)
+                           work-day? (do-need-work (.atStartOfDay %))
+                           _ (println "checking: " %)]
+                       {:work-hour   workHour
+                        :check-start (first signin)
+                        :check-end   (last signin)
+                        :work-day    work-day?
+                        :policy      (exist-policy? %)})
+          pass-data (apply assoc {}
+                           (flatten
+                             (mapv (fn [date] [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
+                                               (calc-info date)])
+                                   date-list)))
+          rest-data (apply assoc {}
+                           (flatten
+                             (mapv (fn [date] [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
+                                               {:work-hour 0
+                                                :work-day  (do-need-work (.atStartOfDay date))
+                                                :policy    (exist-policy? date)}])
+                                   (month-rest-days 0))))
+          res (merge pass-data rest-data)]
+      {:message "获取成功！"
+       :status  1
+       :data    res})
+    (catch Exception e
+      {:message (str "获取失败：" (.getMessage e))
+       :status  0})))
+
 (defn handle-serve-hint [{:keys [user secret token] :as all}]
   "当日提示服务 - 尽可能兼容 Go 版本"
   (try
@@ -508,17 +563,22 @@
       {:message (str "获取数据失败！" (.getMessage e))})))
 
 (defn handle-serve-hint-summary [{:keys [kpi token focus]}]
-  (let [hint (handle-serve-hint {:token token})
-        summary (handle-serve-summary {:useAllData true
-                                       :kpi kpi :token token})
+  (let [hint (time (let [res (handle-serve-hint {:token token})]
+                     (println "for hint do timing: ")
+                     res))
+        summary (time (let [res (handle-serve-summary {:useAllData true
+                                                       :kpi        kpi :token token})]
+                        (println "for summary do timing: ")
+                        res))
         summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
-        todo (todo/handle-today {:focus focus
-                                 :showCompleted false})]
+        todo (time (let [res (todo/handle-today {:focus focus :showCompleted false})]
+                     (println "for todo do timing: ")
+                     res))]
     (assoc hint :Summary summary
                 :Todo todo)))
 
 (defn handle-serve-today [{:keys [user secret token useCache]
-                           :or {useCache false} :as all}]
+                           :or   {useCache false} :as all}]
   "Google Pixel 服务，根据打卡信息返回一句话"
   (let [now (LocalDateTime/now)
         is-morning (< (.getHour now) 12)

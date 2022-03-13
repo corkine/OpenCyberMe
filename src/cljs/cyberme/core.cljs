@@ -67,6 +67,7 @@
                   [nav-link "/" "资产" :home]
                   [nav-link "/clothes" "衣物" :clothes]
                   [nav-link "/foods" "食品耗材" :foods]
+                  [nav-link "/hcm" "工作" :hcm]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
                   [:div.navbar-item.px-1

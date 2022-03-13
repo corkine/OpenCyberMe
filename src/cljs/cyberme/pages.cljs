@@ -8,6 +8,7 @@
     [cyberme.about :refer [log about-page]]
     [cyberme.place.place-filter :as place-filter]
     [cyberme.place.place :as place]
+    [cyberme.work.core :as work]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -88,10 +89,21 @@
 (defn goods-page []
   [:<>
    [top-point]
-   [:selection.hero.is-large
+   [:section.hero.is-large
     [:div.hero-body.has-text-centered
      [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
      [:p.subtitle.is-family-code  "正在施工"]]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn hcm-page []
+  [:<>
+   [top-point]
+   [:div.container>div.content
+    [work/main-page]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "

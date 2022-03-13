@@ -162,6 +162,15 @@
                                                   :hcm/token :hcm/adjust])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (inspur/handle-serve-this-week query)))}}]
+
+    ["/month_summary"
+     {:get {:summary     "HCM 本月信息统计"
+            :description "获取本月打卡、策略、休息等情况"
+            :parameters  {:query (s/keys :req-un []
+                                         :opt-un [:global/user :global/secret])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (inspur/handle-serve-month-summary query)))}}]
+
     ["/summary"
      {:get {:summary     "HCM 所有信息统计"
             :description "获取 2021-06-01 日后所有打卡情况和打卡统计信息、加班信息"
