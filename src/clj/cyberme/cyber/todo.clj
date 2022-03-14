@@ -212,6 +212,29 @@
        :tasks     []
        :message   (str "获取 Today 消息失败：" (.getMessage e))})))
 
+(defn handle-list [{:keys [day listName]
+                    :or {day 7}}]
+  "获取倒序排列的最近 TODO 任务，限制某个列表和某个时期"
+  (if (nil? listName)
+    {:message "没有传入列表名称"
+     :status 0}
+    (let [data-recent (db/to-do-recent-day {:day day})
+          final-data (filter #(= (:list %) listName) data-recent)
+          with-due-full (map (fn [{:keys [due_at create_at finish_at] :as all}]
+                               (cond due_at all
+                                     finish_at (assoc all :due_at finish_at)
+                                     create_at (assoc all :due_at create_at)
+                                     :else all)) final-data)
+          final-data (sort (fn [x y]
+                             (let [dx (:due_at x) dy (:due_at y)
+                                   cx (:create_at x) cy (:create_at y)]
+                               (if (= dx dy) (compare dy dx)
+                                             (compare cy cx))))
+                           with-due-full)]
+      {:message "获取成功"
+       :data final-data
+       :status 1})))
+
 (comment
   (user/start)
   (clojure.pprint/pprint @cache)
@@ -219,6 +242,7 @@
   (user/migrate)
   (cyberme.db.core/bind)
   (db/all-to-do)
+  (db/to-do-recent-day {:day 7})
   (in-ns 'cyberme.db.core)
   (conman/bind-connection *db* "sql/queries.sql" "sql/goods.sql" "sql/cyber.sql")
   (db/insert-to-do {:id "WR" :title "HELLO A" :info {:a "HELLO"}})

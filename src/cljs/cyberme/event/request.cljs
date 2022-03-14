@@ -230,6 +230,13 @@
             :is-post false
             :failure-notice true})
 
+(ajax-flow {:call :hcm/todo
+            :data :hcm/todo-data
+            :clean :hcm/todo-data-clean
+            :uri-fn #(str "/cyber/todo/list?listName=%F0%9F%90%A0%20INSPUR&day=20")
+            :is-post false
+            :failure-notice true})
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; notice ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;dispatch [:global/notice {:message :callback (may nil)}]
 ;show modal with :message

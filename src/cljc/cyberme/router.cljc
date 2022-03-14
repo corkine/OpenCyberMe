@@ -42,7 +42,8 @@
     (merge {:name :hcm}
            #?(:cljs {:view        #'core/hcm-page
                      :controllers [{:start      (fn [_]
-                                                  (rf/dispatch [:hcm/month]))}]}))]
+                                                  (rf/dispatch [:hcm/month])
+                                                  (rf/dispatch [:hcm/todo]))}]}))]
 
    ["/goods"
     (merge {:name :goods}

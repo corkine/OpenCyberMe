@@ -40,7 +40,7 @@
         day-list (range 1 (+ 1 (t/day last_day)))
         month-list (mapv (fn [d]
                            [(date-format d)
-                            (if (= d today) (if after-noon? (str d " ※") (str "※ " d) ) d)
+                            (if (= d today) (str "今 " d) d)
                             (status-fn d)
                             (plan-fn d)]) day-list)
         work-list (mapv (fn [d]
@@ -48,7 +48,7 @@
                             [(date-format d)
                              hour])) day-list)]
     [:> ECharts
-     {:style {:width "500px" :height "600px"}
+     {:style {:width "500px" :height "320px"}
       :option
       {:tooltip   {:formatter (clj->js (fn [param]
                                          (let [pa (js->clj param)
@@ -73,16 +73,16 @@
                    :max         13
                    :calculable  true
                    :right       "10%"
-                   :top         "9%"
+                   :top         "1%"
                    :inRange     {:color   ["#dbdbdb" "#dddddd" "#d2d2d2" "#5f5f5f" "#5f5f5f"]
                                  :opacity [0 0.6]}
                    :controller  {:inRange    {:opacity [0 0.6]
-                                              :color ["#dbdbdb" "#dddddd" "#d2d2d2" "#5f5f5f"]}
+                                              :color   ["#dbdbdb" "#dddddd" "#d2d2d2" "#5f5f5f"]}
                                  :outOfRange {:color "#ccc"}}
                    :seriesIndex [0]
                    :orient      "vertical"}
        :calendar  [{:left       "1%"
-                    :top        "10%"
+                    :top        "15%"
                     :cellSize   [50 50]
                     :splitLine  {:show false}
                     :itemStyle  {:color       "#fff"
@@ -135,11 +135,63 @@
                                        }
                     :data             month-list}]}}]))
 
+(defn re-sharp-data [todo-data]
+  (let [date-list (mapv #(let [date (or (:due_at %) (:finish_at %) (:create_at %))]
+                           (first (str/split (or date "") "T"))) todo-data)
+        kv-list (mapv #(vector
+                         %
+                         (filterv (fn [{:keys [due_at finish_at create_at]}]
+                                    (str/starts-with? (or due_at finish_at create_at)
+                                                      %)) todo-data)) date-list)
+        date-map (reduce #(assoc %1 (first %2) (second %2)) {} kv-list)]
+    {:date     (reverse (sort (set date-list)))
+     :date-map date-map}))
+
+(def week-n-now (t/week-number-of-year (t/time-now)))
+
+(defn date-hint [date]
+  "将 2022-03-02 日期生成 周一 - 周日的信息"
+  (println "handle " date)
+  (let [[_ y m d] (re-find #"(\d+)-(\d+)-(\d+)" date)
+        day (t/local-date (int y) (int m) (int d))
+        _ (println day)
+        week (t/day-of-week day)
+        week_n (t/week-number-of-year day)
+        hint-1 (cond (= week 1) "周一"
+                     (= week 2) "周二"
+                     (= week 3) "周三"
+                     (= week 4) "周四"
+                     (= week 5) "周五"
+                     (= week 6) "周六"
+                     (= week 7) "周日"
+                     :else "不存在")]
+    (cond (= week_n week-n-now)
+          (str "本" hint-1)
+          (= (+ week_n 1) week-n-now)
+          (str "上" hint-1)
+          (= (+ week_n 2) week-n-now)
+          (str "上上" hint-1)
+          :else hint-1)))
+
 (defn main-page []
   (let [{month-data :data} @(rf/subscribe [:hcm/month-data])
+        {todo-data :data} @(rf/subscribe [:hcm/todo-data])
+        {:keys [date date-map]} (re-sharp-data todo-data)
         now (t/now)]
     [:div.block.ml-6.mr-6.mt-6
      [:p.subtitle "\uD83D\uDCC5 考勤日历 "
       [:span.has-text-grey-light.is-size-6
        (gstring/format " %2d 年 %2d 月" (t/year now) (t/month now))]]
-     [hcm-calendar month-data]]))
+     [hcm-calendar month-data]
+     [:div.box
+      (for [date-now date]
+        ^{:key date-now}
+        [:div {:style {:margin-top :-10px}}
+         [:p.subtitle.is-family-code.mt-4.mb-2 date-now
+          [:span.is-size-7.has-text-grey-light {:style {:vertical-align :middle}}
+           " " (date-hint date-now)]]
+         (for [{:keys [title list status importance]}
+               (get date-map date-now)]
+           ^{:key title}
+           [:p.has-text-dark.is-size-7.mt-1.mb-1 title
+            " " (if (= status "completed") "√" "")])])]]))

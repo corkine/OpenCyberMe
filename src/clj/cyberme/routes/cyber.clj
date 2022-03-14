@@ -55,6 +55,8 @@
 (s/def :todo/code string?)
 (s/def :todo/focus boolean?)
 (s/def :todo/showCompleted boolean?)
+(s/def :todo/listName string?)
+(s/def :todo/day int?)
 (s/def :note/quick boolean?)
 (s/def :note/content string?)
 (s/def :note/id int?)
@@ -423,4 +425,11 @@
                                          :opt-un [:global/user :global/secret
                                                   :todo/focus :todo/showCompleted])}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (todo/handle-today query)))}}]]])
+                           (hr/response (todo/handle-today query)))}}]
+    ["/list"
+     {:get {:summary "获取某天内某个列表所有代办事项"
+            :description "列表必填，天数不填默认为 7 天"
+            :parameters {:query (s/keys :req-un [:todo/listName]
+                                        :opt-un [:global/user :global/secret :todo/day])}
+            :handler (fn [{{query :query} :parameters}]
+                       (hr/response (todo/handle-list query)))}}]]])
