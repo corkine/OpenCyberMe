@@ -54,17 +54,20 @@
                                          (let [pa (js->clj param)
                                                dd (get pa "data")
                                                {:keys [check-start check-end work-hour]}
-                                               (get data (keyword (first dd)))]
-                                           (cond (and check-start check-end)
+                                               (get data (keyword (first dd)))
+                                               start-time (second (str/split (:time check-start) "T"))
+                                               end-time (second (str/split (:time check-end) "T"))
+                                               exist-end? (not= end-time start-time)]
+                                           (cond (and check-start check-end exist-end?)
                                                  (str "<b>工作时长：</b>" work-hour " 小时"
                                                       "<br>"
-                                                      "<b>上班打卡</b>：" (second (str/split (:time check-start) "T"))
+                                                      "<b>首次打卡</b>：" start-time
                                                       "<br>"
-                                                      "<b>下班打卡</b>：" (second (str/split (:time check-end) "T")))
+                                                      "<b>末次打卡</b>：" end-time)
                                                  check-start
                                                  (str "<b>工作时长：</b>" work-hour " 小时"
                                                       "<br>"
-                                                      "<b>上班打卡</b>：" (second (str/split (:time check-start) "T")))
+                                                      "<b>首次打卡</b>：" start-time)
                                                  (not= work-hour 0.0)
                                                  (str "<b>工作时长：</b>" work-hour " 小时")
                                                  :else (str "")))))}
@@ -136,7 +139,32 @@
                     :data             month-list}]}}]))
 
 (defn re-sharp-data [todo-data]
-  (let [date-list (mapv #(let [date (or (:due_at %) (:finish_at %) (:create_at %))]
+  (let [todo-data (conj todo-data
+                        {:title "完成 ICE Hint Register 的代码编写工作",
+                         :list "🐠 INSPUR",
+                         :status "completed",
+                         :importance "high",
+                         :create_at "2022-03-14T16:46:13.900094",
+                         :finish_at "2022-03-14T08:00:00",
+                         :due_at "2022-03-14T00:00:00",
+                         :modified_at "2022-03-09T16:53:06.506694"}
+                        {:title "完成 ICE Hint Register 的代码编写工作",
+                         :list "🐠 INSPUR",
+                         :status "completed",
+                         :importance "high",
+                         :create_at "2022-03-13T16:46:13.900094",
+                         :finish_at "2022-03-13T08:00:00",
+                         :due_at "2022-03-13T00:00:00",
+                         :modified_at "2022-03-09T16:53:06.506694"}
+                        {:title "完成 ICE Hint Register 的代码编写工作",
+                         :list "🐠 INSPUR",
+                         :status "completed",
+                         :importance "high",
+                         :create_at "2022-03-12T16:46:13.900094",
+                         :finish_at "2022-03-12T08:00:00",
+                         :due_at "2022-03-12T00:00:00",
+                         :modified_at "2022-03-09T16:53:06.506694"})
+        date-list (mapv #(let [date (or (:due_at %) (:finish_at %) (:create_at %))]
                            (first (str/split (or date "") "T"))) todo-data)
         kv-list (mapv #(vector
                          %
@@ -147,14 +175,16 @@
     {:date     (reverse (sort (set date-list)))
      :date-map date-map}))
 
-(def week-n-now (t/week-number-of-year (t/time-now)))
+(def now (t/time-now))
+(def now-1 (t/minus now (t/period :days 1)))
+(def now-2 (t/minus now-1 (t/period :days 1)))
+(def now-3 (t/minus now-2 (t/period :days 1)))
+(def week-n-now (t/week-number-of-year now))
 
 (defn date-hint [date]
   "将 2022-03-02 日期生成 周一 - 周日的信息"
-  (println "handle " date)
   (let [[_ y m d] (re-find #"(\d+)-(\d+)-(\d+)" date)
         day (t/local-date (int y) (int m) (int d))
-        _ (println day)
         week (t/day-of-week day)
         week_n (t/week-number-of-year day)
         hint-1 (cond (= week 1) "周一"
@@ -165,13 +195,16 @@
                      (= week 6) "周六"
                      (= week 7) "周日"
                      :else "不存在")]
-    (cond (= week_n week-n-now)
-          (str "本" hint-1)
-          (= (+ week_n 1) week-n-now)
-          (str "上" hint-1)
-          (= (+ week_n 2) week-n-now)
-          (str "上上" hint-1)
-          :else hint-1)))
+    (cond
+      (t/equal? day now) "今天"
+      (t/equal? day now-1) "昨天"
+      (t/equal? day now-2) "前天"
+      (t/equal? day now-3) "大前天"
+      (= week_n week-n-now)
+      (str "本" hint-1)
+      (= (+ week_n 1) week-n-now)
+      (str "上" hint-1)
+      :else "")))
 
 (defn main-page []
   (let [{month-data :data} @(rf/subscribe [:hcm/month-data])
