@@ -62,9 +62,20 @@
       nil)))
 
 (defn set-hcm-cache [^String date, info]
-  (let [signin (signin-data info)]
-    (if (and (>= (count signin) 2)
-             (>= (.getHour (:time (last signin))) 15))
+  "两级缓存机制，对于临时数据保存在内存缓存中，关闭服务器会持久化到文件，启用服务器会从文件加载。
+  对于持久数据保存在数据库中。因为取数据总是先从数据库取，然后才是内存，如果取不到则请求 HCM 服务器，
+  为避免在不强制使用缓存（比如 Pixel 的 /auto 接口会强制查询 HCM 服务器并更新缓存）的情况下在
+  减少 HCM 服务器访问的前提下尽可能保持数据一致性，对于保存缓存到数据库还是内存要小心区分。根据实际
+  的打卡规则，当打卡数据的最后时间是昨天（必定是持久化的），今天的数据永远不持久化，因为不确定何时
+  下班并且是否在正常下班后晚上 23:59 再打一次卡的情况，此时仅使用内存缓存。"
+  (let [input-date (try
+                     (LocalDate/parse date (DateTimeFormatter/ISO_LOCAL_DATE))
+                     (catch Exception e
+                       (log/error "[set-hcm-cache] failed to know which day info is,
+                        try to parse date param but failed: " (.getMessage e))
+                       (LocalDateTime/now)))
+        is-yesterday (.isBefore input-date (.atStartOfDay (LocalDate/now)))]
+    (if is-yesterday
       (do (try
             (db/set-signin {:day date :hcm (:data info)})
             (catch Exception e
@@ -76,7 +87,11 @@
                       ", expired after " expired-time)
             (swap! cache assoc (keyword date) (assoc info :expired expired-time)))))))
 
-(defn call-hcm [time token]
+(defonce visit-data (atom []))
+
+(defn call-hcm [^String time, token]
+  "调用 HCM Http Request 获取服务器数据"
+  (swap! visit-data conj {:time (LocalDateTime/now) :for time :token token})
   @(client/request {:url     (edn-in [:hcm :check-url])
                     :method  :post
                     :body    (format "{\"employee_id\":\"\",\"date\":\"%s\"}" time)
