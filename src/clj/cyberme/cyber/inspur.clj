@@ -130,6 +130,7 @@
                   (set-hcm-cache time info))]
           info)
         (catch Exception e
+          (log/error "[get-hcm-info] failed: " (.getMessage e))
           {:message (str "get-hcm-info failed：" (.getMessage e))
            :status  0}))
       (do #_(log/info "[hcm-request] get from cache hint!")
