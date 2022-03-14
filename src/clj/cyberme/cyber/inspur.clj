@@ -61,7 +61,7 @@
       (log/info "[signin-cache] failed internal because：" (.getMessage e))
       nil)))
 
-(defn set-hcm-cache [^String date, info]
+(defn set-hcm-cache [^String date info]
   "两级缓存机制，对于临时数据保存在内存缓存中，关闭服务器会持久化到文件，启用服务器会从文件加载。
   对于持久数据保存在数据库中。因为取数据总是先从数据库取，然后才是内存，如果取不到则请求 HCM 服务器，
   为避免在不强制使用缓存（比如 Pixel 的 /auto 接口会强制查询 HCM 服务器并更新缓存）的情况下在
@@ -73,15 +73,16 @@
                      (catch Exception e
                        (log/error "[set-hcm-cache] failed to know which day info is,
                         try to parse date param but failed: " (.getMessage e))
-                       (LocalDateTime/now)))
-        is-yesterday (.isBefore input-date (.atStartOfDay (LocalDate/now)))]
+                       (LocalDate/now)))
+        is-yesterday (.isBefore input-date (LocalDate/now))]
     (if is-yesterday
-      (do (try
+      (do (log/info "[signin-cache] date is before today, set cache to db!")
+          (try
             (db/set-signin {:day date :hcm (:data info)})
             (catch Exception e
               (log/info "[signin-cache] failed to save to db: " (.getMessage e))))
           (log/info "[signin-cache] set cache! " date))
-      (do (log/info "[signin-cache] miss because info <= 2 and last before 15:00")
+      (do (log/info "[signin-cache] date is today, just set l2-cache!")
           (let [expired-time (.plusSeconds (LocalDateTime/now) (edn-in [:hcm :l2-cache-seconds]))]
             (log/info "[signin-cache-l2] set l2 temp cache for " date
                       ", expired after " expired-time)
