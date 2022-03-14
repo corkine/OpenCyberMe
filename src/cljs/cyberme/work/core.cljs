@@ -139,32 +139,7 @@
                     :data             month-list}]}}]))
 
 (defn re-sharp-data [todo-data]
-  (let [todo-data (conj todo-data
-                        {:title "完成 ICE Hint Register 的代码编写工作",
-                         :list "🐠 INSPUR",
-                         :status "completed",
-                         :importance "high",
-                         :create_at "2022-03-14T16:46:13.900094",
-                         :finish_at "2022-03-14T08:00:00",
-                         :due_at "2022-03-14T00:00:00",
-                         :modified_at "2022-03-09T16:53:06.506694"}
-                        {:title "完成 ICE Hint Register 的代码编写工作",
-                         :list "🐠 INSPUR",
-                         :status "completed",
-                         :importance "high",
-                         :create_at "2022-03-13T16:46:13.900094",
-                         :finish_at "2022-03-13T08:00:00",
-                         :due_at "2022-03-13T00:00:00",
-                         :modified_at "2022-03-09T16:53:06.506694"}
-                        {:title "完成 ICE Hint Register 的代码编写工作",
-                         :list "🐠 INSPUR",
-                         :status "completed",
-                         :importance "high",
-                         :create_at "2022-03-12T16:46:13.900094",
-                         :finish_at "2022-03-12T08:00:00",
-                         :due_at "2022-03-12T00:00:00",
-                         :modified_at "2022-03-09T16:53:06.506694"})
-        date-list (mapv #(let [date (or (:due_at %) (:finish_at %) (:create_at %))]
+  (let [date-list (mapv #(let [date (or (:due_at %) (:finish_at %) (:create_at %))]
                            (first (str/split (or date "") "T"))) todo-data)
         kv-list (mapv #(vector
                          %
