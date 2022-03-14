@@ -51,7 +51,7 @@ jobs:
       # run tests!
       - run: lein test
 
-      - run: lein uberjar
+      #- run: lein uberjar
 
 #      - store_artifacts:
 #          path: target/uberjar/cyberme.jar
