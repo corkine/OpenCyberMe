@@ -52,7 +52,7 @@
               resp @req
               ;_ (clojure.pprint/pprint resp)
               {:keys [status state] :as all} (json/parse-string (:body resp) true)
-              need-track? (not (or (not= status 200) (= state 3) (= state 4)))]
+              need-track? (not (or (not= status "200") (= state 3) (= state 4)))]
           (if need-track?
             (handle-track all note kind)
             (do
@@ -83,7 +83,7 @@
           (do
             ;;这里要检查是否结束、是否有新数据需要推送
             (let [{:keys [status state list]} data
-                  need-track? (not (or (not= status 200) (= state 3) (= state 4)))
+                  need-track? (not (or (not= status "200") (= state 3) (= state 4)))
                   track-id (if need-track? 1 0)
                   new-data? (> (count list) (count old-list))
                   {:keys [time content]} (first list)]
