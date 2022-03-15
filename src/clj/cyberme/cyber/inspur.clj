@@ -723,7 +723,7 @@
             check-result-map (reduce (fn [acc {:keys [id good?]}]
                                        (assoc acc id {:good? good?}))
                                      {} check-result)
-            failed? (some #(not (:good %)) check-result)
+            failed? (some #(not (:good? %)) check-result)
             ;;更新检查过状态的 check 信息，如果成功，标记为 done 失败标记为 failed
             updated-check (mapv (fn [{:keys [id] :as all}]
                                   (let [in-map-data (get check-result-map id)
