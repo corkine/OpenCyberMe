@@ -10,7 +10,8 @@
             [cyberme.cyber.todo :as todo]
             [cyberme.cyber.clean :as clean])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
-           (java.time.format DateTimeFormatter)))
+           (java.time.format DateTimeFormatter)
+           (java.util UUID)))
 
 (def date-time (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss"))
 
@@ -238,10 +239,10 @@
                   (/ (.toMinutes (Duration/between start end))
                      60.0)))))))
 
-(defn signin-hint [hcm-info]
+(defn signin-hint [signin-list]
   "根据 HCM 服务器返回的打卡信息 - [{}] 生成统计信息
   因为允许多次打卡，所以可能有 0 - n 条打卡信息"
-  (let [hcm-info (sort-by :time hcm-info)
+  (let [hcm-info (sort-by :time signin-list)
         one-day (let [some-data (:time (first hcm-info))]
                   (if some-data
                     some-data
@@ -655,30 +656,118 @@
     (catch Exception e
       {:message (str "列出失败：" (.getMessage e)) :status 0})))
 
-(defn ^String handle-serve-auto [{:keys [user secret needCheckAt] :as all}]
-  "For Pixel, 自动检查当前上班状态是否满足目标条件"
+(defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt] :as all}]
+  "For Pixel, 自动检查当前上班状态是否满足目标条件，如果满足，则将此次查询记录在数据库中，以备
+  如果其检查失败后，后台服务发送通知消息。"
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt)
-    (let [needCheckAt (str/trim (str/replace (str/replace needCheckAt ": " ":") "：" ":"))
+    (let [today (LocalDate/now)
+          needCheckAt (str/trim (str/replace (str/replace needCheckAt ": " ":") "：" ":"))
           [_ h m] (re-find #"(\d+):(\d+)" (or needCheckAt ""))
           needCheck (LocalTime/of (Integer/parseInt h) (Integer/parseInt m))
-          ;_ (println "need check at: " needCheck)
-          {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day (LocalDate/now)})
-          ;_ (println "db return: " r1start r1end r2start r2end)
+          {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day today})
           existR1? (not (or (nil? r1start) (nil? r1end)))
           existR2? (not (or (nil? r2start) (nil? r2end)))
           inR1? #(not (or (.isBefore % r1start) (.isAfter % r1end)))
           inR2? #(not (or (.isBefore % r2start) (.isAfter % r2end)))
           in-range (or (and existR1? (inR1? needCheck)) (and existR2? (inR2? needCheck)))]
+      (when in-range
+        (let [new-info (assoc (or info {}) :check
+                                           (-> info :check
+                                               (conj {:id     (str (UUID/randomUUID))
+                                                      :start  (LocalDateTime/now)
+                                                      :status "ready!"
+                                                      :cost   600})))
+              _ (db/update-auto-info {:day today :info new-info})]
+          (log/info "[hcm-auto] update auto checking today: " new-info)))
       (if in-range "YES" "NO"))
     (catch Exception e
       (log/error "[hcm-auto] error: " (.getMessage e))
       (str "解析数据时出现异常：可能是传入的时间无法解析或者不存在数据库表。" (.getMessage e)))))
 
+(defn find-today-ready-and-done []
+  "检查数据库所有的 auto 的 info 的 check 字段，获取所有的检查项，如果检查项为 ready! 并且到期
+  那么进行 HCM 检查并更新这些检查项信息，如果这些 check 项任一检查失败，那么异步通知 Slack。
+  这里不必须使用 HCM 请求，因为一旦 AUTO 成功会不使用缓存请求 HCM 并缓存最新数据，因此检查只需要
+  使用缓存数据即可。"
+  (let [{{:keys [check] :as info} :info} (db/get-today-auto {:day (LocalDate/now)})
+        now (LocalDateTime/now)
+        afternoon? (> (.getHour now) 12)
+        need-check (filterv (fn [{:keys [start cost status] :as all}]
+                              "任何状态为 ready! 的，并且超过了其执行期限的"
+                              (try
+                                (and (= status "ready!")
+                                     (.isBefore (.plusSeconds (LocalDateTime/parse start)
+                                                              cost) now))
+                                (catch Exception e
+                                  (log/info "[hcm-auto-check] failed parse db data: " all
+                                            "exception: " (.getMessage e))
+                                  false))) (or check []))
+        ;_ (log/info "[hcm-auto-check] need check: " need-check)
+        nothing-check? (= (count need-check) 0)]
+    (if-not nothing-check?
+      (let [check-fn (fn [{:keys [id cost start status]}]
+                       "获取当前 HCM 信息，如果是下午，应该 offWork，上午则不是 needMorningCheck
+                       否者都算执行失败。"
+                       (let [data (get-hcm-info {:time now})
+                             signin (signin-data data)
+                             {:keys [needMorningCheck offWork]} (signin-hint signin)
+                             good? (if-not afternoon? (not needMorningCheck) offWork)]
+                         (when-not good?
+                           (log/warn "[hcm-auto-check] not done for " id " start at "
+                                     start " will end at seconds " cost))
+                         {:id id :good? good?}))
+            check-result (mapv check-fn need-check)
+            _ (log/info "[hcm-auto-check] check result: " check-result)
+            ;;将 [{:id :good?}] 转换为 {id {:good?}}
+            check-result-map (reduce (fn [acc {:keys [id good?]}]
+                                       (assoc acc id {:good? good?}))
+                                     {} check-result)
+            failed? (some #(not (:good %)) check-result)
+            ;;更新检查过状态的 check 信息，如果成功，标记为 done 失败标记为 failed
+            updated-check (mapv (fn [{:keys [id] :as all}]
+                                  (let [in-map-data (get check-result-map id)
+                                        is-good? (:good? in-map-data)]
+                                    (if in-map-data
+                                      (assoc all :status (if is-good? "done!" "failed!"))
+                                      all)))
+                                (or check []))]
+        (when failed?
+          ;所有失败，仅异步通知一次
+          (log/info "[hcm-auto-check] failed with task in list: " check-result)
+          (future (slack/notify "检查 AUTO 失败，可能需要手动操作。" "SERVER")))
+        (log/info "[hcm-auto-check] saving database with: " updated-check)
+        (db/update-auto-info {:day (LocalDate/now) :info (assoc info :check updated-check)}))
+      (log/info "[hcm-auto-check] nothing check, skip now..."))))
+
 (defn handle-set-cache [{:keys [token]}]
   (set-cache token)
   {:message (str "成功写入 Token： " token)
    :status  1})
+
+(def c7-00 (LocalTime/of 7 0))
+(def c8-40 (LocalTime/of 8 40))
+(def c17-30 (LocalTime/of 17 30))
+(def c20-20 (LocalTime/of 20 20))
+
+(defn backend-hcm-auto-check-service []
+  "仅在白天的 7:00 - 8:40 以及下午的 17:30 - 20:20 进行检查，检查间隔为 1 分钟一次"
+  (while true
+    (try
+      (let [sleep-sec (or (edn-in [:hcm :auto-check-seconds]) 60)
+            now (LocalTime/now)
+            is-morning? (and (.isAfter now c7-00) (.isBefore now c8-40))
+            is-night? (and (.isAfter now c17-30) (.isBefore now c20-20))]
+        (when (or is-morning? is-night?)
+          (try
+            (log/info "[hcm-auto-check-routine] starting checking database auto...")
+            (find-today-ready-and-done)
+            (log/info "[hcm-auto-check-routine] end checking, try to sleep sec: " sleep-sec)
+            (catch Exception e
+              (log/info "[hcm-auto-check-routine] failed: " (.getMessage e)))))
+        (Thread/sleep (* 1000 sleep-sec)))
+      (catch Exception e
+        (log/info "[hcm-auto-check-routine] routine failed: " (.getMessage e))))))
 
 (comment
   (def server1-conn {:pool {} :spec
@@ -713,4 +802,11 @@
           (take-while #(.isBefore % (LocalDate/of 2022 03 07))
                       (iterate #(.plusDays % 1) (LocalDate/of 2021 06 01)))))
   (def data (get-hcm-info {:time (.minusDays (LocalDateTime/now) 1)}))
+  (db/get-today-auto {:day (LocalDate/now)})
+  (db/update-auto-info {:day (LocalDate/now) :info
+                        {:check [{:id     "0332d9c6-823f-4d7d-966e-8e9710b7e30c",
+                                  :cost   600,
+                                  :start  (LocalDateTime/now),
+                                  :status "ready!"}]}})
+  (LocalDateTime/parse "2022-03-15T16:00:39.931")
   (signin-data data))

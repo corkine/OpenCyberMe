@@ -5,5 +5,5 @@ create table auto (
     r1end time,
     r2start time,
     r2end time,
-    info text default ''
+    info jsonb default '{}'::jsonb
 );

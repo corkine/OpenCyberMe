@@ -92,7 +92,11 @@
                   (when (contains? enable-services :movie)
                     (future
                       (Thread/sleep 2000)
-                      (mini4k/backend-mini4k-routine))))
+                      (mini4k/backend-mini4k-routine)))
+                  (when (contains? enable-services :auto)
+                    (future
+                      (Thread/sleep 2000)
+                      (inspur/backend-hcm-auto-check-service))))
                 :stop
                 (do
                   (backup-token)

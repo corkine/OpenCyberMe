@@ -5,6 +5,9 @@ values (:start1, :end1, :start2, :end2);
 -- :name set-auto :! :1
 insert into auto (day, r1start, r1end, r2start, r2end)
 values (:day, :start1, :end1, :start2, :end2);
+-- :name update-auto-info :! :1
+update auto set info = :info
+where day = :day;
 -- :name list-auto-recent :? :*
 select *
 from auto
