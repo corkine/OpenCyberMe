@@ -108,7 +108,7 @@
           (l/info "[express-service] starting sync with server...")
           (let [now (LocalDateTime/now)
                 hour (.getHour now)
-                is-night? (and (> hour 23) (< hour 7))]
+                is-night? (or (> hour 23) (< hour 7))]
             (if-not is-night?
               (track-routine)
               (l/info "[express-service] skip night check express...")))
