@@ -496,7 +496,7 @@
                                            (nil? r2start) (nil? r2end)))
                          :pending (count (info-check-status info "ready!"))
                          :failed  (count (info-check-status info "failed!"))
-                         :success (count (info-check-status info "success!"))})
+                         :success (count (info-check-status info "done!"))})
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
                            signin (signin-data info)
                            signin (sort-by :time signin)
