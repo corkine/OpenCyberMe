@@ -661,7 +661,10 @@
 
 (defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt] :as all}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件，如果满足，则将此次查询记录在数据库中，以备
-  如果其检查失败后，后台服务发送通知消息。"
+  如果其检查失败后，后台服务发送通知消息。
+  传入的格式可以为 HH:mm 或者 h:m 或者 hh:m 或者 h:mm，: 可以为中文全角或半角，其前后可包含空格。
+  返回值默认为 YES 或 NO，如果无法解析则返回一句话。
+  如果检查的时间点和当前时间点均位于目标范畴，则更新数据库，否者不进行数据库操作。"
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt)
     (let [today (LocalDate/now)

@@ -34,6 +34,11 @@
     (catch Exception e
       {:message (str "追踪设置失败。 " (.getMessage e)) :status 0})))
 
+(defn request-express-api [kuai-di100 no kind code]
+  @(client/request {:url     (format kuai-di100 no kind)
+                   :method  :get
+                   :headers {"Authorization" (str "APPCODE " code)}}))
+
 (defn simple-track [{:keys [no kind note code rewriteIfExist]
                      :or   {kind "AUTO" rewriteIfExist true}}]
   "快递追踪，先查找数据库，找到即返回（不更新数据库数据），找不到则查询 API，并将结果保存到数据库：
@@ -46,10 +51,7 @@
          :data    track
          :status  0}
         (let [kuai-di100 (edn-in [:express :api])
-              req (client/request {:url     (format kuai-di100 no kind)
-                                   :method  :get
-                                   :headers {"Authorization" (str "APPCODE " code)}})
-              resp @req
+              resp (request-express-api kuai-di100 no kind code)
               {:keys [status state] :as all} (json/parse-string (:body resp) true)
               need-track? (not (or (not= status "200") (= state 3) (= state 4)))]
           (if need-track?

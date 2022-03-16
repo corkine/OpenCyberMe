@@ -18,7 +18,8 @@
     [cyberme.db.core :as db]
     [cyberme.cyber.inspur :as inspur])
   (:import (java.util UUID)
-           (java.time LocalDate LocalDateTime)))
+           (java.time LocalDate LocalDateTime LocalTime)
+           (java.time.format DateTimeFormatter)))
 
 (defn parse-json [body]
   (m/decode formats/instance "application/json" body))
@@ -138,4 +139,68 @@
               (inspur/get-hcm-info {:time (LocalDateTime/now)})]
           (is (= status 0))
           (is (non :cache :done))
-          (is (got :notice :set)))))))
+          (is (got :notice :set)))))
+
+    (testing "handle serve auto - time pass and no pass"
+      (with-redefs [db/get-today-auto (fn [& _] {:r1start (LocalTime/of 7 30)
+                                                 :r1end (LocalTime/of 8 10)
+                                                 :r2start (LocalTime/of 17 30)
+                                                 :r2end (LocalTime/of 18 30)
+                                                 :info {}})
+                    db/update-auto-info #(swap! a assoc :auto (:info %))]
+        (let [_ (clean!)
+              message (inspur/handle-serve-auto {:needCheckAt "7:33"})
+              message-2 (inspur/handle-serve-auto {:needCheckAt "8:33"})
+              message-3 (inspur/handle-serve-auto {:needCheckAt "17:30"})
+              message-4 (inspur/handle-serve-auto {:needCheckAt "0:00"})
+              message-5 (inspur/handle-serve-auto {:needCheckAt "7: 33"})
+              message-6 (inspur/handle-serve-auto {:needCheckAt "8：10"})
+              message-7 (inspur/handle-serve-auto {:needCheckAt "17 : 30"})
+              message-8 (inspur/handle-serve-auto {:needCheckAt "0:00"})]
+          (is (= message "YES"))
+          (is (= message-2 "NO"))
+          (is (= message-3 "YES"))
+          (is (= message-4 "NO"))
+          (is (= message-5 "YES"))
+          (is (= message-6 "YES"))
+          (is (str/includes? message-7 "解析数据时出现异常")))))
+
+    (testing "handle serve auto - save request as check to database (in range)"
+      (let [now (LocalTime/now)
+            r1start (.minusHours now 1)
+            r1end (.plusMinutes now 100)
+            check (let [t (.plusSeconds now 100)]
+                    (format "%s:%s" (.getHour t) (.getMinute t)))]
+        (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                   :r1end r1end
+                                                   :r2start (LocalTime/of 17 30)
+                                                   :r2end (LocalTime/of 18 30)
+                                                   :info {}})
+                      db/update-auto-info #(swap! a assoc :auto (:info %))]
+          (let [_ (clean!)
+                message (inspur/handle-serve-auto {:needCheckAt check})
+                {:keys [status cost]} (-> @a :auto :check first)]
+            (is (= message "YES"))
+            (is (not (nil? (:auto @a))))
+            (is (= status "ready!"))
+            (is (= cost 600))))))
+
+    (testing "handle serve auto - save request as check to database (not in range)"
+      (let [now (LocalTime/now)
+            r1start (.plusMinutes now 1)
+            r1end (.plusMinutes now 100)
+            check (let [t (.plusMinutes now 3)]
+                    (format "%s:%s" (.getHour t) (.getMinute t)))]
+        (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                   :r1end r1end
+                                                   :r2start (LocalTime/of 17 30)
+                                                   :r2end (LocalTime/of 18 30)
+                                                   :info {}})
+                      db/update-auto-info #(swap! a assoc :auto (:info %))]
+          (let [_ (clean!)
+                message (inspur/handle-serve-auto {:needCheckAt check})
+                {:keys [status cost]} (-> @a :auto :check first)]
+            (is (= message "YES"))
+            (is (nil? (:auto @a)))
+            (is (= status nil))
+            (is (= cost nil))))))))

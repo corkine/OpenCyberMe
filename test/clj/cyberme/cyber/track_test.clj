@@ -14,7 +14,8 @@
     [clojure.string :as str]
     [cyberme.auth :as auth]
     [conman.core :as conman]
-    [cyberme.cyber.track :as track])
+    [cyberme.cyber.track :as track]
+    [cyberme.cyber.express :as express])
   (:import (java.util UUID)))
 
 (defn parse-json [body]
@@ -55,7 +56,85 @@
                                       :la     1.2}))
             body (decode response)]
         (is (= 200 (:status response)))
-        (is (str/includes? (:message body) by-name))))))
+        (is (str/includes? (:message body) by-name)))))
+
+  (testing "simple track for exist and not going on"
+    (let [a (atom {})]
+      (with-redefs [db/find-express (fn [& _]
+                                      (swap! a assoc :find-express :done)
+                                      {:track "23333"})
+                    db/set-express-track (fn [& _] :done)
+                    express/request-express-api
+                    (fn [& _]
+                      {:status 200
+                       :body   (json/generate-string
+                                 {:status "100" :state  3})})]
+        (let [{:keys [message data status]}
+              (express/simple-track {:no "123456" :rewriteIfExist false})]
+          (is (= (-> @a :find-express) :done))
+          (is (str/includes? message "存在"))
+          (is (= status 0))
+          (is (= data "23333"))))))
+
+  (testing "simple track for exist but still going on"
+    (let [a (atom {})]
+      (with-redefs [db/find-express (fn [& _]
+                                      (swap! a assoc :find-express :done)
+                                      {:track "23333"})
+                    db/set-express-track (fn [& _] (swap! a assoc :set-track :done))
+                    express/request-express-api
+                    (fn [& _]
+                      (swap! a assoc :request-api :true)
+                      {:status 200
+                       :body   (json/generate-string
+                                 {:status "200" :state 1})})]
+        (let [{:keys [message data status]}
+              (express/simple-track {:no "123456"})]
+          (is (= (-> @a :find-express) :done))
+          (is (= (-> @a :request-api) :true))
+          (is (= (-> @a :set-track) :done))
+          (is (str/includes? message "追踪设置成功"))
+          (is (= status 1))))))
+
+  (testing "simple track not exist and set track"
+    (let [a (atom {})]
+      (with-redefs [db/find-express (fn [& _]
+                                      (swap! a assoc :find-express :done)
+                                      nil)
+                    db/set-express-track (fn [& _] (swap! a assoc :set-track :done))
+                    express/request-express-api
+                    (fn [& _]
+                      (swap! a assoc :request-api :true)
+                      {:status 200
+                       :body   (json/generate-string
+                                 {:status "200" :state 1})})]
+        (let [{:keys [message data status]}
+              (express/simple-track {:no "123456"})]
+          (is (= (-> @a :find-express) :done))
+          (is (= (-> @a :request-api) :true))
+          (is (= (-> @a :set-track) :done))
+          (is (str/includes? message "追踪设置成功"))
+          (is (= status 1))))))
+
+  (testing "simple track server error set db and return"
+    (let [a (atom {})]
+      (with-redefs [db/find-express (fn [& _]
+                                      (swap! a assoc :find-express :done)
+                                      nil)
+                    db/set-express-track (fn [& _] (swap! a assoc :set-track :done))
+                    express/request-express-api
+                    (fn [& _]
+                      (swap! a assoc :request-api :true)
+                      {:status 200
+                       :body   (json/generate-string
+                                 {:status "100" :state 1})})]
+        (let [{:keys [message data status]}
+              (express/simple-track {:no "123456"})]
+          (is (= (-> @a :find-express) :done))
+          (is (= (-> @a :request-api) :true))
+          (is (= (-> @a :set-track) :done))
+          (is (str/includes? message "单号错误"))
+          (is (= status 0)))))))
 
 ;(testing "not-found route"
 ;  (let [response ((app) (request :get "/invalid"))]
