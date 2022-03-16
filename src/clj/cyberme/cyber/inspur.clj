@@ -665,6 +665,7 @@
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt)
     (let [today (LocalDate/now)
+          now (LocalTime/now)
           needCheckAt (str/trim (str/replace (str/replace needCheckAt ": " ":") "：" ":"))
           [_ h m] (re-find #"(\d+):(\d+)" (or needCheckAt ""))
           needCheck (LocalTime/of (Integer/parseInt h) (Integer/parseInt m))
@@ -673,8 +674,11 @@
           existR2? (not (or (nil? r2start) (nil? r2end)))
           inR1? #(not (or (.isBefore % r1start) (.isAfter % r1end)))
           inR2? #(not (or (.isBefore % r2start) (.isAfter % r2end)))
-          in-range (or (and existR1? (inR1? needCheck)) (and existR2? (inR2? needCheck)))]
-      (when in-range
+          in-range (or (and existR1? (inR1? needCheck)) (and existR2? (inR2? needCheck)))
+          now-in-range (or (and existR1? (inR1? now)) (and existR2? (inR2? now)))]
+      (when (and in-range now-in-range)
+        ;必须检查的时间点和当前时间点都在范围内才算，否者在任何时候请求正确检查时间点接口
+        ;都将添加 check 记录，那么后台服务一运行就会发现很多失败。
         (let [new-info (assoc (or info {}) :check
                                            (-> info :check
                                                (conj {:id     (str (UUID/randomUUID))
