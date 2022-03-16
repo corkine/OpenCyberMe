@@ -484,16 +484,19 @@
 
 (defn handle-serve-month-summary [{:keys [user secret] :as all}]
   "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
+  用于前端页面展示考勤日历。
   [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
                 :work-day true :policy true}]"
   (try
     (let [date-list (month-days 0 true)
-          exist-policy? #(let [{:keys [r1start r1end r2start r2end] :as all}
-                               (db/get-today-auto {:day %})]
-                           (not (or (nil? r1start)
-                                    (nil? r1end)
-                                    (nil? r2start)
-                                    (nil? r2end))))
+          info-check-status #(filter (fn [c] (= (:status c) %2)) (or (:check %1) []))
+          policy-res #(let [{:keys [r1start r1end r2start r2end info] :as all}
+                            (db/get-today-auto {:day %})]
+                        {:exist   (not (or (nil? r1start) (nil? r1end)
+                                           (nil? r2start) (nil? r2end)))
+                         :pending (count (info-check-status info "ready!"))
+                         :failed  (count (info-check-status info "failed!"))
+                         :success (count (info-check-status info "success!"))})
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
                            signin (signin-data info)
                            signin (sort-by :time signin)
@@ -503,7 +506,7 @@
                         :check-start (first signin)
                         :check-end   (last signin)
                         :work-day    work-day?
-                        :policy      (exist-policy? %)})
+                        :policy      (policy-res %)})
           pass-data (apply assoc {}
                            (flatten
                              (mapv (fn [date] [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
@@ -514,7 +517,7 @@
                              (mapv (fn [date] [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
                                                {:work-hour 0
                                                 :work-day  (do-need-work (.atStartOfDay date))
-                                                :policy    (exist-policy? date)}])
+                                                :policy    (policy-res date)}])
                                    (month-rest-days 0))))
           res (merge pass-data rest-data)]
       {:message "获取成功！"
@@ -738,7 +741,7 @@
           (future (slack/notify "检查 AUTO 失败，可能需要手动操作。" "SERVER")))
         (log/info "[hcm-auto-check] saving database with: " updated-check)
         (db/update-auto-info {:day (LocalDate/now) :info (assoc info :check updated-check)}))
-      (log/info "[hcm-auto-check] nothing check, skip now..."))))
+      #_(log/info "[hcm-auto-check] nothing check, skip now..."))))
 
 (defn handle-set-cache [{:keys [token]}]
   (set-cache token)
@@ -760,14 +763,14 @@
             is-night? (and (.isAfter now c17-30) (.isBefore now c20-20))]
         (when (or is-morning? is-night?)
           (try
-            (log/info "[hcm-auto-check-routine] starting checking database auto...")
+            #_(log/info "[hcm-auto-check-routine] starting checking database auto...")
             (find-today-ready-and-done)
-            (log/info "[hcm-auto-check-routine] end checking, try to sleep sec: " sleep-sec)
+            #_(log/info "[hcm-auto-check-routine] end checking, try to sleep sec: " sleep-sec)
             (catch Exception e
-              (log/info "[hcm-auto-check-routine] failed: " (.getMessage e)))))
+              (log/error "[hcm-auto-check-routine] failed: " (.getMessage e)))))
         (Thread/sleep (* 1000 sleep-sec)))
       (catch Exception e
-        (log/info "[hcm-auto-check-routine] routine failed: " (.getMessage e))))))
+        (log/error "[hcm-auto-check-routine] routine failed: " (.getMessage e))))))
 
 (comment
   (def server1-conn {:pool {} :spec

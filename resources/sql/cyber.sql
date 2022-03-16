@@ -50,10 +50,11 @@ select *
 from express
 where info ->> 'status' = '1';
 -- :name set-express-track :! :1
-insert into express(no, track, info)
-values (:no, :track, :info)
+insert into express(no, track, info, update_at)
+values (:no, :track, :info, current_timestamp)
 on conflict (no) do update set track = :track,
-                               info  = :info;
+                               info  = :info,
+                               update_at = current_timestamp;
 -- :name delete-express :! :1
 delete
 from express

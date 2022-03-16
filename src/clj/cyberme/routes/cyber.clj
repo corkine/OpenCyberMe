@@ -46,6 +46,7 @@
 (s/def :express/no string?)
 (s/def :express/type string?)
 (s/def :express/note string?)
+(s/def :express/rewriteIfExist boolean?)
 (s/def :location/by string?)
 (s/def :location/lo double?)
 (s/def :location/la double?)
@@ -255,10 +256,13 @@
     ["/track"
      {:get {:summary     "新增快递追踪"
             :description "追踪某一快递信息，调用后会立刻查询，且保存到数据库，如果快递尚未发货
-            或者正在运输则进行自动追踪。type 为快递类型，默认为 AUTO，note 为通知时的快递别名。"
+            或者正在运输则进行自动追踪。type 为快递类型，默认为 AUTO，note 为通知时的快递别名。
+            如果 rewriteIfExist 为 false，那么如果快递已经在数据库则不设置追踪，默认为 true
+            则重置数据库数据为追踪状态。对于异常终止的快递，设置为 true 可强制开启追踪"
             :parameters  {:query (s/keys :req-un [:express/no]
                                          :opt-un [:global/user :global/secret
-                                                  :express/type :express/note])}
+                                                  :express/type :express/note
+                                                  :express/rewriteIfExist])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (express/simple-track query)))}}]
 

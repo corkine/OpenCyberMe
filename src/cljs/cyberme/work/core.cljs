@@ -36,7 +36,12 @@
         date-format #(gstring/format "%02d-%02d-%02d" year month %)
         date-key #(keyword (date-format %))
         status-fn #(if-not (->> % date-key (get data) :work-day) "休" "")
-        plan-fn #(if (->> % date-key (get data) :policy) "策" "")
+        plan-fn #(let [{:keys [exist failed success pending]} (->> % date-key (get data) :policy)]
+                   (cond (not exist) ""
+                         (and (= failed 0) (= pending 0) (not= success 0)) "成"
+                         (not= pending 0) "候"
+                         (and (not= failed 0) (= pending 0)) "败"
+                         :else "策"))
         day-list (range 1 (+ 1 (t/day last_day)))
         month-list (mapv (fn [d]
                            [(date-format d)

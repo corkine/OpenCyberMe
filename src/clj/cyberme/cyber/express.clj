@@ -34,14 +34,14 @@
     (catch Exception e
       {:message (str "追踪设置失败。 " (.getMessage e)) :status 0})))
 
-(defn simple-track [{:keys [no kind note code]
-                     :or   {kind "AUTO"}}]
+(defn simple-track [{:keys [no kind note code rewriteIfExist]
+                     :or   {kind "AUTO" rewriteIfExist true}}]
   "快递追踪，先查找数据库，找到即返回（不更新数据库数据），找不到则查询 API，并将结果保存到数据库：
   如果当前状态为运输中，则标记为运输，如果当前状态为已完毕或未找到则保存到数据库并标记为已完毕。"
   (try
     (let [code (or code (edn-in [:express :code]))
           {:keys [track] :as exist} (db/find-express {:no no})]
-      (if exist
+      (if (and exist (not rewriteIfExist))
         {:message (str "追踪的快递已经存在: " no)
          :data    track
          :status  0}
@@ -50,7 +50,6 @@
                                    :method  :get
                                    :headers {"Authorization" (str "APPCODE " code)}})
               resp @req
-              ;_ (clojure.pprint/pprint resp)
               {:keys [status state] :as all} (json/parse-string (:body resp) true)
               need-track? (not (or (not= status "200") (= state 3) (= state 4)))]
           (if need-track?
@@ -74,10 +73,8 @@
       (let [{:keys [kind note]} info
             kind (if (str/blank? kind) "AUTO" kind)
             old-list (get track :list [])
-            {:keys [message status data]}
-            (simple-check {:no no :kind kind})]
-            ;_ (println "data: " data)
-
+            old-status (:status info)
+            {:keys [message status data]} (simple-check {:no no :kind kind})]
         (if (= status 0)
           (l/warn (str "[express-track] failed for check " no ", msg: " message))
           (do
@@ -91,6 +88,10 @@
                 (let [msg (str "快递 [" (or note no) "] 有更新：" time " " content)]
                   (l/info (str "[express-track] new state: " msg))
                   (slack/notify msg "EXPRESS")))
+              (when (and (= old-status 1) (not need-track?))
+                (l/warn "[express-track-terminate] 数据库需要查询，但服务器认为查询已结束或
+                未返回预期数据" message status data)
+                (slack/notify (str "快递 " (or note no) " 已结束追踪。") "EXPRESS"))
               (l/info "[express-track] update express for " (or note no) " set status: " track-id)
               (db/update-express {:no no :track data
                                   :info {:note note :kind kind :status track-id}}))))))
