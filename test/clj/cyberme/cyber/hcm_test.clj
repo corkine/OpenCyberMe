@@ -166,41 +166,43 @@
           (is (str/includes? message-7 "解析数据时出现异常")))))
 
     (testing "handle serve auto - save request as check to database (in range)"
-      (let [now (LocalTime/now)
-            r1start (.minusSeconds now 100)
-            r1end (.plusSeconds now 100)
-            check (let [t (.plusSeconds now 50)]
-                    (format "%s:%s" (.getHour t) (.getMinute t)))]
-        (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
-                                                   :r1end r1end
-                                                   :r2start (LocalTime/of 17 30)
-                                                   :r2end (LocalTime/of 18 30)
-                                                   :info {}})
-                      db/update-auto-info #(swap! a assoc :auto (:info %))]
-          (let [_ (clean!)
-                message (inspur/handle-serve-auto {:needCheckAt check})
-                {:keys [status cost]} (-> @a :auto :check first)]
-            (is (= message "YES"))
-            (is (not (nil? (:auto @a))))
-            (is (= status "ready!"))
-            (is (= cost 600))))))
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)]
+        (let [now (inspur/local-time)
+              r1start (.minusSeconds now 100)
+              r1end (.plusSeconds now 100)
+              check (let [t (.plusSeconds now 50)]
+                      (format "%s:%s" (.getHour t) (.getMinute t)))]
+          (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                     :r1end r1end
+                                                     :r2start (LocalTime/of 17 30)
+                                                     :r2end (LocalTime/of 18 30)
+                                                     :info {}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (clean!)
+                  message (inspur/handle-serve-auto {:needCheckAt check})
+                  {:keys [status cost]} (-> @a :auto :check first)]
+              (is (= message "YES"))
+              (is (not (nil? (:auto @a))))
+              (is (= status "ready!"))
+              (is (= cost 600)))))))
 
     (testing "handle serve auto - save request as check to database (not in range)"
-      (let [now (LocalTime/now)
-            r1start (.plusMinutes now 1)
-            r1end (.plusMinutes now 100)
-            check (let [t (.plusMinutes now 3)]
-                    (format "%s:%s" (.getHour t) (.getMinute t)))]
-        (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
-                                                   :r1end r1end
-                                                   :r2start (LocalTime/of 17 30)
-                                                   :r2end (LocalTime/of 18 30)
-                                                   :info {}})
-                      db/update-auto-info #(swap! a assoc :auto (:info %))]
-          (let [_ (clean!)
-                message (inspur/handle-serve-auto {:needCheckAt check})
-                {:keys [status cost]} (-> @a :auto :check first)]
-            (is (= message "YES"))
-            (is (nil? (:auto @a)))
-            (is (= status nil))
-            (is (= cost nil))))))))
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)]
+        (let [now (inspur/local-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)
+              check (let [t (.plusMinutes now 3)]
+                      (format "%s:%s" (.getHour t) (.getMinute t)))]
+          (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                     :r1end r1end
+                                                     :r2start (LocalTime/of 17 30)
+                                                     :r2end (LocalTime/of 18 30)
+                                                     :info {}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (clean!)
+                  message (inspur/handle-serve-auto {:needCheckAt check})
+                  {:keys [status cost]} (-> @a :auto :check first)]
+              (is (= message "YES"))
+              (is (nil? (:auto @a)))
+              (is (= status nil))
+              (is (= cost nil)))))))))

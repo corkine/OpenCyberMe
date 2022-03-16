@@ -659,6 +659,12 @@
     (catch Exception e
       {:message (str "列出失败：" (.getMessage e)) :status 0})))
 
+(defn local-date [] (LocalDate/now))
+
+(defn local-date-time [] (LocalDateTime/now))
+
+(defn local-time [] (LocalTime/now))
+
 (defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt] :as all}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件，如果满足，则将此次查询记录在数据库中，以备
   如果其检查失败后，后台服务发送通知消息。
@@ -667,28 +673,27 @@
   如果检查的时间点和当前时间点均位于目标范畴，则更新数据库，否者不进行数据库操作。"
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt)
-    (let [today (LocalDate/now)
-          now (LocalTime/now)
+    (let [clock-now (local-time)
           needCheckAt (str/trim (str/replace (str/replace needCheckAt ": " ":") "：" ":"))
           [_ h m] (re-find #"(\d+):(\d+)" (or needCheckAt ""))
           needCheck (LocalTime/of (Integer/parseInt h) (Integer/parseInt m))
-          {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day today})
+          {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day (local-date)})
           existR1? (not (or (nil? r1start) (nil? r1end)))
           existR2? (not (or (nil? r2start) (nil? r2end)))
           inR1? #(not (or (.isBefore % r1start) (.isAfter % r1end)))
           inR2? #(not (or (.isBefore % r2start) (.isAfter % r2end)))
           in-range (or (and existR1? (inR1? needCheck)) (and existR2? (inR2? needCheck)))
-          now-in-range (or (and existR1? (inR1? now)) (and existR2? (inR2? now)))]
+          now-in-range (or (and existR1? (inR1? clock-now)) (and existR2? (inR2? clock-now)))]
       (when (and in-range now-in-range)
         ;必须检查的时间点和当前时间点都在范围内才算，否者在任何时候请求正确检查时间点接口
         ;都将添加 check 记录，那么后台服务一运行就会发现很多失败。
         (let [new-info (assoc (or info {}) :check
                                            (-> info :check
                                                (conj {:id     (str (UUID/randomUUID))
-                                                      :start  (LocalDateTime/now)
+                                                      :start  (local-date-time)
                                                       :status "ready!"
                                                       :cost   600})))
-              _ (db/update-auto-info {:day today :info new-info})]
+              _ (db/update-auto-info {:day local-date :info new-info})]
           (log/info "[hcm-auto] update auto checking today: " new-info)))
       (if in-range "YES" "NO"))
     (catch Exception e
