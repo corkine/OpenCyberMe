@@ -167,9 +167,9 @@
 
     (testing "handle serve auto - save request as check to database (in range)"
       (let [now (LocalTime/now)
-            r1start (.minusHours now 1)
-            r1end (.plusMinutes now 100)
-            check (let [t (.plusSeconds now 100)]
+            r1start (.minusSeconds now 100)
+            r1end (.plusSeconds now 100)
+            check (let [t (.plusSeconds now 50)]
                     (format "%s:%s" (.getHour t) (.getMinute t)))]
         (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
                                                    :r1end r1end
