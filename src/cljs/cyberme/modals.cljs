@@ -90,6 +90,13 @@
            [:span.icon icon]
            [:span title]]]
     [modal-card id title body footer]])
+  ([id opts title body footer fields errors close-fn]
+   [:div [:button.button
+          (merge (:button opts)
+                 {:on-click #(rf/dispatch [:app/show-modal id])})
+          [:span.icon-text
+           [:span title]]]
+    [modal-card id title body footer fields errors close-fn]])
   ([id opts icon title body footer fields errors close-fn]
    [:div [:button.button
           (merge (:button opts)

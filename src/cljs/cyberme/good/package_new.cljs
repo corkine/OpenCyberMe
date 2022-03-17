@@ -43,8 +43,8 @@
       (let [server-back @(rf/subscribe [:package/new-failure])]
         (modals/modal-button
           :create-new-package
-          {:button {:class [:is-info :is-inverted :is-outlined]}}
-          [:i.fa.fa-inbox {:aria-hidden "true"}]
+          {:button {:class [:is-info :is-inverted :is-outlined :is-small :is-rounded]}}
+          #_[:i.fa.fa-inbox {:aria-hidden "true"}]
           "新打包"
           [:div {:style {:color "black"}}
            [common-fields :name "打包名称 *" "尽量简短，言简意赅"]

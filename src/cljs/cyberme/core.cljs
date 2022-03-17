@@ -10,11 +10,14 @@
     [cyberme.event.ajax :as ajax]
     [cyberme.event.events :as events]
     [cyberme.event.request :as req]
-    [cyberme.place.place-new :as place-new]
-    [cyberme.place.place-edit :as place-edit]
+    [cyberme.place.request :as req-place]
+    [cyberme.good.request :as req-good]
+    [cyberme.work.request :as req-work]
+    [cyberme.place.new :as place-new]
+    [cyberme.place.edit :as place-edit]
     [cyberme.good.package-new :as package-new]
-    [cyberme.good.good-new :as good-new]
-    [cyberme.good.good-edit :as good-edit]
+    [cyberme.good.new :as good-new]
+    [cyberme.good.edit :as good-edit]
     [cyberme.about :refer [log about-page]]
     [cyberme.router :as share]
     [cyberme.modals :as modals])
@@ -66,8 +69,8 @@
                  [:div.navbar-start
                   [nav-link "/" "资产" :home]
                   [nav-link "/clothes" "衣物" :clothes]
-                  [nav-link "/foods" "食品耗材" :foods]
-                  [nav-link "/hcm" "工作" :hcm]
+                  [nav-link "/foods" "耗材" :foods]
+                  [nav-link "/work" "工作" :work]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
                   [:div.navbar-item.px-1

@@ -71,7 +71,11 @@ TODO:
 (defn about-page []
   [:div.hero.is-danger.is-fullheight-with-navbar
    [:section.section>div.container>div.content
-    [:p.title "由 Corkine Ma 开发"]
+    [:p.title "由 Corkine Ma 开发"
+     [:a.ml-3.is-size-6.has-text-weight-light
+      {:href "/cyber/api-docs/index.html" :target :_black} "CyberAPI"]
+     [:a.ml-2.is-size-6.has-text-weight-light
+      {:href "/api/api-docs/index.html" :target :_black} "GoodsAPI"]]
     (let [usage @(rf/subscribe [:usage])
           server-back @(rf/subscribe [:wishlist-server-back])
           wish-list @(rf/subscribe [:wishlist])

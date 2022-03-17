@@ -6,8 +6,8 @@
     [markdown.core :refer [md->html]]
     [cyberme.event.events]
     [cyberme.about :refer [log about-page]]
-    [cyberme.place.place-filter :as place-filter]
-    [cyberme.place.place :as place]
+    [cyberme.place.filter :as place-filter]
+    [cyberme.place.core :as place]
     [cyberme.work.core :as work]
     [clojure.string :as string]))
 

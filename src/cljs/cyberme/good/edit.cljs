@@ -1,4 +1,4 @@
-(ns cyberme.good.good-edit
+(ns cyberme.good.edit
   (:require [re-frame.core :as rf]
             [cyberme.modals :as modals]
             [reagent.core :as r]

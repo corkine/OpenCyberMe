@@ -1,4 +1,4 @@
-(ns cyberme.place.place-filter
+(ns cyberme.place.filter
   (:require [re-frame.core :as rf]
             [clojure.string :as string]))
 

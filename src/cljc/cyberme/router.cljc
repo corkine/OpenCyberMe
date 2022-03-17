@@ -38,8 +38,8 @@
                                                   (rf/dispatch [:recent/fetch])
                                                   (rf/dispatch [:set-filter query]))}]}))]
 
-   ["/hcm"
-    (merge {:name :hcm}
+   ["/work"
+    (merge {:name :work}
            #?(:cljs {:view        #'core/hcm-page
                      :controllers [{:start      (fn [_]
                                                   (rf/dispatch [:hcm/month])

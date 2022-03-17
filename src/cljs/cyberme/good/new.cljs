@@ -1,4 +1,4 @@
-(ns cyberme.good.good-new
+(ns cyberme.good.new
   (:require [re-frame.core :as rf]
             [cyberme.modals :as modals]
             [reagent.core :as r]
@@ -72,9 +72,9 @@
             places (sort-by :id places)]
         (modals/modal-button
           :create-new-good
-          {:button {:class [:is-primary]}}
+          {:button {:class [:is-primary :is-small :is-rounded]}}
           [:i.fa.fa-plus-square {:aria-hidden "true"}]
-          "物品入库"
+          "入库"
           [:div {:style {:color "black"}}
            [common-fields :name "名称 *" "物品名称"]
            [common-fields :status "状态 *" "物品所处的状态"

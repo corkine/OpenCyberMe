@@ -1,4 +1,4 @@
-(ns cyberme.place.place
+(ns cyberme.place.core
   (:require
     [day8.re-frame.http-fx]
     [reagent.core :as r]
