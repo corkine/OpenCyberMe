@@ -3,8 +3,7 @@
             [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
             [cyberme.config :refer [env]]
-            [clojure.string :as s]
-            [ring.middleware.basic-authentication :refer [authentication-failure]])
+            [clojure.string :as s])
   (:import java.util.Base64))
 
 ;(defn identity->roles [identity]
@@ -117,6 +116,16 @@
         cred (and auth (decode-base64 (last (re-find #"^Basic (.*)$" auth))))
         [user pass] (and cred (s/split (str cred) #":" 2))]
     (assoc request :basic-authentication (and cred (auth-fn (str user) (str pass))))))
+
+(defn authentication-failure
+  [& [realm denied-response]]
+  (assoc (merge {:status 403
+                 :body   "access denied"}
+                denied-response)
+    :headers (merge {"WWW-Authenticate" (format "Basic realm=\"%s\""
+                                                (or realm "restricted area"))
+                     "Content-Type"     "text/plain"}
+                    (:headers denied-response))))
 
 (defn wrap-basic-authentication
   [app authenticate & [realm denied-response]]

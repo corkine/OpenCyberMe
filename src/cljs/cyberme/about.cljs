@@ -5,7 +5,7 @@
             [goog.string :as gstring]
             [clojure.string :as string]))
 
-(def version "beta 1.0.1")
+(def version "1.0.2")
 
 (def log (str "now: " version "
 [2022-02-03]
@@ -52,6 +52,18 @@ TODO 和 HCM Token 均使用本地文件保存机制进行处理。
 添加了考勤日历功能。
 [2022-03-14]
 添加了考勤周报功能。
+修复 CyberMe API 错误：更新 HCM 缓存写入机制，修复 get-hcm-info 错误后的静默异常
+修复了 LocalDate 和 LocalDateTime 错误的比较。
+考勤日历优化，只打了一次卡只显示一次。
+[2022-03-15]
+为 HCM Auto 添加了 Check 功能，当 Auto 意外失败时 Check 会通知。
+考勤日历添加 Check 数据显示。
+[2022-03-16]
+修复 CyberMe API 错误：express 查询停止通知，允许追踪快递覆盖数据库。
+[2022-03-17]
+修复了 Circle CI 在标准时间 CST 0:00 测试 serve-hcm-auto 的一个跨日期错误。
+从 ICE Manager 迁移了登录交互界面，不依赖浏览器 Basic Auth 登录。
+使用 403 而非 401 处理无权限问题，以在 Chrome 下避免无权限冗余的浏览器弹窗。
 
 ================================================
 TODO:

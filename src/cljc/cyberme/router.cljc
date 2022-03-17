@@ -16,6 +16,7 @@
            #?(:cljs {:view        #'core/home-page
                      :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
+                                                  (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:place/fetch])
                                                   (rf/dispatch [:recent/fetch])
                                                   (rf/dispatch [:set-filter query]))}]}))]
@@ -25,6 +26,7 @@
            #?(:cljs {:view        #'core/foods-page
                      :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
+                                                  (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:place/fetch])
                                                   (rf/dispatch [:recent/fetch])
                                                   (rf/dispatch [:set-filter query]))}]}))]
@@ -34,6 +36,7 @@
            #?(:cljs {:view        #'core/clothes-page
                      :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
+                                                  (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:place/fetch])
                                                   (rf/dispatch [:recent/fetch])
                                                   (rf/dispatch [:set-filter query]))}]}))]
@@ -42,22 +45,26 @@
     (merge {:name :work}
            #?(:cljs {:view        #'core/hcm-page
                      :controllers [{:start      (fn [_]
+                                                  (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:hcm/month])
                                                   (rf/dispatch [:hcm/todo]))}]}))]
 
    ["/goods"
     (merge {:name :goods}
            #?(:cljs {:view        #'core/goods-page
-                     :controllers [{:start (fn [_])}]}))]
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
 
    ["/package"
     (merge {:name :package}
            #?(:cljs {:view        #'core/package-page
-                     :controllers [{:start (fn [_])}]}))]
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
 
    ["/about"
     (merge {:name :about}
            #?(:cljs {:view        #'about/about-page
                      :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
                                              (rf/dispatch [:fetch-usage])
                                              (rf/dispatch [:fetch-wishlist]))}]}))]])

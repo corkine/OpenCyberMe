@@ -20,7 +20,8 @@
     [cyberme.good.edit :as good-edit]
     [cyberme.about :refer [log about-page]]
     [cyberme.router :as share]
-    [cyberme.modals :as modals])
+    [cyberme.modals :as modals]
+    [cyberme.login.core :as login])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -30,9 +31,13 @@
    title])
 
 (defn global-info []
-  (let [{:keys [message callback]} @(rf/subscribe [:global/notice])]
+  (let [{:keys [message pre-message callback callback-fn]} @(rf/subscribe [:global/notice])]
     [modals/modal-card :notice "提示"
-     [:p.has-text-black message]
+     [:<>
+      (when pre-message
+        [:pre.has-text-black pre-message])
+      (when message
+        [:p.has-text-black message])]
      [:button.button.is-primary.is-fullwidth
       {:on-click (fn [_]
                    (rf/dispatch [:global/notice-clean])
@@ -42,6 +47,8 @@
                          (rf/dispatch c))
                        (do
                          (rf/dispatch callback))))
+                   (when-not (nil? callback-fn)
+                     (callback-fn))
                    (rf/dispatch [:app/hide-modal :notice]))}
       "确定"]
      #(rf/dispatch [:global/notice-clean])]))
@@ -55,6 +62,11 @@
                 [global-info]
                 [place-edit/place-edit-holder]
                 [good-edit/edit-good-holder]
+                [:div {:style {:width :0px :height :0px :overflow :hidden}}
+                 [place-new/new-place-btn]
+                 [package-new/new-package-btn]
+                 [good-new/new-good-btn]
+                 [login/login-button]]
                 [:div.navbar-brand
                  [:a.icon-text.navbar-item.has-text-white {:href "/"}
                   [:span.icon [:i.fa.fa-ravelry.mr-1]]
@@ -73,12 +85,31 @@
                   [nav-link "/work" "工作" :work]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
-                  [:div.navbar-item.px-1
-                   [place-new/new-place-btn]]
-                  [:div.navbar-item.px-1
-                   [package-new/new-package-btn]]
-                  [:div.navbar-item.px-1
-                   [good-new/new-good-btn]]]]]]))
+                  [:div.navbar-item.has-dropdown.is-hoverable.mx-0
+                   [:a.navbar-link "操作"]
+                   [:div.navbar-dropdown.is-boxed
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:app/show-modal :create-new-place])}
+                     "新建位置"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:app/show-modal :create-new-package])}
+                     "新建打包"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:app/show-modal :create-new-good])}
+                     "物品入库"]]]
+                  (let [{login-hint :user} @(rf/subscribe [:api-auth])
+                        login-hint (or login-hint "登录")]
+                    [:div.navbar-item.mx-0
+                     [:div.is-clickable
+                      {:on-click #(rf/dispatch [:app/show-modal :login-info-set])}
+                      [:span.icon-text
+                       [:span.icon [:i.fa.fa-user {:style {:margin-left :-10px}}]]
+                       [:span {:style {:margin-left :-5px}} login-hint]]]
+                     #_[:button.button.is-info
+                        {:on-click #(rf/dispatch [:app/show-modal :login-info-set])}
+                        [:span.icon-text
+                         [:span.icon [:i.fa.fa-user {:style {:margin-right :-10px}}]]
+                         [:span " 登录"]]]])]]]]))
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]

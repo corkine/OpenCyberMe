@@ -139,7 +139,7 @@
                                                                   (str "\n\n" "" (nth data 3))))))
                                        :color      "rgb(79, 148, 220)"
                                        :fontSize   11
-                                       :fontWeight 500
+                                       :fontWeight 700
                                        }
                     :data             month-list}]}}]))
 
@@ -196,8 +196,8 @@
       [:span.has-text-grey-light.is-size-6
        (gstring/format " %2d 年 %2d 月" (t/year now) (t/month now))]]
      [hcm-calendar month-data]
-     [:div.box
-      [:div {:style {:margin-top :-10px}}
+     [:div.box {:style {:margin-top :-15px}}
+      [:div {:style {:margin-top :-15px}}
        (for [date-now date]
          ^{:key date-now}
          [:<>

@@ -3,7 +3,45 @@
     [re-frame.core :as rf]
     [ajax.core :as ajax]
     [clojure.string :as string]
-    [clojure.set :as set]))
+    [goog.crypt.base64 :as b64]
+    [clojure.set :as set]
+    [cyberme.event.storage :as storage]
+    [clojure.string :as str]))
+
+(defn auth-header []
+  (let [;{:keys [username password]} (storage/get-item "api_auth")
+        api-auth (rf/subscribe [:api-auth])
+        {username :user password :pass} @api-auth]
+    (if (or (nil? username) (nil? password))
+      {"Authorization" (str "Basic " (b64/encodeString (str "unknown" ":" "unknown")))}
+      {"Authorization" (str "Basic " (b64/encodeString (str username ":" password)))})))
+
+;;;;;;;;;;;;;; login ;;;;;;;;;;;;
+(rf/reg-event-db
+  :user/fetch-from-local
+  (fn [db _]
+    (let [{:keys [username password]} (storage/get-item "api_auth")]
+      (when (and username password)
+        (assoc db :api-auth {:user username :pass password})))))
+
+(rf/reg-sub :api-auth (fn [db _] (:api-auth db)))
+
+(rf/reg-event-db
+  :show-login
+  (fn [_ [_ _]]
+    (rf/dispatch [:app/show-modal :login-info-set])))
+
+(rf/reg-event-db
+  :handle-all-failure
+  (fn [_ [_ error]]
+    (rf/dispatch [:global/notice
+                  {:message  (let [error (or (:last-error error) (str error))]
+                               (if (str/includes? error "Forbidden")
+                                 (str "请求调用失败，没有权限，请点击“确定”登录后再试。")
+                                 (str "请求调用失败：" error)))
+                   :callback (if (str/includes? (str (:last-error error)) "403")
+                               [:show-login]
+                               [])}])))
 
 ;;;;;;;;;;;;;;;;; ajax-flow 抽象 ;;;;;;;;;;;;;;;;;
 (defn ajax-flow [{:keys [call data clean uri-fn is-post
@@ -38,11 +76,13 @@
       (fn [_ [_ data]]
         (if-not is-post
           {:http-xhrio {:method          :get
+                        :headers         (auth-header)
                         :uri             (uri-fn data)
                         :response-format (ajax/json-response-format {:keywords? true})
                         :on-failure      [on-failure]
                         :on-success      [on-success]}}
           {:http-xhrio {:method          :post
+                        :headers         (auth-header)
                         :params          data
                         :uri             (uri-fn data)
                         :format          (ajax/json-request-format)
@@ -71,8 +111,13 @@
       (fn [db [_ error]]
         (when failure-notice
           (rf/dispatch [:global/notice
-                        {:message  (str "请求调用失败：" (:last-error error))
-                         :callback (vector data-clean)}]))
+                        {:message  (let [error (or (:last-error error) (str error))]
+                                     (if (str/includes? error "Forbidden")
+                                       (str "请求调用失败，没有权限，请点击“确定”登录后再试。")
+                                       (str "请求调用失败：" error)))
+                         :callback (if (str/includes? (str (:last-error error)) "403")
+                                     [:show-login]
+                                     (vector data-clean))}]))
         (assoc db data
                   {:data    nil
                    :status  0
@@ -177,9 +222,11 @@
   :fetch-usage
   (fn [_ _]
     {:http-xhrio {:method          :get
+                  :headers         (auth-header)
                   :uri             "/api/usage"
                   :response-format (ajax/json-response-format {:keywords? true})
-                  :on-success      [:set-usage]}}))
+                  :on-success      [:set-usage]
+                  :on-failure      [:handle-all-failure]}}))
 
 (rf/reg-event-db
   :set-usage
@@ -197,6 +244,7 @@
   :send-wishlist
   (fn [_ [_ data]]
     {:http-xhrio {:method          :post
+                  :headers         (auth-header)
                   :params          data
                   :uri             (str "/api/wishlist")
                   :format          (ajax/json-request-format)
@@ -213,6 +261,7 @@
 (rf/reg-event-db
   :set-send-wishlist-error
   (fn [db [_ error]]
+    (rf/dispatch [:handle-all-failure])
     (assoc db :wishlist-server-back {:status  :fail
                                      :content error})))
 
@@ -230,9 +279,11 @@
   :fetch-wishlist
   (fn [_ _]
     {:http-xhrio {:method          :get
+                  :headers         (auth-header)
                   :uri             "/api/wishlist"
                   :response-format (ajax/json-response-format {:keywords? true})
-                  :on-success      [:set-wishlist]}}))
+                  :on-success      [:set-wishlist]
+                  :on-failure      [:handle-all-failure]}}))
 
 (rf/reg-event-db
   :set-wishlist
