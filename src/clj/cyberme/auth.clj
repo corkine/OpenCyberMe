@@ -6,46 +6,6 @@
             [clojure.string :as s])
   (:import java.util.Base64))
 
-;(defn identity->roles [identity]
-;  (cond-> #{:any}
-;          (some? identity) (conj :authenticated)))
-;(def roles
-;  {:message/create!      #{:authenticated}
-;   :auth/login           #{:any}
-;   :auth/logout          #{:any}
-;   :account/register     #{:any}
-;   :session/get          #{:any}
-;   :messages/list        #{:any}
-;   :messages/by-author   #{:any}
-;   :author/get           #{:any}
-;   :account/set-profile! #{:authenticated}
-;   :swagger/swagger      #{:any}
-;   :media/get            #{:any}
-;   :media/upload         #{:authenticated}})
-;
-;(defn authorized? [roles req]
-;  (if (seq roles)
-;    (->> req
-;         :session
-;         :identity
-;         identity->roles
-;         (some roles)
-;         boolean)
-;    (do
-;      (log/error "roles: " roles " is empty for route: " (:uri req))
-;      false)))
-;
-;(defn get-roles-from-match [req]
-;  (-> req
-;      (ring/get-match)
-;      (get-in [:data ::auth/roles] #{})))
-;
-;(defn wrap-authorized [handler unauthorized-handler]
-;  (fn [req]
-;    (if (authorized? (get-roles-from-match req) req)
-;      (handler req)
-;      (unauthorized-handler req))))
-
 (defn get-logs-from-match [req]
   (-> req
       (ring/get-match)
@@ -77,15 +37,7 @@
                      (and (= name (:user %)) (= pass (:pass %)))
                      (and (= name (:user %)) (= pass (:pass %)) (= role (:role %))))
         pass? (some? (some filter-fn auth-info))]
-    ;_ (log/info "for " name ", pass: " pass ", role: " role " passed.")
     pass?))
-
-#_(defn auth-in-query [query-param]
-    (let [u (get query-param "user")
-          s (get query-param "secret")
-          n (:auth-user env)
-          p (:auth-pass env)]
-      (and (not (nil? n)) (not (nil? p)) (= u n) (= s p))))
 
 (defn auth-in-query [query-param]
   (let [name (get query-param "user")
@@ -93,7 +45,6 @@
         auth-info (or (:auth-info env) [])
         filter-fn #(and (= name (:user %)) (= pass (:pass %)))
         pass? (some? (some filter-fn auth-info))]
-    ;_ (log/info "for " name ", pass: " pass ", role: " role " passed.")
     pass?))
 
 (defn byte-transform
@@ -127,18 +78,41 @@
                      "Content-Type"     "text/plain"}
                     (:headers denied-response))))
 
+(defn authentication-failure-401
+  [& [realm denied-response]]
+  (assoc (merge {:status 401
+                 :body   "access denied"}
+                denied-response)
+    :headers (merge {"WWW-Authenticate" (format "Basic realm=\"%s\""
+                                                (or realm "restricted area"))
+                     "Content-Type"     "text/plain"}
+                    (:headers denied-response))))
+
+(defn is-swagger [{uri :uri}]
+  (condp #(s/starts-with? %2 %1) uri
+    "/cyber/api-docs/" true
+    "/api/api-docs/" true
+    "/cyber/swagger.json" true
+    "/api/swagger.json" true
+    false))
+
 (defn wrap-basic-authentication
   [app authenticate & [realm denied-response]]
   (fn [{:keys [request-method] :as req}]
     (let [auth-req (basic-authentication-request req authenticate)]
-      #_(clojure.pprint/pprint req)
+      #_(clojure.pprint/pprint (:uri req))
       (if (or (:basic-authentication auth-req)
               (auth-in-query (:query-params req)))
         (app auth-req)
-        (authentication-failure realm
-                                (into denied-response
-                                      (when (= request-method :head)
-                                        {:body nil})))))))
+        (if (is-swagger req)
+          (authentication-failure-401 realm
+                                      (into denied-response
+                                            (when (= request-method :head)
+                                              {:body nil})))
+          (authentication-failure realm
+                                  (into denied-response
+                                        (when (= request-method :head)
+                                          {:body nil}))))))))
 
 (defn wrap-basic-auth [handler]
   (wrap-basic-authentication handler #(authenticated? %1 %2 nil)))
