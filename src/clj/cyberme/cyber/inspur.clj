@@ -482,21 +482,47 @@
         :Month2RawData (if showDetails month2-raw nil)
         :AllRawData (if showDetails all-raw nil)))))
 
+(defn local-date [] (LocalDate/now))
+
+(defn local-date-time [] (LocalDateTime/now))
+
+(defn local-time [] (LocalTime/now))
+
 (defn handle-serve-month-summary [{:keys [user secret] :as all}]
   "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
+  对于策略而言，如果没有 check，但是当前天是今天且当前时间策略全部超时，构造 failed 为 1
   用于前端页面展示考勤日历。
   [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
                 :work-day true :policy true}]"
   (try
-    (let [date-list (month-days 0 true)
+    (let [today (local-date)
+          clock (local-time)
+          date-list (month-days 0 true)
           info-check-status #(filter (fn [c] (= (:status c) %2)) (or (:check %1) []))
-          policy-res #(let [{:keys [r1start r1end r2start r2end info] :as all}
-                            (db/get-today-auto {:day %})]
-                        {:exist   (not (or (nil? r1start) (nil? r1end)
-                                           (nil? r2start) (nil? r2end)))
-                         :pending (count (info-check-status info "ready!"))
-                         :failed  (count (info-check-status info "failed!"))
-                         :success (count (info-check-status info "done!"))})
+          policy-res #(let [{:keys [r1start r1end r2start r2end info]}
+                            (db/get-today-auto {:day %})
+                            {check :check} info
+                            non-check? (= (count check) 0)
+                            after-all? (and (not (nil? r1start))
+                                            (.isAfter clock r1start)
+                                            (not (nil? r1end))
+                                            (.isAfter clock r1end)
+                                            (not (nil? r2start))
+                                            (.isAfter clock r2start)
+                                            (not (nil? r2end))
+                                            (.isAfter clock r2end))]
+                        (if (.isEqual % today)
+                          {:exist   (not (or (nil? r1start) (nil? r1end)
+                                             (nil? r2start) (nil? r2end)))
+                           :pending (count (info-check-status info "ready!"))
+                           :failed  (max (count (info-check-status info "failed!"))
+                                         (if (and non-check? after-all?) 1 0))
+                           :success (count (info-check-status info "done!"))}
+                          {:exist   (not (or (nil? r1start) (nil? r1end)
+                                             (nil? r2start) (nil? r2end)))
+                           :pending (count (info-check-status info "ready!"))
+                           :failed  (count (info-check-status info "failed!"))
+                           :success (count (info-check-status info "done!"))}))
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
                            signin (signin-data info)
                            signin (sort-by :time signin)
@@ -659,12 +685,6 @@
     (catch Exception e
       {:message (str "列出失败：" (.getMessage e)) :status 0})))
 
-(defn local-date [] (LocalDate/now))
-
-(defn local-date-time [] (LocalDateTime/now))
-
-(defn local-time [] (LocalTime/now))
-
 (defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt] :as all}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件，如果满足，则将此次查询记录在数据库中，以备
   如果其检查失败后，后台服务发送通知消息。
@@ -693,7 +713,7 @@
                                                       :start  (local-date-time)
                                                       :status "ready!"
                                                       :cost   600})))
-              _ (db/update-auto-info {:day local-date :info new-info})]
+              _ (db/update-auto-info {:day (local-date) :info new-info})]
           (log/info "[hcm-auto] update auto checking today: " new-info)))
       (if in-range "YES" "NO"))
     (catch Exception e
@@ -704,9 +724,21 @@
   "检查数据库所有的 auto 的 info 的 check 字段，获取所有的检查项，如果检查项为 ready! 并且到期
   那么进行 HCM 检查并更新这些检查项信息，如果这些 check 项任一检查失败，那么异步通知 Slack。
   这里不必须使用 HCM 请求，因为一旦 AUTO 成功会不使用缓存请求 HCM 并缓存最新数据，因此检查只需要
-  使用缓存数据即可。"
-  (let [{{:keys [check] :as info} :info} (db/get-today-auto {:day (LocalDate/now)})
-        now (LocalDateTime/now)
+  使用缓存数据即可。
+  此外，如果存在策略，但是现在时间超过了所有策略时间且没有 check，将标记 today 完全失败，并发送通知。"
+  (let [clock (local-time)
+        {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day (local-date)})
+        {:keys [check mark-full-failed]} info
+        with-strategy-but-no-check? (and (not (or (nil? r1start) (nil? r1end)
+                                                  (nil? r2start) (nil? r2end)))
+                                         (= (count check) 0)
+                                         (not mark-full-failed))
+        wsbnc-and-after-all-strategy? (and with-strategy-but-no-check?
+                                           (.isAfter clock r1start)
+                                           (.isAfter clock r2start)
+                                           (.isAfter clock r1end)
+                                           (.isAfter clock r2end))
+        now (local-date-time)
         afternoon? (> (.getHour now) 12)
         need-check (filterv (fn [{:keys [start cost status] :as all}]
                               "任何状态为 ready! 的，并且超过了其执行期限的"
@@ -720,8 +752,9 @@
                                   false))) (or check []))
         ;_ (log/info "[hcm-auto-check] need check: " need-check)
         nothing-check? (= (count need-check) 0)]
+    ;如果有检查的话，则进行检查：
     (if-not nothing-check?
-      (let [check-fn (fn [{:keys [id cost start status]}]
+      (let [check-fn (fn [{:keys [id cost start]}]
                        "获取当前 HCM 信息，如果是下午，应该 offWork，上午则不是 needMorningCheck
                        否者都算执行失败。"
                        (let [data (get-hcm-info {:time now})
@@ -752,8 +785,15 @@
           (log/info "[hcm-auto-check] failed with task in list: " check-result)
           (future (slack/notify "检查 AUTO 失败，可能需要手动操作。" "SERVER")))
         (log/info "[hcm-auto-check] saving database with: " updated-check)
-        (db/update-auto-info {:day (LocalDate/now) :info (assoc info :check updated-check)}))
-      #_(log/info "[hcm-auto-check] nothing check, skip now..."))))
+        (db/update-auto-info {:day (local-date) :info (assoc info :check updated-check)}))
+      ;如果没有检查的话，如果策略过期，则通知并更新数据库
+      (if wsbnc-and-after-all-strategy?
+        (do
+          (log/info "[hcm-auto-check] strategy no check!")
+          (future (slack/notify "记录了策略，但是没有任何检查发生！" "SERVER"))
+          (db/update-auto-info {:day (local-date) :info (assoc info :mark-full-failed true)}))
+        ;反之则静默继续处理
+        #_(log/info "[hcm-auto-check] nothing check, skip now...")))))
 
 (defn handle-set-cache [{:keys [token]}]
   (set-cache token)
