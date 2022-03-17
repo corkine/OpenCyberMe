@@ -700,41 +700,30 @@
       (log/error "[hcm-auto] error: " (.getMessage e))
       (str "解析数据时出现异常：可能是传入的时间无法解析或者不存在数据库表。" (.getMessage e)))))
 
-(defn find-today-ready-and-done []
+(defn auto-today-info-check! []
   "检查数据库所有的 auto 的 info 的 check 字段，获取所有的检查项，如果检查项为 ready! 并且到期
   那么进行 HCM 检查并更新这些检查项信息，如果这些 check 项任一检查失败，那么异步通知 Slack。
   这里不必须使用 HCM 请求，因为一旦 AUTO 成功会不使用缓存请求 HCM 并缓存最新数据，因此检查只需要
   使用缓存数据即可。
-  此外，如果存在策略，但是现在时间超过了所有策略时间且存在某个策略范围没有 check，将标记 today 完全失败，并发送通知。"
+  此外，如果存在策略，但是现在时间超过了所有策略时间且存在某个策略范围没有 check，将标记 today 完全失败，并发送通知。
+  上午和下午分别计算自己时间段并通知自己的部分。"
   (let [clock (local-time)
         {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day (local-date)})
-        {:keys [check mark-full-failed]} info
+        {:keys [check mark-night-failed mark-morning-failed]} info
         ;四个条件表明策略失效：完备的策略、当前时间晚于最末策略结束时间、存在策略在检查中找不到、没有处理过数据
-        all-failed? (and (not mark-full-failed)
-                         (not (or (nil? r1start) (nil? r1end)
-                                  (nil? r2start) (nil? r2end)))
-                         (and (.isAfter clock r1start)
-                              (.isAfter clock r2start)
-                              (.isAfter clock r1end)
-                              (.isAfter clock r2end))
-                         (not (and (some (fn [{start :start}]
-                                           (if (nil? start)
-                                             false
-                                             (try
-                                               (and (.isAfter (.toLocalTime (LocalDateTime/parse start)) r1start)
-                                                    (.isBefore (.toLocalTime (LocalDateTime/parse start)) r1end))
-                                               (catch Exception e
-                                                 (log/error "[hcm-auto-routine] parse " start " error: " (.getMessage e))
-                                                 false)))) check)
-                                   (some (fn [{start :start}]
-                                           (if (nil? start)
-                                             false
-                                             (try
-                                               (and (.isAfter (.toLocalTime (LocalDateTime/parse start)) r2start)
-                                                    (.isBefore (.toLocalTime (LocalDateTime/parse start)) r2end))
-                                               (catch Exception e
-                                                 (log/error "[hcm-auto-routine] parse " start " error: " (.getMessage e))
-                                                 false)))) check))))
+        failed-with #(and (not %3)
+                          (not (or (nil? %1) (nil? %2)))
+                          (and (.isAfter clock %1)
+                               (.isAfter clock %2))
+                          (not (some (fn [{start :start}]
+                                       (if (nil? start)
+                                         false
+                                         (try
+                                           (and (.isAfter (.toLocalTime (LocalDateTime/parse start)) %1)
+                                                (.isBefore (.toLocalTime (LocalDateTime/parse start)) %2))
+                                           (catch Exception e
+                                             (log/error "[hcm-auto-routine] parse " start " error: " (.getMessage e))
+                                             false)))) check)))
         now (local-date-time)
         afternoon? (> (.getHour now) 12)
         need-check (filterv (fn [{:keys [start cost status] :as all}]
@@ -784,13 +773,17 @@
         (log/info "[hcm-auto-check] saving database with: " updated-check)
         (db/update-auto-info {:day (local-date) :info (assoc info :check updated-check)}))
       ;如果没有检查的话，如果策略过期，则通知并更新数据库
-      (if all-failed?
-        (do
-          (log/info "[hcm-auto-check] strategy no check!")
-          (future (slack/notify "记录了策略，但是没有任何检查发生！" "SERVER"))
-          (db/update-auto-info {:day (local-date) :info (assoc info :mark-full-failed true)}))
-        ;反之则静默继续处理
-        #_(log/info "[hcm-auto-check] nothing check, skip now...")))))
+      (if afternoon?
+        (when (failed-with r2start r2end mark-night-failed)
+          (log/info "[hcm-auto-check] strategy no check with night!")
+          (future (slack/notify "记录了策略，但是晚上没有任何检查发生！" "SERVER"))
+          (db/update-auto-info {:day (local-date) :info
+                                (assoc info :mark-night-failed true)}))
+        (when (failed-with r1start r1end mark-morning-failed)
+          (log/info "[hcm-auto-check] strategy no check with morning!")
+          (future (slack/notify "记录了策略，但是早上没有任何检查发生！" "SERVER"))
+          (db/update-auto-info {:day (local-date) :info
+                                (assoc info :mark-morning-failed true)}))))))
 
 (defn handle-set-cache [{:keys [token]}]
   (set-cache token)
@@ -813,7 +806,7 @@
         (when (or is-morning? is-night?)
           (try
             #_(log/info "[hcm-auto-check-routine] starting checking database auto...")
-            (find-today-ready-and-done)
+            (auto-today-info-check!)
             #_(log/info "[hcm-auto-check-routine] end checking, try to sleep sec: " sleep-sec)
             (catch Exception e
               (log/error "[hcm-auto-check-routine] failed: " (.getMessage e)))))

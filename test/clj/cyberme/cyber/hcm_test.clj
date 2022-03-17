@@ -16,7 +16,8 @@
     [conman.core :as conman]
     [cyberme.cyber.track :as track]
     [cyberme.db.core :as db]
-    [cyberme.cyber.inspur :as inspur])
+    [cyberme.cyber.inspur :as inspur]
+    [cyberme.cyber.slack :as slack])
   (:import (java.util UUID)
            (java.time LocalDate LocalDateTime LocalTime)
            (java.time.format DateTimeFormatter)))
@@ -143,10 +144,10 @@
 
     (testing "handle serve auto - time pass and no pass"
       (with-redefs [db/get-today-auto (fn [& _] {:r1start (LocalTime/of 7 30)
-                                                 :r1end (LocalTime/of 8 10)
+                                                 :r1end   (LocalTime/of 8 10)
                                                  :r2start (LocalTime/of 17 30)
-                                                 :r2end (LocalTime/of 18 30)
-                                                 :info {}})
+                                                 :r2end   (LocalTime/of 18 30)
+                                                 :info    {}})
                     db/update-auto-info #(swap! a assoc :auto (:info %))]
         (let [_ (clean!)
               message (inspur/handle-serve-auto {:needCheckAt "7:33"})
@@ -173,10 +174,10 @@
               check (let [t (.plusSeconds now 50)]
                       (format "%s:%s" (.getHour t) (.getMinute t)))]
           (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
-                                                     :r1end r1end
+                                                     :r1end   r1end
                                                      :r2start (LocalTime/of 17 30)
-                                                     :r2end (LocalTime/of 18 30)
-                                                     :info {}})
+                                                     :r2end   (LocalTime/of 18 30)
+                                                     :info    {}})
                         db/update-auto-info #(swap! a assoc :auto (:info %))]
             (let [_ (clean!)
                   message (inspur/handle-serve-auto {:needCheckAt check})
@@ -194,10 +195,10 @@
               check (let [t (.plusMinutes now 3)]
                       (format "%s:%s" (.getHour t) (.getMinute t)))]
           (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
-                                                     :r1end r1end
+                                                     :r1end   r1end
                                                      :r2start (LocalTime/of 17 30)
-                                                     :r2end (LocalTime/of 18 30)
-                                                     :info {}})
+                                                     :r2end   (LocalTime/of 18 30)
+                                                     :info    {}})
                         db/update-auto-info #(swap! a assoc :auto (:info %))]
             (let [_ (clean!)
                   message (inspur/handle-serve-auto {:needCheckAt check})
@@ -205,4 +206,307 @@
               (is (= message "YES"))
               (is (nil? (:auto @a)))
               (is (= status nil))
-              (is (= cost nil)))))))))
+              (is (= cost nil))))))))
+
+  (testing "auto-today-info-check with morning need check not end"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck false
+                                          :offWork          false})
+                    slack/notify (fn [& _] (s :notice :true))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check
+                                     [{:cost   600
+                                       :start  (str (.minusSeconds now-dt 100))
+                                       :status "ready!"}]
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (n :get-hcm :true))
+              (is (n :signin-data :true))
+              (is (n :signin-hint :true))))))))
+
+  (testing "auto-today-info-check with morning need check finished hcm success"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck false
+                                          :offWork          false})
+                    slack/notify (fn [& _] (s :notice :true))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check
+                                     [{:cost   600
+                                       :start  (str (.minusSeconds now-dt 700))
+                                       :status "ready!"}]
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (y :get-hcm :true))
+              (is (y :signin-data :true))
+              (is (y :signin-hint :true))
+              (is (n :notice :true))
+              (is (y :update-info "done!"))))))))
+
+  (testing "auto-today-info-check with morning need check finished hcm failed"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck true
+                                          :offWork          false})
+                    slack/notify (fn [& _] (s :notice :true))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check
+                                     [{:cost   600
+                                       :start  (str (.minusSeconds now-dt 700))
+                                       :status "ready!"}]
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (y :get-hcm :true))
+              (is (y :signin-data :true))
+              (is (y :signin-hint :true))
+              (is (y :notice :true))
+              (is (y :update-info "failed!"))))))))
+
+  (testing "auto-today-info-check with nothing checked"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck true
+                                          :offWork          false})
+                    slack/notify (fn [& _] (s :notice :true))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check []
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (nil? (::get-hcm @a)))
+              (is (nil? (:signin-data @a)))
+              (is (nil? (:signin-hint @a)))
+              (is (nil? (:update-info @a)))))))))
+
+  (testing "auto-today-info-check with everything checked"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck true
+                                          :offWork          false})
+                    slack/notify (fn [& _] (s :notice :true))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check [{:cost   600
+                                              :start  (str (.minusSeconds now-dt 700))
+                                              :status "failed!"}
+                                             {:cost   600
+                                              :start  (str (.minusSeconds now-dt 700))
+                                              :status "done!"}
+                                             {:cost   600
+                                              :start  (str (.minusSeconds now-dt 700))
+                                              :status "failed!"}]
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (nil? (::get-hcm @a)))
+              (is (nil? (:signin-data @a)))
+              (is (nil? (:signin-hint @a)))
+              (is (nil? (:update-info @a)))))))))
+
+  (testing "auto-today-info-check morning no check"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck true
+                                          :offWork          false})
+                    slack/notify (fn [m _] (s :notice m))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.minusSeconds now 500)
+              r1end (.minusSeconds now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check []
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status))
+                                              (s :update-info-mmf
+                                                 (-> info :mark-morning-failed))
+                                              (s :update-info-mnf
+                                                 (-> info :mark-night-failed)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (nil? (::get-hcm @a)))
+              (is (nil? (:signin-data @a)))
+              (is (nil? (:signin-hint @a)))
+              (is (nil? (:update-info @a)))
+              (is (str/includes? (:notice @a) "记录了策略，但是早上"))
+              (is (= (:update-info-mmf @a) true))
+              (is (= (:update-info-mnf @a) nil))))))))
+
+  (testing "auto-today-info-check night no check"
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 19 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 19 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck true
+                                          :offWork          false})
+                    slack/notify (fn [m _] (s :notice m))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.minusSeconds now 500)
+              r1end (.minusSeconds now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check []
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status))
+                                              (s :update-info-mmf
+                                                 (-> info :mark-morning-failed))
+                                              (s :update-info-mnf
+                                                 (-> info :mark-night-failed)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (nil? (::get-hcm @a)))
+              (is (nil? (:signin-data @a)))
+              (is (nil? (:signin-hint @a)))
+              (is (nil? (:update-info @a)))
+              (is (str/includes? (or (:notice @a) "") "记录了策略，但是晚上"))
+              (is (= (:update-info-mmf @a) nil))
+              (is (= (:update-info-mnf @a) true)))))))))
