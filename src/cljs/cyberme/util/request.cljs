@@ -1,11 +1,11 @@
-(ns cyberme.event.request
+(ns cyberme.util.request
   (:require
     [re-frame.core :as rf]
     [ajax.core :as ajax]
     [clojure.string :as string]
     [goog.crypt.base64 :as b64]
     [clojure.set :as set]
-    [cyberme.event.storage :as storage]
+    [cyberme.util.storage :as storage]
     [clojure.string :as str]))
 
 (defn auth-header []

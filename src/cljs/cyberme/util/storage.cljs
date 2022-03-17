@@ -1,4 +1,4 @@
-(ns cyberme.event.storage)
+(ns cyberme.util.storage)
 
 (defn set-item [key value]
   (.setItem js/localStorage key (.stringify js/JSON (clj->js value))))

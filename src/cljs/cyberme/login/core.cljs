@@ -3,7 +3,7 @@
             [cyberme.modals :as modals]
             [reagent.core :as r]
             [clojure.string :as string]
-            [cyberme.event.storage :as storage]
+            [cyberme.util.storage :as storage]
             [clojure.string :as str]))
 
 (defn login-button []

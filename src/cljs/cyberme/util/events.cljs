@@ -1,4 +1,4 @@
-(ns cyberme.event.events
+(ns cyberme.util.events
   (:require
     [re-frame.core :as rf]
     [ajax.core :as ajax]

@@ -4,7 +4,7 @@
     [ajax.core :as ajax]
     [clojure.string :as string]
     [clojure.set :as set]
-    [cyberme.event.request :as req]))
+    [cyberme.util.request :as req]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; 位置 ;;;;;;;;;;;;;;;;;;;;;;
 ;获取所有位置和物品数据，失败后自动弹出对话框并清空数据

@@ -4,7 +4,7 @@
     [reagent.core :as r]
     [re-frame.core :as rf]
     [markdown.core :refer [md->html]]
-    [cyberme.event.events]
+    [cyberme.util.events]
     [cyberme.about :refer [log about-page]]
     [cyberme.place.filter :as place-filter]
     [cyberme.place.core :as place]

@@ -1,4 +1,4 @@
-(ns cyberme.event.ajax
+(ns cyberme.util.ajax
   (:require
     [ajax.core :as ajax]
     [luminus-transit.time :as time]

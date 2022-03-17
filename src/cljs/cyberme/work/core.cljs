@@ -38,7 +38,7 @@
         status-fn #(if-not (->> % date-key (get data) :work-day) "休" "")
         plan-fn #(let [{:keys [exist failed success pending]} (->> % date-key (get data) :policy)]
                    (cond (not exist) ""
-                         (and (= failed 0) (= pending 0) (not= success 0)) "成"
+                         (and (= failed 0) (= pending 0) (not= success 0)) (if (> success 1) "成" "可")
                          (not= pending 0) "候"
                          (and (not= failed 0) (= pending 0)) "败"
                          :else "策"))
