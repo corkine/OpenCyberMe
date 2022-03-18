@@ -22,7 +22,8 @@
     [cyberme.cyber.note :as note]
     [cyberme.cyber.mini4k :as mini4k]
     [cyberme.cyber.clean :as clean]
-    [cyberme.cyber.fitness :as fitness]))
+    [cyberme.cyber.fitness :as fitness]
+    [clojure.tools.logging :as log]))
 
 (s/def :global/user string?)
 (s/def :global/secret string?)
@@ -218,14 +219,17 @@
     [""
      {:get {:summary     "上班状态自动检查 (Pixel)"
             :description "供 PIXEL 使用的内部接口，检查当前时间是否需要自动执行计划。
-            mustInRange 默认为 true，如果当前时间不在策略时间内，则也返回 false。如果 mustInRange
-            为 false，则只要检查时间在策略时间内，就返回 true。"
+            如果检查时间在任一策略区间内，则返回 YES，反之返回 NO，出错返回一句话提示。
+            如果当前时间也在策略区间内，则在返回前还持久化当前请求将其看做一次 600s 的任务。
+            在返回前还要判断参数 mustInRange，其默认为 true，如果此标记 true 或空
+            则只有当检查时间和当前时间都在任一策略区间内，才返回 YES。如果标记为 false，
+            则仅检查时间在策略区间内即返回 YES。"
             :parameters  {:query (s/keys :req-un [:hcm/needCheckAt]
                                          :opt-un [:global/user :global/secret :auto/mustInRange])}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/content-type
-                             (hr/response (inspur/handle-serve-auto query))
-                             "text/plain"))}}]
+                           (let [resp (inspur/handle-serve-auto query)
+                                 _ (log/info "[hcm-auto] response is " resp)]
+                             (hr/content-type (hr/response resp) "text/plain")))}}]
     ["/info"
      {:get  {:summary     "最近上班状态条件"
              :description "返回最近上班状态标记, day 为最近天数"

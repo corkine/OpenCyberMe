@@ -681,7 +681,7 @@
   如果 mustInRange 为 true，则返回 YES 还需要当前时间在策略范围内。
   如果检查的时间点和当前时间点均位于目标范畴，则更新数据库，否者不进行数据库操作。"
   (try
-    (log/info "[hcm-auto] req by pixel for " needCheckAt)
+    (log/info "[hcm-auto] req by pixel for " needCheckAt " with mustInRange? " mustInRange)
     (let [clock-now (local-time)
           needCheckAt (str/trim (str/replace (str/replace needCheckAt ": " ":") "：" ":"))
           [_ h m] (re-find #"(\d+):(\d+)" (or needCheckAt ""))
