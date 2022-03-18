@@ -17,7 +17,7 @@
                                :method  :get
                                :headers {"Authorization" (str "APPCODE " code)}})
           resp @req]
-          ;_ (clojure.pprint/pprint resp)
+      ;_ (clojure.pprint/pprint resp)
 
       {:message "检查成功。"
        :data    (json/parse-string (:body resp) true)
@@ -28,7 +28,7 @@
 
 (defn handle-track [{:keys [no] :as all} note kind]
   (try
-    (let [_ (db/set-express-track {:no no :track all
+    (let [_ (db/set-express-track {:no   no :track all
                                    :info {:status 1 :note note :kind kind}})]
       {:message "追踪设置成功。" :status 1})
     (catch Exception e
@@ -36,13 +36,14 @@
 
 (defn request-express-api [kuai-di100 no kind code]
   @(client/request {:url     (format kuai-di100 no kind)
-                   :method  :get
-                   :headers {"Authorization" (str "APPCODE " code)}}))
+                    :method  :get
+                    :headers {"Authorization" (str "APPCODE " code)}}))
 
-(defn simple-track [{:keys [no kind note code rewriteIfExist]
-                     :or   {kind "AUTO" rewriteIfExist true}}]
+(defn simple-track
   "快递追踪，先查找数据库，找到即返回（不更新数据库数据），找不到则查询 API，并将结果保存到数据库：
   如果当前状态为运输中，则标记为运输，如果当前状态为已完毕或未找到则保存到数据库并标记为已完毕。"
+  [{:keys [no kind note code rewriteIfExist]
+    :or   {kind "AUTO" rewriteIfExist true}}]
   (try
     (let [code (or code (edn-in [:express :code]))
           {:keys [track] :as exist} (db/find-express {:no no})]
@@ -58,7 +59,7 @@
             (handle-track all note kind)
             (do
               ;;为了避免下次查询浪费 API 资源
-              (db/set-express-track {:no no :track all
+              (db/set-express-track {:no   no :track all
                                      :info {:status 0 :note note :kind kind}})
               {:message (str "无需检查此快递，可能是单号错误或者状态错误/已完成。")
                :data    all
@@ -67,8 +68,9 @@
       {:message (str "追踪失败，方法未返回预期 JSON 对象。" (.getMessage e))
        :status  0})))
 
-(defn track-routine []
+(defn track-routine
   "每间隔一段时间执行一次的数据库数据查询"
+  []
   (try
     (doseq [{:keys [no info track]} (db/need-track-express)]
       (l/info (str "[express-track] checking express id: " no ", info: " info))
@@ -95,7 +97,7 @@
                 未返回预期数据" message status data)
                 (slack/notify (str "快递 " (or note no) " 已结束追踪。") "EXPRESS"))
               (l/info "[express-track] update express for " (or note no) " set status: " track-id)
-              (db/update-express {:no no :track data
+              (db/update-express {:no   no :track data
                                   :info {:note note :kind kind :status track-id}}))))))
     (catch Exception e
       (l/info "[express-track] exception: " (.getMessage e)))))

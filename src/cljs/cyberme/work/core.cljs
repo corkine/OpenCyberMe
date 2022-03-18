@@ -40,7 +40,7 @@
                    (cond (not exist) ""
                          (and (= failed 0) (= pending 0) (not= success 0)) (if (> success 1) "成" "可")
                          (not= pending 0) "候"
-                         (and (not= failed 0) (= pending 0)) "败"
+                         ;(and (not= failed 0) (= pending 0)) "败"
                          :else "策"))
         day-list (range 1 (+ 1 (t/day last_day)))
         month-list (mapv (fn [d]

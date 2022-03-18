@@ -10,8 +10,9 @@
             [cyberme.config :refer [edn-in]]
             [cuerdas.core :as str]))
 
-(defn parse-data [url]
+(defn parse-data
   "根据 URL 解析获得现在更新的集数"
+  [url]
   (try
     (let [req (binding [org.httpkit.client/*default-client* sni-client/default-client]
                 (client/request {:url        url

@@ -43,8 +43,9 @@
         end (LocalTime/of 17 30)]
     (/ (.toMinutes (Duration/between start end)) 60.0)))
 
-(defn hcm-info-from-cache [^String date]
+(defn hcm-info-from-cache
   "从缓存获取数据，先检查数据库，数据库存在即返回，反之检查内存，内存存在且不过期则返回，反之删除过期数据并返回空"
+  [^String date]
   (try
     (let [{data :hcm} (db/get-signin {:day date})
           with-msg-status {:data    data
@@ -66,13 +67,14 @@
       (log/info "[signin-cache] failed internal because：" (.getMessage e))
       nil)))
 
-(defn set-hcm-cache [^String date info]
+(defn set-hcm-cache
   "两级缓存机制，对于临时数据保存在内存缓存中，关闭服务器会持久化到文件，启用服务器会从文件加载。
   对于持久数据保存在数据库中。因为取数据总是先从数据库取，然后才是内存，如果取不到则请求 HCM 服务器，
   为避免在不强制使用缓存（比如 Pixel 的 /auto 接口会强制查询 HCM 服务器并更新缓存）的情况下在
   减少 HCM 服务器访问的前提下尽可能保持数据一致性，对于保存缓存到数据库还是内存要小心区分。根据实际
   的打卡规则，当打卡数据的最后时间是昨天（必定是持久化的），今天的数据永远不持久化，因为不确定何时
   下班并且是否在正常下班后晚上 23:59 再打一次卡的情况，此时仅使用内存缓存。"
+  [^String date info]
   (let [input-date (try
                      (LocalDate/parse date (DateTimeFormatter/ISO_LOCAL_DATE))
                      (catch Exception e
@@ -93,8 +95,9 @@
                       ", expired after " expired-time)
             (swap! cache assoc (keyword date) (assoc info :expired expired-time)))))))
 
-(defn call-hcm [^String time, token]
+(defn call-hcm
   "调用 HCM Http Request 获取服务器数据"
+  [^String time, token]
   (swap! visit-data conj {:time (LocalDateTime/now) :for time :token token})
   @(client/request {:url     (edn-in [:hcm :check-url])
                     :method  :post
@@ -104,9 +107,10 @@
 (defn notice-expired-async []
   (future (slack/notify "HCM Token 过期！" "SERVER")))
 
-(defn get-hcm-info [{:keys [^LocalDateTime time ^String token notUseCache]
-                     :or   {notUseCache false}}]
+(defn get-hcm-info
   "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}"
+  [{:keys [^LocalDateTime time ^String token notUseCache]
+    :or   {notUseCache false}}]
   (let [time (if (nil? time) (-> (LocalDateTime/now) (.format DateTimeFormatter/ISO_LOCAL_DATE))
                              (.format time DateTimeFormatter/ISO_LOCAL_DATE))
         cache-res (if notUseCache nil (hcm-info-from-cache time))]
@@ -139,20 +143,22 @@
       (do #_(log/info "[hcm-request] get from cache hint!")
         (update cache-res :message #(str % " (from cache)"))))))
 
-(defn signin-data [hcm-info]
+(defn signin-data
   "从 HTTP 返回数据中解析签到数据：
   [{:source 武汉江岸区解放大道,
     :time #object[java.time.LocalDateTime 2022-03-05T09:30:44]}]"
+  [hcm-info]
   (let [signin-vec (-> hcm-info :data :result :data :signin)
         pure-sign-vec (mapv (comp (fn [{time-str :time :as origin}]
                                     (assoc origin :time (LocalDateTime/parse time-str date-time)))
                                   #(select-keys % [:source :time])) signin-vec)]
     pure-sign-vec))
 
-(defn do-need-work [^LocalDateTime time]
+(defn do-need-work
   "根据国家规定返回当前是否要工作的信息 2022
   Reference: http://www.gov.cn/zhengce/content/2020-11/25/content_5564127.htm
   Reference: http://www.gov.cn/zhengce/content/2021-10/25/content_5644835.htm"
+  [^LocalDateTime time]
   (let [time (if (nil? time) (LocalDateTime/now) time)
         of22 #(.atStartOfDay (LocalDate/of 2022 ^int %1 ^int %2))
         in (fn [time [hint & d]]
@@ -184,8 +190,9 @@
       (in time [:weekend]) false
       :else true)))
 
-(defn compute-work-hour [hcm-info]
+(defn compute-work-hour
   "计算工作时长，精确计算，用于自我统计"
+  [hcm-info]
   (let [hcm-info (sort-by :time hcm-info)]
     ;;工作时长计算：无数据返回 0，有数据则开始计算。
     ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
@@ -224,8 +231,9 @@
                         minusMinutes)
                      60.0)))))))
 
-(defn compute-work-hour-duration [hcm-info]
+(defn compute-work-hour-duration
   "计算工作时长，从起点计算到终点，包括午休和下班时间，用于计算加班时间 - 从8：30-17：30 的时间"
+  [hcm-info]
   (let [hcm-info (sort-by :time hcm-info)]
     ;;工作时长计算：无数据返回 0，有数据则开始计算。
     ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
@@ -241,9 +249,10 @@
                   (/ (.toMinutes (Duration/between start end))
                      60.0)))))))
 
-(defn signin-hint [signin-list]
+(defn signin-hint
   "根据 HCM 服务器返回的打卡信息 - [{}] 生成统计信息
   因为允许多次打卡，所以可能有 0 - n 条打卡信息"
+  [signin-list]
   (let [hcm-info (sort-by :time signin-list)
         one-day (let [some-data (:time (first hcm-info))]
                   (if some-data
@@ -271,8 +280,9 @@
   {:message (str "成功写入 Token： " token)
    :status  1})
 
-(defn handle-serve-day [{:keys [user secret adjust token] :as all}]
+(defn handle-serve-day
   "当日打卡服务，不兼容 go 版本 —— 全大写，信息不全"
+  [{:keys [user secret adjust token] :as all}]
   (try
     (let [adjust (if-not adjust 0 adjust)
           info (get-hcm-info {:time (.plusDays (LocalDateTime/now) adjust) :token token})
@@ -282,8 +292,9 @@
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
-(defn week-days [adjust to-today]
+(defn week-days
   "返回一周的日期，adjust 用于按照周数往前后调整，to-today 为日期不包括今天之后的"
+  [adjust to-today]
   (let [adjust (if adjust adjust 0)
         real-now (LocalDate/now)
         now (.plusWeeks real-now adjust)
@@ -293,8 +304,9 @@
         before-now (filter #(not (.isAfter % real-now)) list)]
     (if to-today before-now list)))
 
-(defn month-days [adjust to-today]
+(defn month-days
   "返回一个月的日期，adjust 用于按照月数往前调整，本月返回今天及以前的日期"
+  [adjust to-today]
   (let [adjust (if adjust adjust 0)
         real-now (LocalDate/now)
         now (.plusMonths real-now adjust)
@@ -304,8 +316,9 @@
         before-now (filter #(not (.isAfter % real-now)) list)]
     (if to-today before-now list)))
 
-(defn month-rest-days [adjust]
+(defn month-rest-days
   "返回一个月剩下的日期，adjust 用于按照月数往前调整，不包括今天"
+  [adjust]
   (let [adjust (if adjust adjust 0)
         real-now (LocalDate/now)
         now (.plusMonths real-now adjust)
@@ -321,9 +334,10 @@
                          (iterate #(.plusDays % 1) (LocalDate/of y m d)))]
     list))
 
-(defn handle-serve-this-week [{:keys [user secret adjust token] :as all}]
+(defn handle-serve-this-week
   "返回本周打卡记录，key 为日期，value 为数据，Go 版本兼容
   {:2022-03-07 {:srv_begin :result {:data {:signin}}"
+  [{:keys [user secret adjust token] :as all}]
   (let [before-now (week-days adjust true)]
     (if (empty? before-now)
       {}
@@ -333,8 +347,9 @@
                                 [(keyword (.format day DateTimeFormatter/ISO_LOCAL_DATE))
                                  (:data info)])) before-now))))))
 
-(defn overtime-hint [kpi token]
+(defn overtime-hint
   "返回每月的加班信息"
+  [kpi token]
   (let [kpi (if (nil? kpi) 70.0 (* kpi 1.0))
         now (LocalDate/now)
         rest-days (filter #(.isAfter % now) (month-days 0 false))
@@ -365,8 +380,9 @@
                                (format "%.1f"
                                        (/ (* 1.0 (- kpi overtime-month-all)) rest-work-days-count)))}))
 
-(defn overtime-hint-for-pre-month [kpi token]
+(defn overtime-hint-for-pre-month
   "返回每月的加班信息"
+  [kpi token]
   (let [kpi (if (nil? kpi) 70.0 (* kpi 1.0))
         now (LocalDate/now)
         this-month-start (LocalDate/of (.getYear now) (.getMonth now) 1)
@@ -392,15 +408,16 @@
      :OverTimeAlsoNeed       (Double/parseDouble (format "%.1f" (- kpi overtime-month-all)))
      :AvgDayNeedOvertimeWork 0}))
 
-(defn handle-serve-summary [{:keys [user secret kpi token
-                                    todayFirst use2MonthData useAllData showDetails]
-                             :or   {kpi           70
-                                    todayFirst    true
-                                    use2MonthData false
-                                    useAllData    false
-                                    showDetails   false}
-                             :as   all}]
+(defn handle-serve-summary
   "所有工作情况统计，Go API 兼容"
+  [{:keys [user secret kpi token
+           todayFirst use2MonthData useAllData showDetails]
+    :or   {kpi           70
+           todayFirst    true
+           use2MonthData false
+           useAllData    false
+           showDetails   false}
+    :as   all}]
   (let [work-hour #(mapv (fn [day]
                            (let [info (get-hcm-info {:time (.atStartOfDay day) :token token})
                                  signin (signin-data info)]
@@ -495,11 +512,12 @@
 
 (defn local-time [] (LocalTime/now))
 
-(defn handle-serve-month-summary [{:keys [user secret] :as all}]
+(defn handle-serve-month-summary
   "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
   用于前端页面展示考勤日历。
   [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
                 :work-day true :policy true}]"
+  [{:keys [user secret] :as all}]
   (try
     (let [date-list (month-days 0 true)
           info-check-status #(filter (fn [c] (= (:status c) %2)) (or (:check %1) []))
@@ -540,8 +558,9 @@
       {:message (str "获取失败：" (.getMessage e))
        :status  0})))
 
-(defn handle-serve-hint [{:keys [user secret token] :as all}]
+(defn handle-serve-hint
   "当日提示服务 - 尽可能兼容 Go 版本"
+  [{:keys [user secret token] :as all}]
   (try
     (let [adjust 0
           info (get-hcm-info {:time (.plusDays (LocalDateTime/now) adjust) :token token})
@@ -609,9 +628,10 @@
     (assoc hint :Summary summary
                 :Todo todo)))
 
-(defn handle-serve-today [{:keys [user secret token useCache]
-                           :or   {useCache false} :as all}]
+(defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话"
+  [{:keys [user secret token useCache]
+    :or   {useCache false} :as all}]
   (let [now (LocalDateTime/now)
         is-morning (< (.getHour now) 12)
         info (get-hcm-info {:time now :token token :notUseCache (not useCache)})
@@ -628,8 +648,9 @@
       {:status  1
        :message "今日无需工作。"})))
 
-(defn handle-serve-set-auto [{:keys [date start end]}]
+(defn handle-serve-set-auto
   "新增 Pixel 打卡条件，day 格式为 20220202 格式，card1/2 格式为 10:30-11:40"
+  [{:keys [date start end]}]
   (try
     (let [[_ y m d] (re-find #"(\d\d\d\d)(\d\d)(\d\d)" date)
           [_ c1f1 c1f2 c1e1 c1e2] (re-find #"(\d\d):(\d\d)-(\d\d):(\d\d)" start)
@@ -672,14 +693,15 @@
     (catch Exception e
       {:message (str "列出失败：" (.getMessage e)) :status 0})))
 
-(defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt mustInRange]
-                                  :or {mustInRange true}}]
+(defn ^String handle-serve-auto
   "For Pixel, 自动检查当前上班状态是否满足目标条件，如果满足，则将此次查询记录在数据库中，以备
   如果其检查失败后，后台服务发送通知消息。
   传入的格式可以为 HH:mm 或者 h:m 或者 hh:m 或者 h:mm，: 可以为中文全角或半角，其前后可包含空格。
   返回值默认为 YES 或 NO，如果无法解析则返回一句话。
   如果 mustInRange 为 true，则返回 YES 还需要当前时间在策略范围内。
   如果检查的时间点和当前时间点均位于目标范畴，则更新数据库，否者不进行数据库操作。"
+  [{:keys [user secret ^String needCheckAt mustInRange]
+    :or {mustInRange true}}]
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt " with mustInRange? " mustInRange)
     (let [clock-now (local-time)
@@ -711,13 +733,14 @@
       (log/error "[hcm-auto] error: " (.getMessage e))
       (str "解析数据时出现异常：可能是传入的时间无法解析或者不存在数据库表。" (.getMessage e)))))
 
-(defn auto-today-info-check! []
+(defn auto-today-info-check!
   "检查数据库所有的 auto 的 info 的 check 字段，获取所有的检查项，如果检查项为 ready! 并且到期
   那么进行 HCM 检查并更新这些检查项信息，如果这些 check 项任一检查失败，那么异步通知 Slack。
   这里不必须使用 HCM 请求，因为一旦 AUTO 成功会不使用缓存请求 HCM 并缓存最新数据，因此检查只需要
   使用缓存数据即可。
   此外，如果存在策略，但是现在时间超过了所有策略时间且存在某个策略范围没有 check，将标记 today 完全失败，并发送通知。
   上午和下午分别计算自己时间段并通知自己的部分。"
+  []
   (let [clock (local-time)
         {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day (local-date)})
         {:keys [check mark-night-failed mark-morning-failed]} info
@@ -752,8 +775,8 @@
     ;如果有检查的话，则进行检查：
     (if-not nothing-check?
       (let [check-fn (fn [{:keys [id cost start]}]
-                       "获取当前 HCM 信息，如果是下午，应该 offWork，上午则不是 needMorningCheck
-                       否者都算执行失败。"
+                       ;获取当前 HCM 信息，如果是下午，应该 offWork，上午则不是 needMorningCheck
+                       ;否者都算执行失败。
                        (let [data (get-hcm-info {:time now})
                              signin (signin-data data)
                              {:keys [needMorningCheck offWork]} (signin-hint signin)
@@ -796,8 +819,9 @@
           (db/update-auto-info {:day (local-date) :info
                                 (assoc info :mark-morning-failed true)}))))))
 
-(defn backend-hcm-auto-check-service []
+(defn backend-hcm-auto-check-service
   "仅在白天的 7:00 - 8:40 以及下午的 17:30 - 20:20 进行检查，检查间隔为 1 分钟一次"
+  []
   (while true
     (try
       (let [sleep-sec (or (edn-in [:hcm :auto-check-seconds]) 60)

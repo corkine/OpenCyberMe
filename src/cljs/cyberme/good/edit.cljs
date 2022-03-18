@@ -8,9 +8,10 @@
 
 (def default-place-id "1")
 
-(defn validate-map-good-edit [{:keys [name uid status note labels placeId]
-                              :or {status (first good-status)} :as raw}]
+(defn validate-map-good-edit
   "一定要提供的字段：id,uid,name,label(默认空列表),status(默认活跃),placeId"
+  [{:keys [name uid status note labels placeId]
+    :or {status (first good-status)} :as raw}]
   (cond (or (nil? placeId) (string/blank? placeId)) {:error {:name "位置不能为空"}}
         (or (nil? name) (string/blank? name)) {:error {:name "名称不能为空"}}
         (and (not (or (nil? uid) (string/blank? uid)))

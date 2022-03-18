@@ -39,8 +39,9 @@
       (.warn js/console (str "解析 " jvm-time-str "失败：" e))
       "0000-00-00 00:00")))
 
-(defn items->map [items]
+(defn items->map
   "将每个位置的多个项目按照类别进行划分，包括一个 :all 所有项目"
+  [items]
   (let [map-data
         (reduce (fn [agg {:keys [labels] :as new-item}]
                   (reduce (fn [agg2 label]
@@ -56,10 +57,7 @@
 (declare place-card-right-contents)
 (declare place-card-right-contents-line)
 
-(defn place-card [{:keys [id place location description updateAt items]
-                   :or   {place       "未命名位置" location "未命名地点"
-                          description "暂无备注" updateAt "2022-01-01T00:00:00.000000"
-                          items       []}}]
+(defn place-card
   "首页位置和物品卡片。
   数据结构：{id place location description updateAt
            items [{id uid name note createAt updateAt status
@@ -67,6 +65,10 @@
                    packages [{id name status}]}]}
   渲染要求：将 items 的 labels 提取出来，按照 label 进行 items 的导航，label 按照 a-z
   排序，对于同一 label items 按照 status 进行排序。"
+  [{:keys [id place location description updateAt items]
+    :or   {place       "未命名位置" location "未命名地点"
+           description "暂无备注" updateAt "2022-01-01T00:00:00.000000"
+           items       []}}]
   (let [data (items->map items)
         labels (keys data)]
     (r/with-let
@@ -111,8 +113,9 @@
             [:div.columns.mt-2                              ;;抽屉内容
              [place-card-right-contents first-column second-column id]]]])]])))
 
-(defn place-card-right-nav [label ss select]
+(defn place-card-right-nav
   "位置卡片右侧详情按照标签进行导航"
+  [label ss select]
   (if (= label :all)
     [(if (= ss :all) :a.is-active.is-unselectable :a.is-unselectable)
      {:on-click #(reset! select label) :style {:padding "5px 0 5px 0"}}
@@ -122,8 +125,9 @@
      {:on-click #(reset! select label)}
      (str "# " (name label))]))
 
-(defn place-card-right-contents [first second placeId]
+(defn place-card-right-contents
   "位置卡片物品详情列，包括物品状态、备注和打包信息，以及鼠标移入显示的操作按钮"
+  [first second placeId]
   [:<>
    [:div.column.my-0.py-0
     (for [col first]

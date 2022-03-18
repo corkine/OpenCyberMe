@@ -7,8 +7,9 @@
             [clojure.string :as str])
   (:import (java.time LocalDateTime Instant)))
 
-(defn save-track-to-db [by info]
+(defn save-track-to-db
   "记录上报数据到数据库"
+  [by info]
   (try
     (db/set-track {:by by :info info})
     (catch Exception e
@@ -33,8 +34,9 @@
                      "loc_time"         (.getEpochSecond (Instant/now))
                      "coord_type_input" "wgs84"}}))
 
-(defn handle-track [{:keys [by lo la al ve ho]}]
+(defn handle-track
   "上报数据先根据百度地图获取地理位置，然后记录到数据库，并根据策略选择是否上报给百度"
+  [{:keys [by lo la al ve ho]}]
   (let [{:keys [ak service-id allow-devices]} (edn :location)
         {:keys [status message body]} (req-loc ak la lo)]
     (if (not= status 200)
