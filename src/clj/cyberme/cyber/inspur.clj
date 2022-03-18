@@ -14,8 +14,16 @@
            (java.util UUID)))
 
 (def date-time (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss"))
+(def c7-00 (LocalTime/of 7 0))
+(def c8-40 (LocalTime/of 8 40))
+(def c17-30 (LocalTime/of 17 30))
+(def c20-20 (LocalTime/of 20 20))
 
 (defonce token-cache (atom {}))
+(defonce cache (atom {}))
+(defonce visit-data (atom []))
+
+(declare signin-data)
 
 (defn set-cache [token]
   (swap! token-cache merge {:token   token
@@ -34,10 +42,6 @@
   (let [start (LocalTime/of 8 30)
         end (LocalTime/of 17 30)]
     (/ (.toMinutes (Duration/between start end)) 60.0)))
-
-(defonce cache (atom {}))
-
-(declare signin-data)
 
 (defn hcm-info-from-cache [^String date]
   "从缓存获取数据，先检查数据库，数据库存在即返回，反之检查内存，内存存在且不过期则返回，反之删除过期数据并返回空"
@@ -88,8 +92,6 @@
             (log/info "[signin-cache-l2] set l2 temp cache for " date
                       ", expired after " expired-time)
             (swap! cache assoc (keyword date) (assoc info :expired expired-time)))))))
-
-(defonce visit-data (atom []))
 
 (defn call-hcm [^String time, token]
   "调用 HCM Http Request 获取服务器数据"
@@ -263,6 +265,11 @@
       :offWork off-work
       :needMorningCheck morning-check
       :workHour work-hour)))
+
+(defn handle-set-cache [{:keys [token]}]
+  (set-cache token)
+  {:message (str "成功写入 Token： " token)
+   :status  1})
 
 (defn handle-serve-day [{:keys [user secret adjust token] :as all}]
   "当日打卡服务，不兼容 go 版本 —— 全大写，信息不全"
@@ -665,11 +672,13 @@
     (catch Exception e
       {:message (str "列出失败：" (.getMessage e)) :status 0})))
 
-(defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt] :as all}]
+(defn ^String handle-serve-auto [{:keys [user secret ^String needCheckAt mustInRange]
+                                  :or {mustInRange true}}]
   "For Pixel, 自动检查当前上班状态是否满足目标条件，如果满足，则将此次查询记录在数据库中，以备
   如果其检查失败后，后台服务发送通知消息。
   传入的格式可以为 HH:mm 或者 h:m 或者 hh:m 或者 h:mm，: 可以为中文全角或半角，其前后可包含空格。
   返回值默认为 YES 或 NO，如果无法解析则返回一句话。
+  如果 mustInRange 为 true，则返回 YES 还需要当前时间在策略范围内。
   如果检查的时间点和当前时间点均位于目标范畴，则更新数据库，否者不进行数据库操作。"
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt)
@@ -695,7 +704,9 @@
                                                       :cost   600})))
               _ (db/update-auto-info {:day (local-date) :info new-info})]
           (log/info "[hcm-auto] update auto checking today: " new-info)))
-      (if in-range "YES" "NO"))
+      (if mustInRange
+        (if (and now-in-range in-range) "YES" "NO")
+        (if in-range "YES" "NO")))
     (catch Exception e
       (log/error "[hcm-auto] error: " (.getMessage e))
       (str "解析数据时出现异常：可能是传入的时间无法解析或者不存在数据库表。" (.getMessage e)))))
@@ -784,16 +795,6 @@
           (future (slack/notify "记录了策略，但是早上没有任何检查发生！" "SERVER"))
           (db/update-auto-info {:day (local-date) :info
                                 (assoc info :mark-morning-failed true)}))))))
-
-(defn handle-set-cache [{:keys [token]}]
-  (set-cache token)
-  {:message (str "成功写入 Token： " token)
-   :status  1})
-
-(def c7-00 (LocalTime/of 7 0))
-(def c8-40 (LocalTime/of 8 40))
-(def c17-30 (LocalTime/of 17 30))
-(def c20-20 (LocalTime/of 20 20))
 
 (defn backend-hcm-auto-check-service []
   "仅在白天的 7:00 - 8:40 以及下午的 17:30 - 20:20 进行检查，检查间隔为 1 分钟一次"

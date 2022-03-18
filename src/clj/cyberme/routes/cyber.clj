@@ -34,6 +34,7 @@
 (s/def :auto/date string?)
 (s/def :auto/start string?)
 (s/def :auto/end string?)
+(s/def :auto/mustInRange boolean?)
 (s/def :summary/todayFirst boolean?)
 (s/def :summary/use2MonthData boolean?)
 (s/def :summary/useAllData boolean?)
@@ -216,9 +217,11 @@
     {:tags #{"HCM 相关"}}
     [""
      {:get {:summary     "上班状态自动检查 (Pixel)"
-            :description "供 PIXEL 使用的内部接口，检查当前时间是否需要自动执行计划。"
+            :description "供 PIXEL 使用的内部接口，检查当前时间是否需要自动执行计划。
+            mustInRange 默认为 true，如果当前时间不在策略时间内，则也返回 false。如果 mustInRange
+            为 false，则只要检查时间在策略时间内，就返回 true。"
             :parameters  {:query (s/keys :req-un [:hcm/needCheckAt]
-                                         :opt-un [:global/user :global/secret])}
+                                         :opt-un [:global/user :global/secret :auto/mustInRange])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/content-type
                              (hr/response (inspur/handle-serve-auto query))

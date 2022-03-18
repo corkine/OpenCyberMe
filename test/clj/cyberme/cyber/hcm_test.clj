@@ -43,7 +43,7 @@
 
 (def fnn (fn [wrap-fn] (fn [& _] (wrap-fn))))
 
-(deftest test-hcm
+(deftest handle-serve-set-auto
   (testing "handle-serve-set-auto success"
     (with-redefs [db/set-auto (fn [&_] "RANDOM")]
       (let [data {:date  "20220101"
@@ -67,8 +67,9 @@
                   :start "10:34-10:32"
                   :end   "10:30-11:20"}
             {:keys [message status]} (inspur/handle-serve-set-auto data)]
-        (is (str/includes? message "不合法")))))
+        (is (str/includes? message "不合法"))))))
 
+(deftest get-hcm-info
   (let [a (atom {})
         set (fn ([p v] (swap! a assoc p v) v)
               ([p v r] (swap! a assoc p v) r)
@@ -140,9 +141,19 @@
               (inspur/get-hcm-info {:time (LocalDateTime/now)})]
           (is (= status 0))
           (is (non :cache :done))
-          (is (got :notice :set)))))
+          (is (got :notice :set)))))))
+
+(deftest handle-serve-auto
+  (let [a (atom {})
+        set (fn ([p v] (swap! a assoc p v) v)
+              ([p v r] (swap! a assoc p v) r)
+              ([p v m r] (swap! a assoc p v) (println m) r))
+        got (fn [p v] (= (get @a p) v))
+        non (fn [p v] (not= (get @a p) v))
+        clean! #(reset! a {})]
 
     (testing "handle serve auto - time pass and no pass"
+      ;测试传入参数是否能正常解析
       (with-redefs [db/get-today-auto (fn [& _] {:r1start (LocalTime/of 7 30)
                                                  :r1end   (LocalTime/of 8 10)
                                                  :r2start (LocalTime/of 17 30)
@@ -150,14 +161,22 @@
                                                  :info    {}})
                     db/update-auto-info #(swap! a assoc :auto (:info %))]
         (let [_ (clean!)
-              message (inspur/handle-serve-auto {:needCheckAt "7:33"})
-              message-2 (inspur/handle-serve-auto {:needCheckAt "8:33"})
-              message-3 (inspur/handle-serve-auto {:needCheckAt "17:30"})
-              message-4 (inspur/handle-serve-auto {:needCheckAt "0:00"})
-              message-5 (inspur/handle-serve-auto {:needCheckAt "7: 33"})
-              message-6 (inspur/handle-serve-auto {:needCheckAt "8：10"})
-              message-7 (inspur/handle-serve-auto {:needCheckAt "17 : 30"})
-              message-8 (inspur/handle-serve-auto {:needCheckAt "0:00"})]
+              message (inspur/handle-serve-auto {:needCheckAt "7:33"
+                                                 :mustInRange false})
+              message-2 (inspur/handle-serve-auto {:needCheckAt "8:33"
+                                                   :mustInRange false})
+              message-3 (inspur/handle-serve-auto {:needCheckAt "17:30"
+                                                   :mustInRange false})
+              message-4 (inspur/handle-serve-auto {:needCheckAt "0:00"
+                                                   :mustInRange false})
+              message-5 (inspur/handle-serve-auto {:needCheckAt "7: 33"
+                                                   :mustInRange false})
+              message-6 (inspur/handle-serve-auto {:needCheckAt "8：10"
+                                                   :mustInRange false})
+              message-7 (inspur/handle-serve-auto {:needCheckAt "17 : 30"
+                                                   :mustInRange false})
+              message-8 (inspur/handle-serve-auto {:needCheckAt "0:00"
+                                                   :mustInRange false})]
           (is (= message "YES"))
           (is (= message-2 "NO"))
           (is (= message-3 "YES"))
@@ -167,6 +186,7 @@
           (is (str/includes? message-7 "解析数据时出现异常")))))
 
     (testing "handle serve auto - save request as check to database (in range)"
+      ;在策略时间请求，不需要 mustInRange，返回 YES 且更新数据库
       (with-redefs [inspur/local-time #(LocalTime/of 10 0)]
         (let [now (inspur/local-time)
               r1start (.minusSeconds now 100)
@@ -180,7 +200,31 @@
                                                      :info    {}})
                         db/update-auto-info #(swap! a assoc :auto (:info %))]
             (let [_ (clean!)
-                  message (inspur/handle-serve-auto {:needCheckAt check})
+                  message (inspur/handle-serve-auto {:needCheckAt check
+                                                     :mustInRange false})
+                  {:keys [status cost]} (-> @a :auto :check first)]
+              (is (= message "YES"))
+              (is (not (nil? (:auto @a))))
+              (is (= status "ready!"))
+              (is (= cost 600)))))))
+
+    (testing "handle serve auto - save request as check to database (in range and now in range)"
+      ;在策略时间请求，需要 mustInRange，则返回 YES 且更新数据库
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)]
+        (let [now (inspur/local-time)
+              r1start (.minusSeconds now 100)
+              r1end (.plusSeconds now 100)
+              check (let [t (.plusSeconds now 50)]
+                      (format "%s:%s" (.getHour t) (.getMinute t)))]
+          (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                     :r1end   r1end
+                                                     :r2start (LocalTime/of 17 30)
+                                                     :r2end   (LocalTime/of 18 30)
+                                                     :info    {}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (clean!)
+                  message (inspur/handle-serve-auto {:needCheckAt check
+                                                     :mustInRange true})
                   {:keys [status cost]} (-> @a :auto :check first)]
               (is (= message "YES"))
               (is (not (nil? (:auto @a))))
@@ -188,6 +232,7 @@
               (is (= cost 600)))))))
 
     (testing "handle serve auto - save request as check to database (not in range)"
+      ;在策略时间 前 请求，不需要 mustInRange，返回 YES 且不更新数据库
       (with-redefs [inspur/local-time #(LocalTime/of 10 0)]
         (let [now (inspur/local-time)
               r1start (.plusMinutes now 1)
@@ -201,14 +246,122 @@
                                                      :info    {}})
                         db/update-auto-info #(swap! a assoc :auto (:info %))]
             (let [_ (clean!)
-                  message (inspur/handle-serve-auto {:needCheckAt check})
+                  message (inspur/handle-serve-auto {:needCheckAt check
+                                                     :mustInRange false})
                   {:keys [status cost]} (-> @a :auto :check first)]
               (is (= message "YES"))
               (is (nil? (:auto @a)))
               (is (= status nil))
-              (is (= cost nil))))))))
+              (is (= cost nil)))))))
+
+    (testing "handle serve auto - save request as check to database
+    (in range but not Now in range and mustInRange is false)"
+      ;在策略时间 后 请求，不需要 mustInRange，则返回 YES 且不更新数据库
+      (with-redefs [inspur/local-time #(LocalTime/of 20 0)]
+        (let [lt10 (LocalTime/of 10 0)
+              r1start (.minusSeconds lt10 100)
+              r1end (.plusSeconds lt10 100)
+              check (let [t (.plusSeconds lt10 50)]
+                      (format "%s:%s" (.getHour t) (.getMinute t)))]
+          (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                     :r1end   r1end
+                                                     :r2start (LocalTime/of 17 30)
+                                                     :r2end   (LocalTime/of 18 30)
+                                                     :info    {}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (clean!)
+                  message (inspur/handle-serve-auto {:needCheckAt check
+                                                     :mustInRange false})
+                  {:keys [status cost]} (-> @a :auto :check first)]
+              (is (= message "YES"))
+              (is (nil? (:auto @a))))))))
+
+    (testing "handle serve auto - save request as check to database
+    (in range but not Now in range and mustInRange is true)"
+      ;在非策略时间请求，需要 mustInRange，则返回 NO 且不更新数据库
+      (with-redefs [inspur/local-time #(LocalTime/of 20 0)]
+        (let [lt10 (LocalTime/of 10 0)
+              r1start (.minusSeconds lt10 100)
+              r1end (.plusSeconds lt10 100)
+              check (let [t (.plusSeconds lt10 50)]
+                      (format "%s:%s" (.getHour t) (.getMinute t)))]
+          (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                     :r1end   r1end
+                                                     :r2start (LocalTime/of 17 30)
+                                                     :r2end   (LocalTime/of 18 30)
+                                                     :info    {}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (clean!)
+                  message (inspur/handle-serve-auto {:needCheckAt check
+                                                     :mustInRange true})
+                  {:keys [status cost]} (-> @a :auto :check first)]
+              (is (= message "NO"))
+              (is (nil? (:auto @a))))))))
+
+    (testing "handle serve auto - save request as check to database
+    (in range but not Now in range and mustInRange is true by default)"
+      ;在非策略时间请求，需要 mustInRange，则返回 NO 且不更新数据库（默认参数）
+      (with-redefs [inspur/local-time #(LocalTime/of 20 0)]
+        (let [lt10 (LocalTime/of 10 0)
+              r1start (.minusSeconds lt10 100)
+              r1end (.plusSeconds lt10 100)
+              check (let [t (.plusSeconds lt10 50)]
+                      (format "%s:%s" (.getHour t) (.getMinute t)))]
+          (with-redefs [db/get-today-auto (fn [& _] {:r1start r1start
+                                                     :r1end   r1end
+                                                     :r2start (LocalTime/of 17 30)
+                                                     :r2end   (LocalTime/of 18 30)
+                                                     :info    {}})
+                        db/update-auto-info #(swap! a assoc :auto (:info %))]
+            (let [_ (clean!)
+                  message (inspur/handle-serve-auto {:needCheckAt check})
+                  {:keys [status cost]} (-> @a :auto :check first)]
+              (is (= message "NO"))
+              (is (nil? (:auto @a))))))))))
+
+(deftest today-auto-info-check
+  (testing "auto-today-info-check with nothing checked"
+    ;早晨自动检查，当前时间早过策略开始时间，虽然没有 check 也直接跳过
+    (let [a (atom {})
+          s #(swap! a assoc %1 %2)
+          y #(= (get @a %1) %2)
+          n #(not= (get @a %1) %2)]
+      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
+                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
+                    inspur/local-date #(LocalDate/of 2022 03 03)
+                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
+                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
+                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
+                                         {:needMorningCheck true
+                                          :offWork          false})
+                    slack/notify (fn [& _] (s :notice :true))]
+        (let [now (inspur/local-time)
+              now-dt (inspur/local-date-time)
+              r1start (.plusMinutes now 1)
+              r1end (.plusMinutes now 100)]
+          (with-redefs [db/get-today-auto
+                        (fn [& _]
+                          (s :fetch-today :true)
+                          {:r1start r1start
+                           :r1end   r1end
+                           :r2start (LocalTime/of 17 30)
+                           :r2end   (LocalTime/of 18 30)
+                           :info    {:check []
+                                     :mark-morning-failed nil
+                                     :mark-night-failed   nil}})
+                        db/update-auto-info (fn [{:keys [info]}]
+                                              (s :update-info
+                                                 (-> info :check first :status)))]
+            (let [_ (inspur/auto-today-info-check!)
+                  _ (println @a)]
+              (is (y :fetch-today :true))
+              (is (nil? (::get-hcm @a)))
+              (is (nil? (:signin-data @a)))
+              (is (nil? (:signin-hint @a)))
+              (is (nil? (:update-info @a)))))))))
 
   (testing "auto-today-info-check with morning need check not end"
+    ;早晨自动检查，当前 check 还未完毕，跳过
     (let [a (atom {})
           s #(swap! a assoc %1 %2)
           y #(= (get @a %1) %2)
@@ -248,6 +401,7 @@
               (is (n :signin-hint :true))))))))
 
   (testing "auto-today-info-check with morning need check finished hcm success"
+    ;早晨自动检查，当前策略已完毕，且成功，没有动作
     (let [a (atom {})
           s #(swap! a assoc %1 %2)
           y #(= (get @a %1) %2)
@@ -291,6 +445,7 @@
               (is (y :update-info "done!"))))))))
 
   (testing "auto-today-info-check with morning need check finished hcm failed"
+    ;早晨自动检查，当前策略已完毕，但失败，通知并更新数据库 check 标记
     (let [a (atom {})
           s #(swap! a assoc %1 %2)
           y #(= (get @a %1) %2)
@@ -333,46 +488,8 @@
               (is (y :notice :true))
               (is (y :update-info "failed!"))))))))
 
-  (testing "auto-today-info-check with nothing checked"
-    (let [a (atom {})
-          s #(swap! a assoc %1 %2)
-          y #(= (get @a %1) %2)
-          n #(not= (get @a %1) %2)]
-      (with-redefs [inspur/local-time #(LocalTime/of 10 0)
-                    inspur/local-date-time #(LocalDateTime/of 2022 03 03 10 0)
-                    inspur/local-date #(LocalDate/of 2022 03 03)
-                    inspur/get-hcm-info (fn [& _] (s :get-hcm :true) [])
-                    inspur/signin-data (fn [& _] (s :signin-data :true) [])
-                    inspur/signin-hint (fn [& _] (s :signin-hint :true)
-                                         {:needMorningCheck true
-                                          :offWork          false})
-                    slack/notify (fn [& _] (s :notice :true))]
-        (let [now (inspur/local-time)
-              now-dt (inspur/local-date-time)
-              r1start (.plusMinutes now 1)
-              r1end (.plusMinutes now 100)]
-          (with-redefs [db/get-today-auto
-                        (fn [& _]
-                          (s :fetch-today :true)
-                          {:r1start r1start
-                           :r1end   r1end
-                           :r2start (LocalTime/of 17 30)
-                           :r2end   (LocalTime/of 18 30)
-                           :info    {:check []
-                                     :mark-morning-failed nil
-                                     :mark-night-failed   nil}})
-                        db/update-auto-info (fn [{:keys [info]}]
-                                              (s :update-info
-                                                 (-> info :check first :status)))]
-            (let [_ (inspur/auto-today-info-check!)
-                  _ (println @a)]
-              (is (y :fetch-today :true))
-              (is (nil? (::get-hcm @a)))
-              (is (nil? (:signin-data @a)))
-              (is (nil? (:signin-hint @a)))
-              (is (nil? (:update-info @a)))))))))
-
   (testing "auto-today-info-check with everything checked"
+    ;早晨有多个 check，其都不需要检查：没有 ready！ 标记，则跳过
     (let [a (atom {})
           s #(swap! a assoc %1 %2)
           y #(= (get @a %1) %2)
@@ -420,6 +537,7 @@
               (is (nil? (:update-info @a)))))))))
 
   (testing "auto-today-info-check morning no check"
+    ;早晨没有检查，且超过了策略最大时间，通知并更新数据库
     (let [a (atom {})
           s #(swap! a assoc %1 %2)
           y #(= (get @a %1) %2)
@@ -466,6 +584,7 @@
               (is (= (:update-info-mnf @a) nil))))))))
 
   (testing "auto-today-info-check night no check"
+    ;晚上没有检查，超过了策略最大事件，更新数据库并通知
     (let [a (atom {})
           s #(swap! a assoc %1 %2)
           y #(= (get @a %1) %2)
