@@ -16,6 +16,8 @@
 (def date-time (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss"))
 (def c7-00 (LocalTime/of 7 0))
 (def c8-40 (LocalTime/of 8 40))
+(def c9-00 (LocalTime/of 9 0))
+(def c10-00 (LocalTime/of 10 0))
 (def c17-30 (LocalTime/of 17 30))
 (def c20-20 (LocalTime/of 20 20))
 
@@ -827,8 +829,9 @@
       (let [sleep-sec (or (edn-in [:hcm :auto-check-seconds]) 60)
             now (LocalTime/now)
             is-morning? (and (.isAfter now c7-00) (.isBefore now c8-40))
+            is-later-morning? (and (.isAfter now c9-00) (.isBefore now c10-00))
             is-night? (and (.isAfter now c17-30) (.isBefore now c20-20))]
-        (when (or is-morning? is-night?)
+        (when (or is-morning? is-later-morning? is-night?)
           (try
             #_(log/info "[hcm-auto-check-routine] starting checking database auto...")
             (auto-today-info-check!)
