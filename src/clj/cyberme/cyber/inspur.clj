@@ -524,11 +524,15 @@
     (let [date-list (month-days 0 true)
           info-check-status #(filter (fn [c] (= (:status c) %2)) (or (:check %1) []))
           policy-res #(let [{:keys [r1start r1end r2start r2end info]}
-                            (db/get-today-auto {:day %})]
+                            (db/get-today-auto {:day %})
+                            {:keys [mark-night-failed mark-morning-failed]} info
+                            count-not-check-failed (+ (if mark-morning-failed 1 0)
+                                                      (if mark-night-failed 1 0))]
                         {:exist   (not (or (nil? r1start) (nil? r1end)
                                            (nil? r2start) (nil? r2end)))
                          :pending (count (info-check-status info "ready!"))
-                         :failed  (count (info-check-status info "failed!"))
+                         :failed  (+ (count (info-check-status info "failed!"))
+                                     count-not-check-failed)
                          :success (count (info-check-status info "done!"))})
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
                            signin (signin-data info)
