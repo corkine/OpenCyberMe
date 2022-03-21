@@ -103,6 +103,22 @@ from todo
 where (info ->> 'createdDateTime')::timestamptz >
       (current_timestamp - (:day || ' day')::interval)
 order by (info ->> 'lastModifiedDateTime')::timestamptz desc;
+-- :name to-do-recent-day-2 :? :*
+select title,
+       info -> 'listInfo' ->> 'name'                                                    as list,
+       info ->> 'status'                                                                as status,
+       info ->> 'importance'                                                            as importance,
+       coalesce(((info -> 'dueDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval)::text,
+                ((info -> 'completedDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval)::text,
+                (info ->> 'createdDateTime')::text)::date                               as time,
+       (info ->> 'createdDateTime')::timestamptz                                        as create_at,
+       ((info -> 'completedDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval) as finish_at,
+       ((info -> 'dueDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval)       as due_at,
+       (info ->> 'lastModifiedDateTime')::timestamptz                                   as modified_at
+from todo
+where (info ->> 'createdDateTime')::timestamptz >
+      (current_timestamp - (:day || ' day')::interval)
+order by (info ->> 'lastModifiedDateTime')::timestamptz desc;
 -- :name delete-by-id :! :1
 delete
 from todo
@@ -218,3 +234,9 @@ on conflict (hash) do nothing;
 -- :name remote-all-fitness :! :*
 delete from fitness
 where 1 = 1;
+-- :name recent-activity :? :*
+select date(start), category, sum(value) from fitness
+where (category = 'restactivity' or category = 'activeactivity')
+    and start > (current_date - (:day || ' day')::interval)
+group by date(start), category
+order by date(start) desc;

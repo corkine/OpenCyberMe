@@ -218,6 +218,12 @@
        :tasks     []
        :message   (str "获取 Today 消息失败：" (.getMessage e))})))
 
+(defn handle-recent
+  "返回最近 n 天的 TODO 待办事项，按照天数进行分组"
+  [{day :day :or { day 7}}]
+  (let [data (db/to-do-recent-day-2 {:day day})]
+    (group-by #(str (:time %)) data)))
+
 (defn handle-list
   "获取倒序排列的最近 TODO 任务，限制某个列表和某个时期"
   [{:keys [day listName]

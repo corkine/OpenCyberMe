@@ -70,6 +70,24 @@
       (filter #(not= 0.0 (:value %)) full-data)
       (filter #(not= 0.0 (second %)) full-data))))
 
+(defn recent-active
+  "获取最近的活动记录"
+  [day]
+  (let [data (db/recent-activity {:day day})]
+    (map #(update % :date str) data)))
+
+(defn today-active
+  "获取今日的活动记录，格式 {:active, :rest}"
+  []
+  (let [recent (recent-active 1)
+        today (str (LocalDate/now))
+        in-cat (fn [cate]
+                 (filter #(and (= (:date %) today)
+                               (= (:category %) cate))
+                         recent))]
+    {:active (or (:sum (first (in-cat "activeactivity"))) 0.0)
+     :rest (or (:sum (first (in-cat "restactivity"))) 0.0)}))
+
 (defn handle-upload [json-data]
   (try
     (let [data (json->data json-data false)
@@ -79,6 +97,15 @@
        :status  1})
     (catch Exception e
       {:message (str "批量上传失败：" (.getMessage e))
+       :status  0})))
+
+(defn handle-recent-active [{day :day}]
+  (try
+    {:message "获取成功"
+     :status  1
+     :data    (recent-active day)}
+    (catch Exception e
+      {:message (str "获取失败： " (.getMessage e))
        :status  0})))
 
 (defn handle-list [{:keys [category lastDays limit]

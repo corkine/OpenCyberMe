@@ -8,7 +8,8 @@
             [cyberme.config :refer [edn-in edn]]
             [cyberme.cyber.slack :as slack]
             [cyberme.cyber.todo :as todo]
-            [cyberme.cyber.clean :as clean])
+            [cyberme.cyber.clean :as clean]
+            [cyberme.cyber.fitness :as fitness])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)
            (java.util UUID)))
@@ -26,6 +27,15 @@
 (defonce visit-data (atom []))
 
 (declare signin-data)
+
+(defn d-format
+  "格式化小数保留指定位数"
+  ([d]
+   (Double/parseDouble (format "%.1f" d)))
+  ([d dot]
+   (if (= dot 0)
+     (Math/round ^double d)
+     (Double/parseDouble (format (str "%." dot "f") d)))))
 
 (defn set-cache [token]
   (swap! token-cache merge {:token   token
@@ -565,14 +575,15 @@
        :status  0})))
 
 (defn handle-serve-hint
-  "当日提示服务 - 尽可能兼容 Go 版本"
+  "当日提示服务 - 包括打卡、加班、策略以及健身锻炼、清洁等数据。"
   [{:keys [user secret token] :as all}]
   (try
     (let [adjust 0
           info (get-hcm-info {:time (.plusDays (LocalDateTime/now) adjust) :token token})
           info-data (-> info :data)
           signin (signin-data info)
-          {:keys [needWork offWork needMorningCheck workHour]} (signin-hint signin)]
+          {:keys [needWork offWork needMorningCheck workHour]} (signin-hint signin)
+          {:keys [active rest]} (fitness/today-active)]
       (array-map
         :NeedWork needWork
         :OffWork offWork
@@ -599,8 +610,8 @@
         (array-map
           :Fitness (array-map
                      :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
-                     :TodayCalories 0
-                     :TodayRestingCalories 0
+                     :TodayCalories (d-format active 0)
+                     :TodayRestingCalories (d-format rest 0)
                      :IsOK false
                      :CountNow 94
                      :LastUpdate "2022-03-07T08:48:02.804888789+08:00"

@@ -123,7 +123,7 @@
               :config {:validator-url nil}})}]]
 
    ["/check"
-    {:tags #{"HCM 相关"}}
+    {:tags #{"工作相关"}}
     ["/hint"
      {:get {:summary     "当日生活提醒服务：HCM、健身、饮食和刷牙"
             :description "返回当日生活信息，比如 HCM 打卡，健身，饮食和刷牙情况"
@@ -215,7 +215,7 @@
      {:get {:summary "本周计划加班信息（废弃）" :handler not-impl}}]]
 
    ["/auto"
-    {:tags #{"HCM 相关"}}
+    {:tags #{"工作相关"}}
     [""
      {:get {:summary     "上班状态自动检查 (Pixel)"
             :description "供 PIXEL 使用的内部接口，检查当前时间是否需要自动执行计划。
@@ -309,7 +309,7 @@
                           (hr/response (note/handle-add-note body)))}}]
 
    ["/movie"
-    {:tags #{"电影电视更新通知"}}
+    {:tags #{"电影电视"}}
     ["/"
      {:post {:summary    "添加电影电视跟踪"
              :parameters {:query (s/keys :opt-un [:global/user :global/secret]
@@ -327,7 +327,7 @@
                            (hr/response (mini4k/handle-delete-movie path)))}}]]
 
    ["/notice"
-    {:tags #{"Slack 消息通知"}
+    {:tags #{"消息通知"}
      :get  {:summary     "Slack 通知服务"
             :description "channel 为 PIXEL 则推送到 Pixel 通道，其余推送到服务器通道
             from 不提供默认为 Nobody"
@@ -357,7 +357,7 @@
                            (hr/response (clean/handle-clean-update query)))}}]]
 
    ["/fitness"
-    {:tags #{"健康数据管理"}}
+    {:tags #{"健康数据"}}
     ["/iOSUpload"
      {:post {:summary     "上传健康样本"
              :description "IOS 健康 App 上传最近样本"
@@ -405,7 +405,7 @@
                            (hr/response (clean/handle-blue-set query)))}}]]
 
    ["/todo"
-    {:tags #{"TODO 同步"}}
+    {:tags #{"微软待办"}}
     ["/setcode"
      {:get {:summary     "登录并保存 XToken"
             :description "不应该直接调用此接口，而应该使用 mazhangjing.com/todologin 来
@@ -438,9 +438,17 @@
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (todo/handle-today query)))}}]
     ["/list"
-     {:get {:summary "获取某天内某个列表所有代办事项"
-            :description "列表必填，天数不填默认为 7 天"
+     {:get {:summary "获取某列表待办事项"
+            :description "列表必填，最近天数不填默认为 7 天"
             :parameters {:query (s/keys :req-un [:todo/listName]
                                         :opt-un [:global/user :global/secret :todo/day])}
             :handler (fn [{{query :query} :parameters}]
-                       (hr/response (todo/handle-list query)))}}]]])
+                       (hr/response (todo/handle-list query)))}}]
+
+    ["/recent"
+     {:get {:summary "获取最近待办事项"
+            :description "所有列表，结果按照天数分组，天数不填默认为 7 天"
+            :parameters {:query (s/keys :req-un []
+                                        :opt-un [:global/user :global/secret :todo/day])}
+            :handler (fn [{{query :query} :parameters}]
+                       (hr/response (todo/handle-recent query)))}}]]])
