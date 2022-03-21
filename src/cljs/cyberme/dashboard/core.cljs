@@ -101,7 +101,7 @@
         {:keys [MonthBlueCount]} blue
         non-blue-percent (- 1 (/ MonthBlueCount month-days))
         ;;TO-DO
-        today-todo (get todo today [])
+        today-todo (get todo (keyword today) [])
         not-finished (count (filter #(not= (:status %) "completed") today-todo))
         finish-percent (if (= (count today-todo) 0)
                          1 (- 1 (/ not-finished (count today-todo))))
@@ -134,8 +134,8 @@
           ^{:key day}
           [:div.mb-4
            [:span.has-text-weight-bold.is-family-code
-            (cond (= day today) "今天"
-                  (= day yesterday) "昨天"
+            (cond (= day (keyword today)) "今天"
+                  (= day (keyword yesterday)) "昨天"
                   :else day)]
            (let [data (get todo day)
                  data (filter #(not (or (str/includes? (:list %) "INSPUR")

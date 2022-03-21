@@ -151,6 +151,8 @@ TODO 和 HCM Token 均使用本地文件保存机制进行处理。
 (def log (str "now: " version old-log-1 "
 [1.4.0 2022-3-17]
 关闭 CyberMe Go 实现，完成 iOS 快捷指令，Pixel Tasker，CyberMe Flutter APP 以及其他各种桌面和工具 API 的迁移。
+[1.4.1 2022-3-21]
+提供了 CyberMe Dashboard 界面。
 
 ================================================
 TODO:

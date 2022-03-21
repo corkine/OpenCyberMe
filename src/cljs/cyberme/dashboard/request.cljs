@@ -9,7 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;; Dashboard ;;;;;;;;;;;;;;;;;;;;;;
 ;最近事项
 (ajax-flow {:call           :dashboard/recent
-            :uri-fn         #(str "/cyber/dashboard/summary?day=17")
+            :uri-fn         #(str "/cyber/dashboard/summary?day=5")
             :data           :dashboard/recent-data
             :clean          :dashboard/recent-data-clean
             :failure-notice true})
