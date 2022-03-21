@@ -9,7 +9,9 @@
             [cyberme.cyber.slack :as slack]
             [cyberme.cyber.todo :as todo]
             [cyberme.cyber.clean :as clean]
-            [cyberme.cyber.fitness :as fitness])
+            [cyberme.cyber.fitness :as fitness]
+            [cyberme.cyber.express :as express]
+            [cyberme.cyber.mini4k :as mini4k])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)
            (java.util UUID)))
@@ -631,14 +633,16 @@
       {:message (str "获取数据失败！" (.getMessage e))})))
 
 (defn handle-dashboard
-  "返回前端大屏显示用数据，包括 Blue、Fitness、Clean 和 TODO"
+  "返回前端大屏显示用数据，包括 Blue、Fitness、Clean 和 TODO、快递和电影电视跟踪。"
   [{:keys [day] :or {day 7}}]
   {:message "获取数据成功！"
-   :status 1
-   :data {:blue (clean/handle-blue-show)
-          :fitness (fitness/today-active)
-          :clean (clean/handle-clean-show {})
-          :todo (todo/handle-recent {:day day})}})
+   :status  1
+   :data    {:blue    (clean/handle-blue-show)
+             :fitness (fitness/today-active)
+             :clean   (clean/handle-clean-show {})
+             :todo    (todo/handle-recent {:day day})
+             :express (express/recent-express)
+             :movie   (mini4k/recent-update {:day 113})}})
 
 (defn handle-serve-hint-summary [{:keys [kpi token focus]}]
   (let [hint (time (let [res (handle-serve-hint {:token token})]
@@ -871,6 +875,8 @@
   (def server1-conn {:pool {} :spec
                      {:uri "redis://admin:???@ct.mazhangjing.com:6379/"}})
   (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
+  (in-ns 'cyberme.db.core)
+  (conman/bind-connection *db* "sql/queries.sql" "sql/goods.sql" "sql/cyber.sql")
   (defn merge-from-redis []
     "Redis 数据迁移工具，开发时使用"
     (mapv (fn [today]

@@ -62,13 +62,20 @@ where no = :no;
 -- :name update-express :! :1
 update express
 set track = :track,
-    info  = :info
+    info  = :info,
+    update_at = current_timestamp
 where no = :no;
 -- :name find-express :? :1
 select *
 from express
 where no = :no
 limit 1;
+-- :name recent-express :? :*
+select no as id, info->>'note' as name, (info->>'status')::int as status,
+       update_at as last_update, track as info
+from express
+order by create_at desc
+limit 10;
 
 ------------------------ to-do ----------------------
 -- :name all-to-do :? :*
@@ -168,12 +175,19 @@ values (:name, :url)
 on conflict (name) do nothing;
 -- :name update-movie :! :1
 update movie
-set info = :info
+set info = :info,
+    update_at = current_timestamp
 where id = :id;
 -- :name delete-movie :! :1
 delete
 from movie
 where id = :id;
+-- :name recent-movie-update :? :*
+select name as name, url as url, info->'series' as data,
+       update_at as last_update
+from movie
+where update_at > (current_date - (:day || ' day')::interval)
+order by update_at desc ;
 
 ------------------------ days ----------------------
 -- :name today :? :1

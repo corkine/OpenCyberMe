@@ -121,6 +121,18 @@
       (catch Exception e
         (l/info "[express-service] express-service routine failed: " (.getMessage e))))))
 
+(defn recent-express
+  "获取最近的快递信息，数据库格式：[{id name status last_update info {:list [{:time :content}]}}]
+  转换后格式：[{id name status last_update info}]"
+  []
+  (let [data (db/recent-express)
+        short-info (fn [info] (let [data (->> info :list first)]
+                                (if (nil? data)
+                                  "暂无物流信息。"
+                                  (format "%s %s" (:time data) (:content data)))))
+        with-message #(update-in % [:info] short-info)]
+    (mapv with-message data)))
+
 (comment
   (count nil)
   (db/all-express)

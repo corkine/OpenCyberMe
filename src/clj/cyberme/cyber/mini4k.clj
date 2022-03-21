@@ -34,6 +34,12 @@
       (log/info "[mini4k-parse] failed because: " (.getMessage e))
       nil)))
 
+(defn recent-update
+  "返回最近更新的影视剧信息"
+  [{:keys [day]}]
+  (let [data (db/recent-movie-update {:day day})]
+    data))
+
 (defn call-slack-async [name need-add-series]
   (future (slack/notify (str "Series " name " Updated: "
                              (str/join " " (sort (vec need-add-series))))
