@@ -40,7 +40,9 @@
                                          :shadowColor ""
                                          :color       "#fff"
                                          :label       {:show false}
-                                         :labelLine   {:show false}}}
+                                         :labelLine   {:show false}}
+                                :borderCap      "round"
+                                :borderJoin     "round"}
                :hoverAnimation false
                :data           [100]}
               {:type           "pie"
@@ -62,7 +64,8 @@
                                                        [{:offset 0
                                                          :color  start}
                                                         {:offset 1
-                                                         :color  stop}]}}}}
+                                                         :color  stop}]}
+                                                      :borderRadius ["10%" "10%"]}}}
                                 {:value     (- 100 (* value 100))
                                  :name      "Other"
                                  :itemStyle {:normal {:color
@@ -70,12 +73,15 @@
                                                        [{:offset 0
                                                          :color  "#F7F7F7"}
                                                         {:offset 1
-                                                         :color  "#F7F7F7"}]}}}}]}
+                                                         :color  "#F7F7F7"}]}
+                                                      :borderRadius ["10%" "10%"]}}}]}
               {:type           "pie"
                :clockWise      false
                :radius         ["62%" "70%"]
                :center         ["50%" "45%"]
-               :itemStyle      {:normal {:shadowBlur  0
+               :itemStyle      {:normal {:borderCap      "round"
+                                         :borderJoin     "round"
+                                         :shadowBlur  0
                                          :shadowColor "rgba(0,0,0,.2)"
                                          :color       "#fff"
                                          :label       {:show false}
@@ -113,18 +119,18 @@
         [:p [:span.is-size-5.is-family-code.has-text-weight-bold.is-unselectable
              "> " today]]
         [:div.is-flex {:style {:flex-wrap :wrap}}
-         [:div {:style {:margin-left :-20px :margin-right :-20px
+         [:div {:style {:margin-left   :-20px :margin-right :-20px
                         :margin-bottom :-30px}}
           [chart-1 {:title "健康" :value non-blue-percent}]]
-         [:div {:style {:margin-left :-20px :margin-right :-20px
+         [:div {:style {:margin-left   :-20px :margin-right :-20px
                         :margin-bottom :-30px}}
           [chart-1 {:title "锻炼" :value (/ active goal-active)
                     :start "#EE0000" :stop "#EE9572"}]]
-         [:div {:style {:margin-left :-20px :margin-right :-20px
+         [:div {:style {:margin-left   :-20px :margin-right :-20px
                         :margin-bottom :-30px}}
           [chart-1 {:title "习惯" :value (/ clean-count 4)
                     :start "#D8BFD8" :stop "#DDA0DD"}]]
-         [:div {:style {:margin-left :-20px :margin-right :-10px
+         [:div {:style {:margin-left   :-20px :margin-right :-10px
                         :margin-bottom :-30px}}
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"}]]]]]
