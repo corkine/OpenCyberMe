@@ -105,6 +105,8 @@
                        (if MorningCleanFace 1 0)
                        (if NightCleanFace 1 0)
                        (if NightBrushTeeth 1 0))
+        ;;EXPRESS
+        express (filterv #(not= (:status %) 0) express)
         ;;BLUE
         {:keys [MonthBlueCount]} blue
         non-blue-percent (- 1 (/ MonthBlueCount month-days))
@@ -139,28 +141,33 @@
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"}]]]]
        [:div.mt-2.mx-2.box
-        [:p.is-size-5.mb-2.has-text-weight-light "快递更新"]
-        (for [{:keys [id name status last_update info] :as exp} express]
-          ^{:key exp}
-          [:p {:style {:line-height :2em}}
-           (if (= status 1)
-             [:span.tag.is-small.is-rounded.is-light.is-primary.is-size-7.mr-2 "正在追踪"]
-             [:span.tag.is-small.is-light.is-rounded.is-size-7.mr-2 "已经结束"])
-           (or name id)
-           [:span.has-text-grey-light.is-size-7.ml-3 (subs (or info "暂无数据。") 0
-                                                           (if (> (count info) max-word)
-                                                             max-word
-                                                             (count info)))]])]
+        [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
+        (if (empty? express)
+            [:p "暂无正在追踪的快递。"]
+            [:<>
+             (for [{:keys [id name status last_update info] :as exp} express]
+                  ^{:key exp}
+                  [:p {:style {:line-height :1.7em}}
+                   (if (= status 1)
+                       [:span.tag.is-small.is-rounded.is-light.is-primary.is-size-7.mr-2 "正在追踪"]
+                       [:span.tag.is-small.is-light.is-rounded.is-size-7.mr-2 "已经结束"])
+                   (or name id)
+                   [:span.has-text-grey-light.is-size-7.ml-3 (subs (or info "暂无数据。") 0
+                                                                   (if (> (count info) max-word)
+                                                                       max-word
+                                                                       (count info)))]])])]
        [:div.mt-2.mx-2.box
         [:p.is-size-5.mb-3.has-text-weight-light "影视更新"]
-        [:div.tags.mb-1
-         (for [{:keys [name url data last_update] :as mov} movie]
-           ^{:key mov}
-           [:<>
-            (let [data (sort (or data []))]
-              [:span.tag.is-light.is-info {:style {:line-height :35px}}
-               [:a {:href url :target :_black} name]
-               [:span.has-text-grey-light.is-size-7.ml-3 (or (last data) "暂无数据")]])])]]]
+        (if (empty? movie)
+            [:p "暂无最近更新的影视剧。"]
+            [:div.tags.mb-1
+             (for [{:keys [name url data last_update] :as mov} movie]
+                  ^{:key mov}
+                  [:<>
+                   (let [data (sort (or data []))]
+                        [:span.tag.is-light.is-info {:style {:line-height :35px}}
+                         [:a {:href url :target :_black} name]
+                         [:span.has-text-grey-light.is-size-7.ml-3 (or (last data) "暂无数据")]])])])]]
       [:div.column.is-one-third-desktop.pl-0
        (if (= (count todo) 0)
          [:div.mx-2.mt-3.is-unselectable.box
