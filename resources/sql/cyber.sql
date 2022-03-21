@@ -6,7 +6,8 @@ values (:start1, :end1, :start2, :end2);
 insert into auto (day, r1start, r1end, r2start, r2end)
 values (:day, :start1, :end1, :start2, :end2);
 -- :name update-auto-info :! :1
-update auto set info = :info
+update auto
+set info = :info
 where day = :day;
 -- :name list-auto-recent :? :*
 select *
@@ -52,8 +53,8 @@ where info ->> 'status' = '1';
 -- :name set-express-track :! :1
 insert into express(no, track, info, update_at)
 values (:no, :track, :info, current_timestamp)
-on conflict (no) do update set track = :track,
-                               info  = :info,
+on conflict (no) do update set track     = :track,
+                               info      = :info,
                                update_at = current_timestamp;
 -- :name delete-express :! :1
 delete
@@ -61,8 +62,8 @@ from express
 where no = :no;
 -- :name update-express :! :1
 update express
-set track = :track,
-    info  = :info,
+set track     = :track,
+    info      = :info,
     update_at = current_timestamp
 where no = :no;
 -- :name find-express :? :1
@@ -71,8 +72,11 @@ from express
 where no = :no
 limit 1;
 -- :name recent-express :? :*
-select no as id, info->>'note' as name, (info->>'status')::int as status,
-       update_at as last_update, track as info
+select no                       as id,
+       info ->> 'note'          as name,
+       (info ->> 'status')::int as status,
+       update_at                as last_update,
+       track                    as info
 from express
 order by create_at desc
 limit 10;
@@ -123,7 +127,9 @@ select title,
        ((info -> 'dueDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval)       as due_at,
        (info ->> 'lastModifiedDateTime')::timestamptz                                   as modified_at
 from todo
-where (info ->> 'createdDateTime')::timestamptz >
+where ((info ->> 'createdDateTime')::timestamptz >
+       (current_timestamp - (:day || ' day')::interval))
+   or (((info -> 'dueDateTime' ->> 'dateTime')::timestamptz + '8 hour'::interval))::timestamptz >
       (current_timestamp - (:day || ' day')::interval)
 order by (info ->> 'lastModifiedDateTime')::timestamptz desc;
 -- :name delete-by-id :! :1
@@ -175,7 +181,7 @@ values (:name, :url)
 on conflict (name) do nothing;
 -- :name update-movie :! :1
 update movie
-set info = :info,
+set info      = :info,
     update_at = current_timestamp
 where id = :id;
 -- :name delete-movie :! :1
@@ -183,11 +189,13 @@ delete
 from movie
 where id = :id;
 -- :name recent-movie-update :? :*
-select name as name, url as url, info->'series' as data,
-       update_at as last_update
+select name             as name,
+       url              as url,
+       info -> 'series' as data,
+       update_at        as last_update
 from movie
 where update_at > (current_date - (:day || ' day')::interval)
-order by update_at desc ;
+order by update_at desc;
 
 ------------------------ days ----------------------
 -- :name today :? :1
@@ -221,36 +229,47 @@ order by day desc;
 
 ------------------------ fitness ----------------------
 -- :name delete-fitness :! :1
-delete from fitness
+delete
+from fitness
 where id = :id;
 -- :name details-fitness :? :1
-select * from fitness
+select *
+from fitness
 where id = :id
 limit 1;
 -- :name all-fitness :? :*
-select * from fitness
+select *
+from fitness
 limit :limit;
 -- :name all-fitness-after :? :*
-select * from fitness
+select *
+from fitness
 where start >= :day;
 -- :name all-fitness-after-limit :? :*
-select * from fitness
+select *
+from fitness
 where start >= :day
 limit :limit;
 -- :name all-fitness-by-cat-after-limit :? :*
-select * from fitness
-where start >= :day and category = :category
+select *
+from fitness
+where start >= :day
+  and category = :category
 limit :limit;
 -- :name insert-fitness-batch :! :*
 insert into fitness (category, value, unit, start, "end", duration, hash)
-values :tuple*:records
-on conflict (hash) do nothing;
+values
+:tuple*:records
+on conflict (hash)
+do nothing;
 -- :name remote-all-fitness :! :*
-delete from fitness
+delete
+from fitness
 where 1 = 1;
 -- :name recent-activity :? :*
-select date(start), category, sum(value) from fitness
+select date(start), category, sum(value)
+from fitness
 where (category = 'restactivity' or category = 'activeactivity')
-    and start > (current_date - (:day || ' day')::interval)
+  and start > (current_date - (:day || ' day')::interval)
 group by date(start), category
 order by date(start) desc;
