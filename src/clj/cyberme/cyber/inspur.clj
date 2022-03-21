@@ -630,6 +630,16 @@
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
+(defn handle-dashboard
+  "返回前端大屏显示用数据，包括 Blue、Fitness、Clean 和 TODO"
+  [{:keys [day] :or {day 7}}]
+  {:message "获取数据成功！"
+   :status 1
+   :data {:blue (clean/handle-blue-show)
+          :fitness (fitness/today-active)
+          :clean (clean/handle-clean-show {})
+          :todo (todo/handle-recent {:day day})}})
+
 (defn handle-serve-hint-summary [{:keys [kpi token focus]}]
   (let [hint (time (let [res (handle-serve-hint {:token token})]
                      (println "for hint do timing: ")

@@ -10,10 +10,17 @@
 (defn share-router []
   ["" #?(:clj {:middleware [middleware/wrap-csrf
                             middleware/wrap-formats]
-               :get home/home-page})
+               :get        home/home-page})
    ["/"
-    (merge {:name :home}
-           #?(:cljs {:view        #'core/home-page
+    (merge {:name :dashboard}
+           #?(:cljs {:view        #'core/dashboard-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
+                                             (rf/dispatch [:dashboard/recent]))}]}))]
+
+   ["/properties"
+    (merge {:name :properties}
+           #?(:cljs {:view        #'core/properties-page
                      :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:user/fetch-from-local])
@@ -44,10 +51,10 @@
    ["/work"
     (merge {:name :work}
            #?(:cljs {:view        #'core/hcm-page
-                     :controllers [{:start      (fn [_]
-                                                  (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:hcm/month])
-                                                  (rf/dispatch [:hcm/todo]))}]}))]
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
+                                             (rf/dispatch [:hcm/month])
+                                             (rf/dispatch [:hcm/todo]))}]}))]
 
    ["/goods"
     (merge {:name :goods}

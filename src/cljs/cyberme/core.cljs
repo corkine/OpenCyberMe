@@ -13,6 +13,7 @@
     [cyberme.place.request :as req-place]
     [cyberme.good.request :as req-good]
     [cyberme.work.request :as req-work]
+    [cyberme.dashboard.request :as req-dash]
     [cyberme.place.new :as place-new]
     [cyberme.place.edit :as place-edit]
     [cyberme.good.package-new :as package-new]
@@ -79,10 +80,11 @@
                 [:div#nav-menu.navbar-menu
                  {:class (when @expanded? :is-active)}
                  [:div.navbar-start
-                  [nav-link "/" "资产" :home]
+                  [nav-link "/" "总览" :dashboard]
+                  [nav-link "/work" "工作" :work]
+                  [nav-link "/properties" "物品" :properties]
                   [nav-link "/clothes" "衣物" :clothes]
                   [nav-link "/foods" "耗材" :foods]
-                  [nav-link "/work" "工作" :work]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
                   [:div.navbar-item.has-dropdown.is-hoverable.mx-0

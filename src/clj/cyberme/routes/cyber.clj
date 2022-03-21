@@ -404,6 +404,16 @@
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (clean/handle-blue-set query)))}}]]
 
+   ["/dashboard"
+    {:tags #{"前端大屏"}}
+    ["/summary"
+     {:get {:summary "获取当日综合信息"
+            :description "包括 Fitness、TODO、Blue、Clean 等信息"
+            :parameters {:query (s/keys :opt-un [:global/user :global/secret
+                                                 :todo/day])}
+            :handler (fn [{{query :query} :parameters}]
+                       (hr/response (inspur/handle-dashboard query)))}}]]
+
    ["/todo"
     {:tags #{"微软待办"}}
     ["/setcode"

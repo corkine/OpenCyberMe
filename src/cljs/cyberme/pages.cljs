@@ -9,6 +9,7 @@
     [cyberme.place.filter :as place-filter]
     [cyberme.place.core :as place]
     [cyberme.work.core :as work]
+    [cyberme.dashboard.core :as dashboard]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -20,7 +21,12 @@
      :reagent-render
      (fn [_] [:div ""])}))
 
-(defn home-page []
+(defn dashboard-page []
+  [:<>
+   [top-point]
+   [dashboard/dashboard-page]])
+
+(defn properties-page []
   [:<>
    [top-point]
    [place-filter/home-filter]
