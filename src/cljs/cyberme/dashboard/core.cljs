@@ -15,6 +15,8 @@
 
 (def month-days (t/number-of-days-in-the-month (t/time-now)))
 
+(def max-word 50)
+
 (defn chart-1 [{:keys [title value width height start stop]
                 :or   {width "200px" height "200px"
                        title "未命名" value 0.8
@@ -140,12 +142,15 @@
         [:p.is-size-5.mb-2.has-text-weight-light "快递更新"]
         (for [{:keys [id name status last_update info] :as exp} express]
           ^{:key exp}
-          [:p {:style {:line-height :35px}}
+          [:p {:style {:line-height :2em}}
            (if (= status 1)
              [:span.tag.is-small.is-rounded.is-light.is-primary.is-size-7.mr-2 "正在追踪"]
              [:span.tag.is-small.is-light.is-rounded.is-size-7.mr-2 "已经结束"])
            (or name id)
-           [:span.has-text-grey-light.is-size-7.ml-3 info]])]
+           [:span.has-text-grey-light.is-size-7.ml-3 (subs (or info "暂无数据。") 0
+                                                           (if (> (count info) max-word)
+                                                             max-word
+                                                             (count info)))]])]
        [:div.mt-2.mx-2.box
         [:p.is-size-5.mb-3.has-text-weight-light "影视更新"]
         [:div.tags.mb-1

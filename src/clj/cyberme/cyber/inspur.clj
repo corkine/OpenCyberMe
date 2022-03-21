@@ -642,7 +642,7 @@
              :clean   (clean/handle-clean-show {})
              :todo    (todo/handle-recent {:day day})
              :express (express/recent-express)
-             :movie   (mini4k/recent-update {:day 113})}})
+             :movie   (mini4k/recent-update {:day day})}})
 
 (defn handle-serve-hint-summary [{:keys [kpi token focus]}]
   (let [hint (time (let [res (handle-serve-hint {:token token})]
