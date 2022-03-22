@@ -540,8 +540,8 @@
                             {:keys [mark-night-failed mark-morning-failed]} info
                             count-not-check-failed (+ (if mark-morning-failed 1 0)
                                                       (if mark-night-failed 1 0))]
-                        {:exist   (not (or (nil? r1start) (nil? r1end)
-                                           (nil? r2start) (nil? r2end)))
+                        {:exist   (not (and (nil? r1start) (nil? r1end)
+                                            (nil? r2start) (nil? r2end)))
                          :pending (count (info-check-status info "ready!"))
                          :failed  (+ (count (info-check-status info "failed!"))
                                      count-not-check-failed)
