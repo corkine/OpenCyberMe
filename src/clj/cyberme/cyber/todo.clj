@@ -158,7 +158,7 @@
   [access-token]
   (let [tasks (list-todo access-token)]
     (merge-to-db tasks)
-    (when-not (empty? tasks) sync-delete-id tasks)))
+    (when-not (empty? tasks) (sync-delete-id tasks))))
 
 (defn todo-sync-routine []
   (let [{:keys [access-token refresh-token]} (fetch-cache)]
