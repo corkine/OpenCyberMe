@@ -47,14 +47,14 @@
 
 (defn fetch-and-merge [{:keys [id name url info]}]
   (try
-    (log/info "[mini4k-check] start checking " name)
+    (log/debug "[mini4k-check] start checking " name)
     (when (or (nil? url) (nil? name))
       (throw (RuntimeException. "传入的数据不包含 URL 和 NAME")))
     (let [db-series (set (or (:series info) []))
           web-series (parse-data url)
           need-add-series (set/difference web-series db-series)]
       (if (empty? need-add-series)
-        (do (log/info "[mini4k-check] no data need to merge, go on...")
+        (do (log/debug "[mini4k-check] no data need to merge, go on...")
             #{})
         (do (call-slack-async name need-add-series)
             (db/update-movie {:id id :info (merge info {:series web-series})})
@@ -68,10 +68,10 @@
     (try
       (let [sleep-sec (or (edn-in [:movie :sleep-seconds]) 1800)]
         (try
-          (log/info "[movie-service] starting sync with server...")
+          (log/debug "[movie-service] starting sync with server...")
           (doseq [need-check (db/all-movie)]
             (fetch-and-merge need-check))
-          (log/info "[movie-service] end sync with server, try to sleep sec: " sleep-sec)
+          (log/debug "[movie-service] end sync with server, try to sleep sec: " sleep-sec)
           (catch Exception e
             (log/info "[movie-service] sync with ms-server failed: " (.getMessage e))))
         (Thread/sleep (* 1000 sleep-sec)))

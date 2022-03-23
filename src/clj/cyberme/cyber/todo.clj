@@ -176,9 +176,9 @@
     (try
       (let [sleep-sec (* 60 5)]
         (try
-          (log/info "[todo-service] starting sync with ms-server...")
+          (log/debug "[todo-service] starting sync with ms-server...")
           (todo-sync-routine)
-          (log/info "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
+          (log/debug "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
           (catch Exception e
             (log/info "[todo-service] sync with ms-server failed: " (.getMessage e))))
         (Thread/sleep (* 1000 sleep-sec)))

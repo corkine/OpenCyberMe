@@ -70,7 +70,7 @@
               expired-at (or (:expired l2-cache) (.plusYears (LocalDateTime/now) 10))]
           (if (and l2-cache (.isAfter expired-at (LocalDateTime/now)))
             (do
-              (log/info "[signin-cache-l2] hint mem cache for " date)
+              (log/debug "[signin-cache-l2] hint mem cache for " date)
               l2-cache)                                     ;如果内存缓存存在且没有超时，则返回缓存，否则清空过期缓存并返回空
             (do
               (log/info "[signin-cache-l2] no mem cache for " date " or expired")
