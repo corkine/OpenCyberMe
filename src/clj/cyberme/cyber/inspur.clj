@@ -644,7 +644,7 @@
              :express (express/recent-express)
              :movie   (mini4k/recent-update {:day day})}})
 
-(defn handle-serve-hint-summary [{:keys [kpi token focus]}]
+(defn handle-serve-hint-summary-with-debug [{:keys [kpi token focus]}]
   (let [hint (time (let [res (handle-serve-hint {:token token})]
                      (println "for hint do timing: ")
                      res))
@@ -657,6 +657,13 @@
                      (println "for todo do timing: ")
                      res))]
     (assoc hint :Summary summary
+                :Todo todo)))
+
+(defn handle-serve-hint-summary [{:keys [kpi token focus]}]
+  (let [hint (handle-serve-hint {:token token})
+        summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
+        todo (todo/handle-today {:focus focus :showCompleted false})]
+    (assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
                 :Todo todo)))
 
 (defn handle-serve-today
@@ -732,7 +739,7 @@
   如果 mustInRange 为 true，则返回 YES 还需要当前时间在策略范围内。
   如果检查的时间点和当前时间点均位于目标范畴，则更新数据库，否者不进行数据库操作。"
   [{:keys [user secret ^String needCheckAt mustInRange]
-    :or {mustInRange true}}]
+    :or   {mustInRange true}}]
   (try
     (log/info "[hcm-auto] req by pixel for " needCheckAt " with mustInRange? " mustInRange)
     (let [clock-now (local-time)

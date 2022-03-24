@@ -184,15 +184,18 @@
        (gstring/format " %2d 年 %2d 月" (t/year now) (t/month now))]]
      [hcm-calendar month-data]
      [:div.box {:style {:margin-top :-15px}}
-      [:div {:style {:margin-top :-15px}}
-       (for [date-now date]
-         ^{:key date-now}
-         [:<>
-          [:p.subtitle.is-family-code.mt-4.mb-2 date-now
-           [:span.is-size-7.has-text-grey-light {:style {:vertical-align :middle}}
-            " " (date-hint date-now)]]
-          (for [{:keys [title list status importance]}
-                (get date-map date-now)]
-            ^{:key title}
-            [:p.has-text-dark.is-size-7.mt-1.mb-1 title
-             " " (if (= status "completed") "√" "")])])]]]))
+      (if (empty? date)
+        [:div {:style {:margin-top :-15px}}
+         [:p.mt-4 "没有数据"]]
+        [:div {:style {:margin-top :-15px}}
+         (for [date-now date]
+           ^{:key date-now}
+           [:<>
+            [:p.subtitle.is-family-code.mt-4.mb-2 date-now
+             [:span.is-size-7.has-text-grey-light {:style {:vertical-align :middle}}
+              " " (date-hint date-now)]]
+            (for [{:keys [title list status importance]}
+                  (get date-map date-now)]
+              ^{:key title}
+              [:p.has-text-dark.is-size-7.mt-1.mb-1 title
+               " " (if (= status "completed") "√" "")])])])]]))

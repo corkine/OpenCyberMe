@@ -126,7 +126,7 @@
     [:div.container
      [:div.columns
       [:div.column.pr-0
-       [:div.mx-2.mt-3.box
+       [:div.mx-2.mt-3.box {:style {:margin-bottom :1em}}
         [:p [:span.is-size-5.is-family-code.has-text-weight-bold.is-unselectable
              "> " today]]
         [:div.is-flex {:style {:flex-wrap :wrap}}
@@ -151,7 +151,7 @@
                     :hint (simple-print {:total (count today-todo)
                                          :finished (- (count today-todo)
                                                       not-finished)})}]]]]
-       [:div.mt-2.mx-2.box
+       [:div.mx-2.box {:style {:margin-bottom :1em}}
         [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
         (if (empty? express)
           [:p "暂无正在追踪的快递。"]
@@ -167,7 +167,7 @@
                                                               (if (> (count info) max-word)
                                                                 max-word
                                                                 (count info)))]])])]
-       [:div.mt-2.mx-2.box
+       [:div.mx-2.box {:style {:margin-bottom :1em}}
         [:p.is-size-5.mb-3.has-text-weight-light "影视更新"]
         (if (empty? movie)
           [:p "暂无最近更新的影视剧。"]

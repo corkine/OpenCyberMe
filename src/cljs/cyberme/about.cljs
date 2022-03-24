@@ -261,4 +261,10 @@ Build with shadow-cljs, cljs-ajax, reagent, re-frame, react, bulma, http-kit, mu
 Managed by lein, maven and npm.
 Data stored with postgreSQL.
 Developed with firefox and IDEA.
-All Open Source Software, no evil."]]])
+All Open Source Software, no evil."]
+    [:div
+     [:img {:src "/img/made-with-bulma-semiwhite.png"
+            :width "170px"
+            :style {:margin-left :-10px
+                    :vertical-align :-40%}}]
+     [:span " © 2016-2022 Marvin Studio. All Right Reserved."]]]])
