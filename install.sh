@@ -44,33 +44,33 @@ git pull
 sleep 2
 if [ $1 = "frontend" ]
 then
-  echo "2. Kill exist app"
-  echo "skip step 2..."
-  sleep 2
-  echo "3. Release frontEnd resources"
+  echo "2. Release frontEnd resources"
   ./lein.sh shadow release app
-  sleep 3
+  sleep 2
+  echo "3. Kill exist app"
+  echo "skip step 3..."
+  sleep 2
   echo "4. Run backEnd app"
   echo "skip step 4..."
   sleep 5
 elif [ $1 = "backend" ]
 then
-  echo "2. Kill exist app"
+  echo "2. Release frontEnd resources"
+  echo "skip step 2..."
+  sleep 2
+  echo "3. Kill exist app"
   kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
   sleep 2
-  echo "3. Release frontEnd resources"
-  echo "skip step 3..."
-  sleep 3
   echo "4. Run backEnd app"
   nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
   sleep 5
 else
-  echo "2. Kill exist app"
+  echo "2. Release frontEnd resources"
+  ./lein.sh shadow release app
+  sleep 2
+  echo "3. Kill exist app"
   kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
   sleep 2
-  echo "3. Release frontEnd resources"
-  ./lein.sh shadow release app
-  sleep 3
   echo "4. Run backEnd app"
   nohup ./lein.sh run 1>>/var/log/app.log 2>&1 &
   sleep 5
