@@ -3,14 +3,14 @@
             [clojure.string :as str]
             [cljs-time.format :as format]
             [cljs-time.core :as t]
-            [cyberme.util.echarts :refer [ECharts]]
+            [cyberme.util.echarts :refer [ECharts EChartsR EChartsM]]
             [cljs.pprint :refer [pprint]]))
 
 (defn chart-1 [{:keys [title value width height start stop hint]
                 :or   {width "200px" height "200px"
                        title "未命名" value 0.8
                        start "#2fdb9a" stop "#1cbab4"}}]
-  [:> ECharts
+  [EChartsM
    {:style {:width width :height height}
     :option
     {:title   {:text      title
@@ -21,65 +21,98 @@
                            :color      "#303030"
                            :fontSize   "20"}}
      :tooltip {:formatter (or hint title) #_(clj->js (fn [params ticket callback]
-                                            (let [{{:keys [name value]} :data}
-                                                  (js->clj params :keywordize-keys true)])))
+                                                       (let [{{:keys [name value]} :data}
+                                                             (js->clj params :keywordize-keys true)])))
                :position  ["70%" "60%"]}
      :legend  {:show false}
-     :series  [{:type           "pie"
-                :zlevel         2
-                :radius         ["0" "10%"]
-                :center         ["50%" "45%"]
-                :label          {:show false}
-                :clockwise      false
-                :animation      false
-                :itemStyle      {:shadowBlur  0
-                                 :shadowColor ""
-                                 :color       "#fff"
-                                 :label       {:show false}
-                                 :labelLine   {:show false}
-                                 :borderCap   "round"
-                                 :borderJoin  "round"}
-                :hoverAnimation false
-                :data           [100]}
-               {:type           "pie"
-                :label          {:show false}
-                :clockwise      false
-                :radius         ["40%" "62%"]
-                :center         ["50%" "45%"]
-                :itemStyle      {:label     {:show false}
-                                 :labelLine {:show false}}
-                :hoverAnimation false
-                :data           [{:value     (* value 100)
-                                  :name      title
-                                  :itemStyle {:color
-                                              {:type "linear"
-                                               :x    0 :y 0 :x2 1 :y2 1
-                                               :colorStops
-                                               [{:offset 0 :color start}
-                                                {:offset 1 :color stop}]}
-                                              :borderRadius ["10%" "10%"]}}
-                                 {:value     (- 100 (* value 100))
-                                  :name      "Other"
-                                  :itemStyle {:color
-                                              {:colorStops
-                                               [{:offset 0 :color "#F7F7F7"}
-                                                {:offset 1 :color "#F7F7F7"}]}
-                                              :borderRadius ["10%" "10%"]}}]}
-               {:type           "pie"
-                :clockwise      false
-                :label          {:show false}
-                :radius         ["62%" "70%"]
-                :center         ["50%" "45%"]
-                :itemStyle      {:borderCap   "round"
-                                 :borderJoin  "round"
-                                 :shadowBlur  0
-                                 :shadowColor "rgba(0,0,0,.2)"
-                                 :color       "#fff"
-                                 :label       {:show false}
-                                 :labelLine   {:show false}}
-                :hoverAnimation false
-                :data           [100]}]}
+     :series  [{:type      "pie"
+                :zlevel    2
+                :radius    ["0" "10%"]
+                :center    ["50%" "45%"]
+                :label     {:show false}
+                :clockwise false
+                :animation false
+                :itemStyle {:shadowBlur  0
+                            :shadowColor ""
+                            :color       "#fff"
+                            :label       {:show false}
+                            :labelLine   {:show false}
+                            :borderCap   "round"
+                            :borderJoin  "round"}
+                ;:hoverAnimation false
+                :data      [100]}
+               {:type      "pie"
+                :label     {:show false}
+                :clockwise false
+                :radius    ["40%" "62%"]
+                :center    ["50%" "45%"]
+                :itemStyle {:label     {:show false}
+                            :labelLine {:show false}}
+                ;:hoverAnimation false
+                :data      [{:value     (* value 100)
+                             :name      title
+                             :itemStyle {:color
+                                         {:type "linear"
+                                          :x    0 :y 0 :x2 1 :y2 1
+                                          :colorStops
+                                          [{:offset 0 :color start}
+                                           {:offset 1 :color stop}]}
+                                         :borderRadius ["10%" "10%"]}}
+                            {:value     (- 100 (* value 100))
+                             :name      "Other"
+                             :itemStyle {:color
+                                         {:colorStops
+                                          [{:offset 0 :color "#F7F7F7"}
+                                           {:offset 1 :color "#F7F7F7"}]}
+                                         :borderRadius ["10%" "10%"]}}]}
+               {:type      "pie"
+                :clockwise false
+                :label     {:show false}
+                :radius    ["62%" "70%"]
+                :center    ["50%" "45%"]
+                :itemStyle {:borderCap   "round"
+                            :borderJoin  "round"
+                            :shadowBlur  0
+                            :shadowColor "rgba(0,0,0,.2)"
+                            :color       "#fff"
+                            :label       {:show false}
+                            :labelLine   {:show false}}
+                ;:hoverAnimation false
+                :data      [100]}]}
     }])
+
+(defn chart-2 [{:keys [title value width height start stop hint]
+                :or   {width "300px" height "100px"
+                       title "未命名" value 0.8
+                       start "#2fdb9a" stop "#1cbab4"}}]
+  [EChartsM
+   {:style {:width "50%" :height height}
+    :option
+    {:backgroundColor "#0F224C"
+     :series
+     [{:type            "liquidFill"
+       :radius          "60%"
+       :silent          true
+       :center          ["50%" "50%"]
+       :amplitude       10
+       :data            [1.0 1.0 1.0]
+       :itemStyle       {:opacity :0.4}
+       :shape           "container"
+       :color           [{:type        "linear"
+                          :x           0 :y 0 :x2 0 :y2 1
+                          :colorStops  [{:offset 0 :color "#446bf5"}
+                                        {:offset 1 :color "#2ca3e2"}]
+                          :globalCoord false}]
+       :backgroundStyle {:borderWidth 10
+                         :color       "#0F224C"
+                         :borderColor "transparent"
+                         :shadowColor "red"
+                         :shadowBlur  100}
+       :label           {:position  ["50%" "55%"]
+                         :formatter "This Week's Goal: 90%"
+                         :textStyle {:fontSize "24px"
+                                     :color    "#fff"}}
+       :outline         {:show false}}]}}])
 
 (def goal-active 600)
 
@@ -133,24 +166,34 @@
          [:div {:style {:margin-left   :-20px :margin-right :-20px
                         :margin-bottom :-30px}}
           [chart-1 {:title "健康" :value non-blue-percent
-                    :hint (simple-print blue)}]]
+                    :hint  (simple-print blue)}]]
          [:div {:style {:margin-left   :-20px :margin-right :-20px
                         :margin-bottom :-30px}}
           [chart-1 {:title "锻炼" :value (/ active goal-active)
                     :start "#EE0000" :stop "#EE9572"
-                    :hint (simple-print fitness)}]]
+                    :hint  (simple-print fitness)}]]
          [:div {:style {:margin-left   :-20px :margin-right :-20px
                         :margin-bottom :-30px}}
           [chart-1 {:title "习惯" :value (/ clean-count 4)
                     :start "#D8BFD8" :stop "#DDA0DD"
-                    :hint (simple-print clean)}]]
+                    :hint  (simple-print clean)}]]
          [:div {:style {:margin-left   :-20px :margin-right :-10px
                         :margin-bottom :-30px}}
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"
-                    :hint (simple-print {:total (count today-todo)
-                                         :finished (- (count today-todo)
-                                                      not-finished)})}]]]]
+                    :hint  (simple-print {:total    (count today-todo)
+                                          :finished (- (count today-todo)
+                                                       not-finished)})}]]]]
+       [:div.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom    :1em
+                                                 :padding-top      :0px
+                                                 :overflow         :hidden
+                                                 :height           :100px
+                                                 :background-color "#0F224C"}}
+        [chart-2 {}]
+        #_[:div.is-family-code.has-text-white
+           {:style {:font-size     :70px
+                    :line-height   :80px
+                    :margin-bottom :-20px}} "27"]]
        [:div.mx-2.box {:style {:margin-bottom :1em}}
         [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
         (if (empty? express)
@@ -193,7 +236,7 @@
                     :else day)]
              (let [data (get todo day)
                    data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
-                                          (str/includes? (:list %) "任务"))) data)]
+                                        (str/includes? (:list %) "任务"))) data)]
                (for [{:keys [time finish_at modified_at create_at
                              title status list importance] :as todo} data]
                  ^{:key todo}

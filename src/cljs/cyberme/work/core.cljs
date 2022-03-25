@@ -2,7 +2,7 @@
   (:require [goog.string :as gstring]
             [cljs-time.core :as t]
             [clojure.string :as str]
-            [cyberme.util.echarts :refer [ECharts]]
+            [cyberme.util.echarts :refer [ECharts EChartsM]]
             [re-frame.core :as rf]))
 
 (def pathes
@@ -39,7 +39,7 @@
                           (let [{hour :work-hour} (get data (date-key d))]
                             [(date-format d)
                              hour])) day-list)]
-    [:> ECharts
+    [EChartsM
      {:style {:width "500px" :height "320px"}
       :option
       {:tooltip   {:formatter (clj->js (fn [param]

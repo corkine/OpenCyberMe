@@ -80,7 +80,7 @@
      :output-to "target/test/test.js"
      :autorun true}}}
   
-  :npm-deps [[xregexp "5.1.0"] [echarts "^5.3.1"] [buffer "6.0.3"]]
+  :npm-deps [[xregexp "5.1.0"] [echarts "5.3.0"] [echarts-liquidfill "3.1.0"] [buffer "6.0.3"]]
   :npm-dev-deps [[xmlhttprequest "1.8.0"]]
 
   :profiles
