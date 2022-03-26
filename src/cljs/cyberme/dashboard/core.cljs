@@ -129,7 +129,7 @@
   :score {:2022-03-01
           {:blue true
            :fitness {:rest 2000 :active 300}
-           :todo {:total 27 :finish 27}}
+           :todo {:total 27 :finished 27}}
            :clean {:m1xx :m2xx :n1xx :n2xx}}}"
   [score]
   (let [now (t/time-now)
@@ -144,8 +144,8 @@
         score-have (reduce (fn [today-kw]
                              (let [{:keys [blue fitness todo clean]} (get score today-kw)
                                    is-blue? (boolean blue)
-                                   finish-active! (> (or (:active fitness) 0) goal-active)
-                                   todo-all-done! (>= (or (:finish todo) 0) (or (:total todo) 0))
+                                   finish-active! (>= (or (:active fitness) 0) goal-active)
+                                   todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
                                    clean-count (count (filter true? (vals clean)))]
                                (+ (if is-blue? 0 2)
                                   (if finish-active! 2 0)

@@ -639,7 +639,7 @@
   :score {:2022-03-01
            {:blue true
             :fitness {:rest 2000 :active 300}
-            :todo {:total 27 :finish 27}}
+            :todo {:total 27 :finished 27}
             :clean {:m1xx :m2xx :n1xx :n2xx}}}"
   [{:keys [day] :or {day 7}}]
   (try
