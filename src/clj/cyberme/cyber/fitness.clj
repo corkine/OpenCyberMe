@@ -2,7 +2,8 @@
   (:require [cyberme.db.core :as db]
             [cheshire.core :as json]
             [clojure.tools.logging :as log]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [cyberme.tool :as tool])
   (:import (java.time LocalDate LocalDateTime Duration)
            (java.util Locale)
            (java.time.format DateTimeFormatter)))
@@ -86,7 +87,23 @@
                                (= (:category %) cate))
                          recent))]
     {:active (or (:sum (first (in-cat "activeactivity"))) 0.0)
-     :rest (or (:sum (first (in-cat "restactivity"))) 0.0)}))
+     :rest   (or (:sum (first (in-cat "restactivity"))) 0.0)}))
+
+(defn week-active
+  "获取本周的活动记录，格式 {:2022-03-01 {:active, :rest}}"
+  []
+  (let [recent (recent-active 8)
+        all-day (mapv str (tool/all-week-day))
+        day-cate-sum (fn [cate day]
+                 (or (:sum (first (filter #(and (= (:date %) day)
+                                                (= (:category %) cate))
+                                          recent)))
+                     0.0))]
+    (reduce #(assoc %1
+               (keyword %2)
+               {:active (day-cate-sum "activeactivity" %2)
+                :rest   (day-cate-sum "restactivity" %2)})
+            {} all-day)))
 
 (defn handle-upload [json-data]
   (try

@@ -11,7 +11,8 @@
             [cyberme.cyber.clean :as clean]
             [cyberme.cyber.fitness :as fitness]
             [cyberme.cyber.express :as express]
-            [cyberme.cyber.mini4k :as mini4k])
+            [cyberme.cyber.mini4k :as mini4k]
+            [cyberme.tool :as tool])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)
            (java.util UUID)))
@@ -633,16 +634,38 @@
       {:message (str "获取数据失败！" (.getMessage e))})))
 
 (defn handle-dashboard
-  "返回前端大屏显示用数据，包括 Blue、Fitness、Clean 和 TODO、快递和电影电视跟踪。"
+  "返回前端大屏显示用数据，包括 Blue、Fitness、Clean 和 TODO、快递和电影电视跟踪。
+  以及一个方便生成本周表现的积分系统，其包含了最近一周每天的数据，格式为：
+  :score {:2022-03-01
+           {:blue true
+            :fitness {:rest 2000 :active 300}
+            :todo {:total 27 :finish 27}}
+            :clean {:m1xx :m2xx :n1xx :n2xx}}}"
   [{:keys [day] :or {day 7}}]
-  {:message "获取数据成功！"
-   :status  1
-   :data    {:blue    (clean/handle-blue-show)
-             :fitness (fitness/today-active)
-             :clean   (clean/handle-clean-show {})
-             :todo    (todo/handle-recent {:day day})
-             :express (express/recent-express)
-             :movie   (mini4k/recent-update {:day day})}})
+  (try
+    (let [all-week-day (mapv (comp keyword str) (tool/all-week-day))
+          ;每一个子项都是 {:2022-03-01 xxx}
+          ;要合并为 {:2022-03-01 {:blue xxx}}
+          blue-week (clean/handle-blue-week)
+          clean-week (clean/handle-clean-week)
+          fitness-week (fitness/week-active)
+          todo-week (todo/handle-week-static)
+          ; 返回的所有数据
+          data {:blue    (clean/handle-blue-show)
+                :fitness (fitness/today-active)
+                :clean   (clean/handle-clean-show {})
+                :todo    (todo/handle-recent {:day day})
+                :express (express/recent-express)
+                :movie   (mini4k/recent-update {:day day})
+                :score   (reduce #(assoc % (keyword %2)
+                                           {:blue    (get blue-week %2)
+                                            :clean   (get clean-week %2)
+                                            :fitness (get fitness-week %2)
+                                            :todo    (get todo-week %2 [])})
+                                 {} all-week-day)}]
+      {:message "获取数据成功！" :status  1 :data data})
+    (catch Exception e
+      {:message (str "获取大屏信息失败！" (.getMessage e)) :status  0})))
 
 (defn handle-serve-hint-summary-with-debug [{:keys [kpi token focus]}]
   (let [hint (time (let [res (handle-serve-hint {:token token})]

@@ -43,6 +43,22 @@
         today? (-> (get this-year-map today) :info :blue boolean)]
     {:max-count keep-in :today today?}))
 
+(defn handle-blue-week
+  "获取本周的 blue 数据：{:2022-03-01 true :2022-03-02 false..}"
+  []
+  (let [today (LocalDate/now)
+        today-day-of-week (.getValue (.getDayOfWeek today))
+        week-first (.minusDays today (- today-day-of-week 1))
+        all-week-day (take 7 (iterate #(.plusDays % 1) week-first))
+        ;type: [{:day date :info {:blue t/f} :create_at :update_at ts}]
+        data-in-db (db/day-range {:from week-first :to today})
+        ;type: {:2022-03-01 {:day 2022-03-01 :info :create_at :update_at}
+        db-data-map (reduce #(assoc % (:day %2) %2) {} data-in-db)]
+    (reduce #(assoc %
+               (-> %2 str keyword)
+               (boolean (-> (get db-data-map %2) :info :blue)))
+            {} all-week-day)))
+
 (defn handle-blue-show []
   (try
     (let [today (LocalDate/now)
@@ -70,6 +86,27 @@
          :MonthBlueCount      -1
          :MaxNoBlueDay        -1
          :MaxNoBlueDayLastDay (LocalDateTime/now)}))))
+
+(defn handle-clean-week
+  "获取本周的 clean 数据：{:2022-03-01 {:mf :mb xx} :2022-03-02..}"
+  []
+  (let [today (LocalDate/now)
+        today-day-of-week (.getValue (.getDayOfWeek today))
+        week-first (.minusDays today (- today-day-of-week 1))
+        all-week-day (take 7 (iterate #(.plusDays % 1) week-first))
+        ;type: [{:day date :info {:blue t/f} :create_at :update_at ts}]
+        data-in-db (db/day-range {:from week-first :to today})
+        ;type: {:2022-03-01 {:day 2022-03-01 :info :create_at :update_at}
+        db-data-map (reduce #(assoc % (:day %2) %2) {} data-in-db)]
+    (reduce #(assoc %
+               (-> %2 str keyword)
+               (let [{:keys [MorningBrushTeeth NightCleanFace MorningCleanFace NightBrushTeeth]}
+                     (-> (get db-data-map %2) :info)]
+                 {:MorningBrushTeeth  (boolean MorningBrushTeeth)
+                  :NightBrushTeeth    (boolean NightBrushTeeth)
+                  :MorningCleanFace   (boolean MorningCleanFace)
+                  :NightCleanFace     (boolean NightCleanFace)}))
+            {} all-week-day)))
 
 (defn handle-clean-show [{:keys []}]
   (try

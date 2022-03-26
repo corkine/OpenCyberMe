@@ -6,7 +6,8 @@
             [clojure.set :as set]
             [clojure.java.io :as io]
             [cyberme.config :refer [edn edn-in]]
-            [cyberme.cyber.slack :as slack])
+            [cyberme.cyber.slack :as slack]
+            [cyberme.tool :as tool])
   (:import (java.time LocalDateTime LocalDate LocalTime)
            (java.time.format DateTimeFormatter)))
 
@@ -223,6 +224,19 @@
   [{day :day :or { day 7}}]
   (let [data (db/to-do-recent-day-2 {:day day})]
     (group-by #(str (:time %)) data)))
+
+(defn handle-week-static
+  "返回本周的 TODO 待办事项，格式：{:2022-03-01 {:finished 3 :total 4}}"
+  []
+  (let [data (handle-recent 8)
+        days-date (tool/all-week-day)]
+    (reduce (fn [acc one-date]
+              (let [collect (get data (str one-date) [])]
+                (assoc acc
+                  (-> one-date str keyword)
+                  {:finished (count (filter #(= (:status %) "completed") collect))
+                   :total (count collect) })))
+            {} days-date)))
 
 (defn handle-list
   "获取倒序排列的最近 TODO 任务，限制某个列表和某个时期"

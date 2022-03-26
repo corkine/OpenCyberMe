@@ -2,6 +2,7 @@
   (:require [re-frame.core :as rf]
             [clojure.string :as str]
             [cljs-time.format :as format]
+            [goog.string :as gstring]
             [cljs-time.core :as t]
             [cyberme.util.echarts :refer [ECharts EChartsR EChartsM]]
             [cljs.pprint :refer [pprint]]))
@@ -81,12 +82,11 @@
                 :data      [100]}]}
     }])
 
-(defn chart-2 [{:keys [title value width height start stop hint]
-                :or   {width "300px" height "100px"
-                       title "未命名" value 0.8
-                       start "#2fdb9a" stop "#1cbab4"}}]
+(defn chart-2 [{:keys [title value width height hint finish]
+                :or   {height "100px" width "50%" hint "Nothing HERE" finish 0.5
+                       title "未命名" value 0.8}}]
   [EChartsM
-   {:style {:width "50%" :height height}
+   {:style {:width width :height height}
     :option
     {:backgroundColor "#0F224C"
      :series
@@ -95,7 +95,7 @@
        :silent          true
        :center          ["50%" "50%"]
        :amplitude       10
-       :data            [1.0 1.0 1.0]
+       :data            [finish finish finish]
        :itemStyle       {:opacity :0.4}
        :shape           "container"
        :color           [{:type        "linear"
@@ -109,7 +109,7 @@
                          :shadowColor "red"
                          :shadowBlur  100}
        :label           {:position  ["50%" "55%"]
-                         :formatter "This Week's Goal: 90%"
+                         :formatter hint
                          :textStyle {:fontSize "24px"
                                      :color    "#fff"}}
        :outline         {:show false}}]}}])
@@ -124,6 +124,41 @@
       (str/replace "{" " ")
       (str/replace "}" " ")))
 
+(defn progress-bar
+  "根据 API 信息返回计算好的每周进度条指示
+  :score {:2022-03-01
+          {:blue true
+           :fitness {:rest 2000 :active 300}
+           :todo {:total 27 :finish 27}}
+           :clean {:m1xx :m2xx :n1xx :n2xx}}}"
+  [score]
+  (let [now (t/time-now)
+        week-index (t/day-of-week now)
+        week-start (t/minus now (t/days (- week-index 1)))
+        ;;只统计到昨天，今天的不算
+        week-list (take (- week-index 1) (iterate #(t/plus % (t/days 1)) week-start))
+        week-list (mapv (comp keyword #(format/unparse-local
+                                         (format/formatter "yyyy-MM-dd") %))
+                        week-list)
+        score-all (* 7 8)
+        score-have (reduce (fn [today-kw]
+                             (let [{:keys [blue fitness todo clean]} (get score today-kw)
+                                   is-blue? (boolean blue)
+                                   finish-active! (> (or (:active fitness) 0) goal-active)
+                                   todo-all-done! (>= (or (:finish todo) 0) (or (:total todo) 0))
+                                   clean-count (count (filter true? (vals clean)))]
+                               (+ (if is-blue? 0 2)
+                                  (if finish-active! 2 0)
+                                  (if todo-all-done! 2 0)
+                                  (* clean-count 0.5))))
+                           0 week-list)
+        finish-percent (/ score-have score-all)]
+    {:pass-percent (gstring/format "%.0d%%" (* (/ (t/day-of-week now) 7.0) 100))
+     :score score-have
+     :hint (gstring/format "本周已达成 %.0f%% 目标" (* finish-percent 100))
+     :score-percent finish-percent
+     :is-day-one? (= week-index 1)}))
+
 (defn dashboard-page []
   (let [today (format/unparse-local
                 (format/formatter "yyyy-MM-dd")
@@ -134,7 +169,7 @@
         month-days (t/number-of-days-in-the-month (t/time-now))
 
         recent @(rf/subscribe [:dashboard/recent-data])
-        {:keys [todo fitness blue clean express movie]} (:data recent)
+        {:keys [todo fitness blue clean express movie score]} (:data recent)
         {:keys [active rest]} fitness
         {:keys [MorningBrushTeeth MorningCleanFace
                 NightCleanFace NightBrushTeeth]} clean
@@ -155,7 +190,14 @@
         not-finished (count (filter #(not= (:status %) "completed") today-todo))
         finish-percent (if (= (count today-todo) 0)
                          1 (- 1 (/ not-finished (count today-todo))))
-        days (reverse (sort (keys todo)))]
+        days (reverse (sort (keys todo)))
+        ;;SCORE
+        ;首先生成今天日期占据本周日期的百分比，以供进度条使用
+        {:keys [pass-percent
+                score
+                hint
+                score-percent
+                is-day-one?]} (progress-bar score)]
     [:div.container
      [:div.columns
       [:div.column.pr-0
@@ -189,7 +231,7 @@
                                                  :overflow         :hidden
                                                  :height           :100px
                                                  :background-color "#0F224C"}}
-        [chart-2 {}]
+        [chart-2 {:width pass-percent :hint hint :finish score-percent}]
         #_[:div.is-family-code.has-text-white
            {:style {:font-size     :70px
                     :line-height   :80px
