@@ -158,7 +158,7 @@
      :score score-have
      :hint (if (= week-index 1)
              "新的一周开始了"
-             (gstring/format "本周已达成 %.0f%% 目标" (* finish-percent 100)))
+             (gstring/format "过去每天平均达成 %.0f%% 目标" (* finish-percent 100)))
      :score-percent finish-percent}))
 
 (defn dashboard-page []
