@@ -114,7 +114,7 @@
                                      :color    "#fff"}}
        :outline         {:show false}}]}}])
 
-(def goal-active 600)
+(def goal-active 500)
 
 (def max-word 43)
 
@@ -140,24 +140,26 @@
         week-list (mapv (comp keyword #(format/unparse-local
                                          (format/formatter "yyyy-MM-dd") %))
                         week-list)
-        score-all (* 7 8)
-        score-have (reduce (fn [today-kw]
-                             (let [{:keys [blue fitness todo clean]} (get score today-kw)
-                                   is-blue? (boolean blue)
-                                   finish-active! (>= (or (:active fitness) 0) goal-active)
-                                   todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
-                                   clean-count (count (filter true? (vals clean)))]
-                               (+ (if is-blue? 0 2)
-                                  (if finish-active! 2 0)
-                                  (if todo-all-done! 2 0)
-                                  (* clean-count 0.5))))
+        score-pass-all (* (- week-index 1) 8)
+        score-have (reduce (fn [acc today-kw]
+                             (+ acc
+                                (let [{:keys [blue fitness todo clean]} (get score today-kw)
+                                      is-blue? (boolean blue)
+                                      finish-active! (>= (or (:active fitness) 0) goal-active)
+                                      todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
+                                      clean-count (count (filter true? (vals clean)))]
+                                  (+ (if is-blue? 0 2)
+                                     (if finish-active! 2 0)
+                                     (if todo-all-done! 2 0)
+                                     (* clean-count 0.5)))))
                            0 week-list)
-        finish-percent (/ score-have score-all)]
-    {:pass-percent (gstring/format "%.0d%%" (* (/ (t/day-of-week now) 7.0) 100))
+        finish-percent (if (= score-pass-all 0) 0 (/ score-have score-pass-all))]
+    {:pass-percent (gstring/format "%.0d%%" (* (/ (- week-index 1) 7.0) 100))
      :score score-have
-     :hint (gstring/format "本周已达成 %.0f%% 目标" (* finish-percent 100))
-     :score-percent finish-percent
-     :is-day-one? (= week-index 1)}))
+     :hint (if (= week-index 1)
+             "新的一周开始了"
+             (gstring/format "本周已达成 %.0f%% 目标" (* finish-percent 100)))
+     :score-percent finish-percent}))
 
 (defn dashboard-page []
   (let [today (format/unparse-local
@@ -194,10 +196,8 @@
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
         {:keys [pass-percent
-                score
                 hint
-                score-percent
-                is-day-one?]} (progress-bar score)]
+                score-percent]} (progress-bar score)]
     [:div.container
      [:div.columns
       [:div.column.pr-0
