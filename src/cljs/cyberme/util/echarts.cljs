@@ -32,7 +32,8 @@
         props (clj->js (:option (r/props comp)))
         _ (set! (.-onresize js/window)
                 (clj->js (fn [_]
-                           (.resize chart)
+                           (doseq [chart-inst (vals @echarts-instance)]
+                             (.resize chart-inst))
                            (r/force-update comp))))]
     (.setOption chart props)))
 

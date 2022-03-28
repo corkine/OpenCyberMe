@@ -125,6 +125,8 @@
       (str/replace "{" " ")
       (str/replace "}" " ")))
 
+;;TODO 加一个更新按钮，获取 API 时进度条显示正在加载而非 50%，今日完毕则直接入条
+
 (defn progress-bar
   "根据 API 信息返回计算好的每周进度条指示，数据如下：
   :score {:2022-03-01
@@ -255,11 +257,10 @@
          ;TODO 等待完善日志系统并提供自评得分
          [:div {:style {:margin-left :-20px :margin-right :-10px :margin-bottom :-30px}}
           [chart-1 {:title "自省" :value 0.9
-                    :hint  (simple-print {:hint "等待施工"})}]]]]
-       [:div.mx-2.box {:style {:margin-bottom :1em}}
-        [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap
-         [:div.is-align-self-center {:style {:margin-left :-10px
-                                             :margin-right :-20px}}
+                    :hint  (simple-print {:hint "等待施工"})}]]]
+        [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
+         {:style {:margin-left :-30px :margin-top :20px :margin-bottom :7px}}
+         [:div.is-align-self-center {:style {:margin-left :-10px :margin-right :-20px}}
           [:p.mb-2
            "已工作 "
            [:span.tag.is-rounded.is-small.is-light.is-success
@@ -269,7 +270,7 @@
           [:div.tags
            [:span.tag  "上午打卡：08:20"]
            [:span.tag "下午打卡：17:50"]]]
-         [:div.is-align-self-center.is-hidden-touch
+         [:div.is-align-self-center.is-hidden-touch {:style {:margin-left :-10px}}
           [:p.mt-2 "健身已坚持 "
            [:span.is-size-4.is-family-code "100"] " 天"]
           [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 100 天"]]
