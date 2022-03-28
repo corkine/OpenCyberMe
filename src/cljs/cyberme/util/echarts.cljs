@@ -31,8 +31,11 @@
         _ (swap! echarts-instance assoc dom chart)
         props (clj->js (:option (r/props comp)))
         _ (set! (.-onresize js/window)
-                (clj->js (fn [_] (.resize chart) (r/force-update comp))))]
+                (clj->js (fn [_]
+                           (.resize chart)
+                           (r/force-update comp))))]
     (.setOption chart props)))
+
 
 (defn dispose-charts [comp]
   (let [dom (d/dom-node comp)]
@@ -43,7 +46,7 @@
 (defn EChartsM [_]
   (r/create-class
     {:component-did-mount  render-chart
-     :component-did-update render-chart
+     ;:component-did-update rerender-chart
      :component-will-unmount dispose-charts
      :reagent-render       (fn [config]
                              [:div {:style (or (:style config)
