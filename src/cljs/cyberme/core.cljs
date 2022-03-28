@@ -15,6 +15,7 @@
     [cyberme.work.request :as req-work]
     [cyberme.diary.request :as req-diary]
     [cyberme.dashboard.request :as req-dash]
+    [cyberme.diary.request :as req-daily]
     [cyberme.place.new :as place-new]
     [cyberme.place.edit :as place-edit]
     [cyberme.good.package-new :as package-new]

@@ -183,7 +183,7 @@
       [:span.has-text-grey-light.is-size-6
        (gstring/format " %2d 年 %2d 月" (t/year now) (t/month now))]]
      [hcm-calendar month-data]
-     [:div.box {:style {:margin-top :-15px}}
+     [:div.box {:style {:margin-top :-0px}}
       (if (empty? date)
         [:div {:style {:margin-top :-15px}}
          [:p.mt-4 "没有数据"]]

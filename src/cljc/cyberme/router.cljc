@@ -62,7 +62,7 @@
                      :controllers [{:parameters {:query []}
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:diary/list]))}]}))]
+                                                  #_(rf/dispatch [:diary/list]))}]}))]
 
    ["/goods"
     (merge {:name :goods}

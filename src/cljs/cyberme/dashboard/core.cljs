@@ -256,6 +256,27 @@
          [:div {:style {:margin-left :-20px :margin-right :-10px :margin-bottom :-30px}}
           [chart-1 {:title "自省" :value 0.9
                     :hint  (simple-print {:hint "等待施工"})}]]]]
+       [:div.mx-2.box {:style {:margin-bottom :1em}}
+        [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap
+         [:div.is-align-self-center {:style {:margin-left :-10px
+                                             :margin-right :-20px}}
+          [:p.mb-2
+           "已工作 "
+           [:span.tag.is-rounded.is-small.is-light.is-success
+            {:style {:vertical-align :10%}} "10.3"]
+           " 小时"
+           " [2/2] "]
+          [:div.tags
+           [:span.tag  "上午打卡：08:20"]
+           [:span.tag "下午打卡：17:50"]]]
+         [:div.is-align-self-center.is-hidden-touch
+          [:p.mt-2 "健身已坚持 "
+           [:span.is-size-4.is-family-code "100"] " 天"]
+          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 100 天"]]
+         [:div.is-align-self-center.is-hidden-touch
+          [:p.mt-2 "习惯已坚持 "
+           [:span.is-size-4.is-family-code "100"] " 天"]
+          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 100 天"]]]]
        [:div.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom    :1em
                                                  :padding-top      :0px
                                                  :overflow         :hidden
@@ -269,7 +290,7 @@
        [:div.mx-2.box {:style {:margin-bottom :1em}}
         [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
         (if (empty? express)
-          [:p "暂无正在追踪的快递。"]
+          [:p.is-size-6.has-text-grey "暂无正在追踪的快递。"]
           [:<>
            (for [{:keys [id name status last_update info] :as exp} express]
              ^{:key exp}
@@ -285,7 +306,7 @@
        [:div.mx-2.box {:style {:margin-bottom :1em}}
         [:p.is-size-5.mb-3.has-text-weight-light "影视更新"]
         (if (empty? movie)
-          [:p "暂无最近更新的影视剧。"]
+          [:p.is-size-6.has-text-grey "暂无最近更新的影视剧。"]
           [:div.tags.mb-1
            (for [{:keys [name url data last_update] :as mov} movie]
              ^{:key mov}
