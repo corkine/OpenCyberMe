@@ -85,7 +85,7 @@
     }])
 
 (defn chart-2
-  "进度条图表，基于 ECharts waterFill"
+  "进度条图表，基于 ECharts liquidFill"
   [{:keys [width height hint finish]
     :or   {height "100px" width "100%" hint "正在加载数据..." finish 0.1}}]
   [EChartsM
@@ -111,7 +111,7 @@
                          :borderColor "transparent"
                          :shadowColor "red"
                          :shadowBlur  100}
-       :label           {:position  ["50%" "55%"]
+       :label           {:position  ["50%" "53%"]
                          :formatter hint
                          :textStyle {:fontSize "24px"
                                      :color    "#fff"}}
@@ -136,40 +136,54 @@
   pass-percent 返回本周过了多久，粒度为天，返回百分比字符串，对于周一返回 100%
   hint 返回字符串提示，周一返回一句话，其余时间返回过去每天平均达成百分比，
        返回的数据必须能够让前端在不同尺寸设备上都完整显示文字。
-  score-percent 返回此百分比的数值"
+  score-percent 返回此百分比的数值
+  show-pass-percent 为了激发完成潜力，每天如果所有圆环满则将今天的数据也纳入计算
+  show-score-percent 同上，今天圆环满则将今天数据也纳入计算"
   [score & {:keys [goal-active]}]
   (let [now (t/time-now)
+        format-date #(format/unparse-local (format/formatter "yyyy-MM-dd") %)
         week-1-hint (str "Week #" (t/week-number-of-year now))
         week-n-hint (condp = (t/day-of-week now)
+                      1 "%.0f%%"
                       2 "%.0f%%"
                       7 "本周平均达成 %.0f%%"
                       "平均达成 %.0f%%")
         week-index (t/day-of-week now)
         week-start (t/minus now (t/days (- week-index 1)))
-        ;;只统计到昨天，今天的不算
-        week-list (take (- week-index 1) (iterate #(t/plus % (t/days 1)) week-start))
-        week-list (mapv (comp keyword #(format/unparse-local
-                                         (format/formatter "yyyy-MM-dd") %))
-                        week-list)
-        score-pass-all (* (- week-index 1) 8)
-        score-have (reduce (fn [acc today-kw]
-                             (+ acc
-                                (let [{:keys [blue fitness todo clean]} (get score today-kw)
-                                      is-blue? (boolean blue)
-                                      finish-active! (>= (or (:active fitness) 0) goal-active)
-                                      todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
-                                      clean-count (count (filter true? (vals clean)))]
-                                  (+ (if is-blue? 0 2)
-                                     (if finish-active! 2 0)
-                                     (if todo-all-done! 2 0)
-                                     (* clean-count 0.5)))))
-                           0 week-list)
-        finish-percent (if (= score-pass-all 0) 0 (/ score-have score-pass-all))]
-    {:pass-percent  (if (= week-index 1)
-                      "100%" (gstring/format "%.0d%%" (* (/ (- week-index 1) 7.0) 100)))
-     :hint          (if (= week-index 1)
-                      week-1-hint (gstring/format week-n-hint (* finish-percent 100)))
-     :score-percent finish-percent}))
+        ;分别计算包含/不包含今天的数据
+        week-list-f (take (- week-index 1) (iterate #(t/plus % (t/days 1)) week-start))
+        week-list (mapv (comp keyword format-date) week-list-f)
+        each-day-score 8
+        score-pass-all-f (* week-index each-day-score)
+        score-pass-all (* (- week-index 1) each-day-score)
+        ;计算规则：blue 计 2 分，active 完成计 2 分，to-do 完成计 2 分，clean 完成计 2 分
+        ;TODO 等待日志系统完善后使用自评而非 blue 评分，但是接口也需要提供自评而非 blue 得分
+        compute-oneday (fn [day-str]
+                         (let [{:keys [blue fitness todo clean]} (get score day-str)
+                               is-blue? (boolean blue)
+                               finish-active! (>= (or (:active fitness) 0) goal-active)
+                               todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
+                               clean-count (count (filter true? (vals clean)))]
+                           (+ (if is-blue? 0 2)
+                              (if finish-active! 2 0)
+                              (if todo-all-done! 2 0)
+                              (* clean-count 0.5))))
+        score-have (fn [week-list] (reduce #(+ %1 (compute-oneday %2)) 0 week-list))
+        finish-percent-f (/ (score-have week-list-f) score-pass-all-f)
+        finish-percent (if (= score-pass-all 0)
+                         0 (/ (score-have week-list) score-pass-all))]
+    (let [today-all-finished? (>= (compute-oneday (format-date now)) each-day-score)
+          pass-percent (if (= week-index 1)
+                         "100%" (gstring/format "%.0d%%" (* (/ (- week-index 1) 7.0) 100)))
+          pass-percent-f (gstring/format "%.0d%%" (* (/ week-index 7.0) 100))
+          hint (if (= week-index 1)
+                 week-1-hint (gstring/format week-n-hint (* finish-percent 100)))
+          hint-f (gstring/format week-n-hint (* finish-percent-f 100))]
+      {:pass-percent       (if today-all-finished? pass-percent-f pass-percent)
+       :score-percent      finish-percent
+       :hint               (if today-all-finished? hint-f hint)
+       :show-pass-percent  (if today-all-finished? pass-percent-f pass-percent)
+       :show-score-percent (if today-all-finished? finish-percent-f finish-percent)})))
 
 (defn dashboard-page []
   (let [now (t/time-now)
@@ -206,7 +220,8 @@
         days (reverse (sort (keys todo)))
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
-        {:keys [pass-percent hint score-percent]} (progress-bar score :goal-active goal-active)]
+        {:keys [hint show-pass-percent show-score-percent]}
+        (progress-bar score :goal-active goal-active)]
     [:div.container
      [:div.columns
       [:div.column.pr-0
@@ -237,6 +252,7 @@
                     :hint  (simple-print {:total    (count today-todo)
                                           :finished (- (count today-todo)
                                                        not-finished)})}]]
+         ;TODO 等待完善日志系统并提供自评得分
          [:div {:style {:margin-left :-20px :margin-right :-10px :margin-bottom :-30px}}
           [chart-1 {:title "自省" :value 0.9
                     :hint  (simple-print {:hint "等待施工"})}]]]]
@@ -245,7 +261,7 @@
                                                  :overflow         :hidden
                                                  :height           :100px
                                                  :background-color "#0F224C"}}
-        [chart-2 {:width pass-percent :hint hint :finish score-percent}]
+        [chart-2 {:width show-pass-percent :hint hint :finish show-score-percent}]
         #_[:div.is-family-code.has-text-white
            {:style {:font-size     :70px
                     :line-height   :80px

@@ -641,6 +641,7 @@
             :fitness {:rest 2000 :active 300 :goal-active 500}
             :todo {:total 27 :finished 27}
             :clean {:m1xx :m2xx :n1xx :n2xx}}}"
+  ;TODO 增加自评系统和接口数据
   [{:keys [day] :or {day 7}}]
   (try
     (let [all-week-day (mapv (comp keyword str) (tool/all-week-day))

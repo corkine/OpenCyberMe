@@ -36,6 +36,15 @@
                            (r/force-update comp))))]
     (.setOption chart props)))
 
+(defn rerender-chart [comp]
+  (let [dom (d/dom-node comp)
+        _ (when-let [exist-inst (get @echarts-instance dom)]
+            (.dispose exist-inst)
+            (swap! echarts-instance dissoc dom))
+        chart (echarts/init dom)
+        _ (swap! echarts-instance assoc dom chart)
+        props (clj->js (:option (r/props comp)))]
+    (.setOption chart props)))
 
 (defn dispose-charts [comp]
   (let [dom (d/dom-node comp)]
@@ -46,7 +55,7 @@
 (defn EChartsM [_]
   (r/create-class
     {:component-did-mount  render-chart
-     ;:component-did-update rerender-chart
+     :component-did-update rerender-chart
      :component-will-unmount dispose-charts
      :reagent-render       (fn [config]
                              [:div {:style (or (:style config)
