@@ -288,8 +288,8 @@
             [:<>
              (if (= day (keyword today))
                [:div.mb-5 {:style {:background-color "#f5f5f5"
-                                   :outline          "10px solid #f5f5f5"
-                                   :border-radius    :1px}}
+                                   :outline          "13px solid #f5f5f5"
+                                   :border-radius    :0px}}
                 (let [data (get todo day)
                       data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
                                            (str/includes? (:list %) "任务"))) data)
@@ -299,8 +299,7 @@
                    [:span.has-text-weight-bold.is-family-code "我的一天"
                     [:span.has-text-weight-normal
                      (gstring/format "（完成 %s / 合计 %s）" finished-count all-count)]]
-                   (for [{:keys [time finish_at modified_at create_at
-                                 title status list importance] :as todo} data]
+                   (for [{:keys [title status list] :as todo} data]
                      ^{:key todo}
                      [:p.mt-1
                       [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
