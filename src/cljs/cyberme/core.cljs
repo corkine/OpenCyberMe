@@ -13,6 +13,7 @@
     [cyberme.place.request :as req-place]
     [cyberme.good.request :as req-good]
     [cyberme.work.request :as req-work]
+    [cyberme.diary.request :as req-diary]
     [cyberme.dashboard.request :as req-dash]
     [cyberme.place.new :as place-new]
     [cyberme.place.edit :as place-edit]
@@ -82,6 +83,7 @@
                  [:div.navbar-start
                   [nav-link "/" "总览" :dashboard]
                   [nav-link "/work" "工作" :work]
+                  [nav-link "/diary" "日记" :diary]
                   [nav-link "/properties" "物品" :properties]
                   [nav-link "/clothes" "衣物" :clothes]
                   [nav-link "/foods" "耗材" :foods]

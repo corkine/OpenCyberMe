@@ -71,6 +71,8 @@
       (filter #(not= 0.0 (:value %)) full-data)
       (filter #(not= 0.0 (second %)) full-data))))
 
+(def goal-active 500)
+
 (defn recent-active
   "获取最近的活动记录"
   [day]
@@ -78,7 +80,7 @@
     (map #(update % :date str) data)))
 
 (defn today-active
-  "获取今日的活动记录，格式 {:active, :rest}"
+  "获取今日的活动记录，格式 {:active, :rest, :goal-active}"
   []
   (let [recent (recent-active 1)
         today (str (LocalDate/now))
@@ -87,7 +89,8 @@
                                (= (:category %) cate))
                          recent))]
     {:active (or (:sum (first (in-cat "activeactivity"))) 0.0)
-     :rest   (or (:sum (first (in-cat "restactivity"))) 0.0)}))
+     :rest   (or (:sum (first (in-cat "restactivity"))) 0.0)
+     :goal-active goal-active}))
 
 (defn week-active
   "获取本周的活动记录，格式 {:2022-03-01 {:active, :rest}}"

@@ -7,10 +7,12 @@
             [cyberme.util.echarts :refer [ECharts EChartsR EChartsM]]
             [cljs.pprint :refer [pprint]]))
 
-(defn chart-1 [{:keys [title value width height start stop hint]
-                :or   {width "200px" height "200px"
-                       title "未命名" value 0.8
-                       start "#2fdb9a" stop "#1cbab4"}}]
+(defn chart-1
+  "圆环图表，基于 ECharts Pie 图"
+  [{:keys [title value width height start stop hint]
+    :or   {width "200px" height "200px"
+           title "未命名" value 0.8
+           start "#2fdb9a" stop "#1cbab4"}}]
   [EChartsM
    {:style {:width width :height height}
     :option
@@ -82,9 +84,10 @@
                 :data      [100]}]}
     }])
 
-(defn chart-2 [{:keys [title value width height hint finish]
-                :or   {height "100px" width "50%" hint "Nothing HERE" finish 0.5
-                       title "未命名" value 0.8}}]
+(defn chart-2
+  "进度条图表，基于 ECharts waterFill"
+  [{:keys [width height hint finish]
+    :or   {height "100px" width "100%" hint "正在加载数据..." finish 0.1}}]
   [EChartsM
    {:style {:width width :height height}
     :option
@@ -114,8 +117,6 @@
                                      :color    "#fff"}}
        :outline         {:show false}}]}}])
 
-(def goal-active 500)
-
 (def max-word 43)
 
 (defn simple-print [data]
@@ -125,14 +126,24 @@
       (str/replace "}" " ")))
 
 (defn progress-bar
-  "根据 API 信息返回计算好的每周进度条指示
+  "根据 API 信息返回计算好的每周进度条指示，数据如下：
   :score {:2022-03-01
           {:blue true
            :fitness {:rest 2000 :active 300}
            :todo {:total 27 :finished 27}}
-           :clean {:m1xx :m2xx :n1xx :n2xx}}}"
-  [score]
+           :clean {:m1xx :m2xx :n1xx :n2xx}}}
+  返回的规则如下：
+  pass-percent 返回本周过了多久，粒度为天，返回百分比字符串，对于周一返回 100%
+  hint 返回字符串提示，周一返回一句话，其余时间返回过去每天平均达成百分比，
+       返回的数据必须能够让前端在不同尺寸设备上都完整显示文字。
+  score-percent 返回此百分比的数值"
+  [score & {:keys [goal-active]}]
   (let [now (t/time-now)
+        week-1-hint (str "Week #" (t/week-number-of-year now))
+        week-n-hint (condp = (t/day-of-week now)
+                      2 "%.0f%%"
+                      7 "本周平均达成 %.0f%%"
+                      "平均达成 %.0f%%")
         week-index (t/day-of-week now)
         week-start (t/minus now (t/days (- week-index 1)))
         ;;只统计到昨天，今天的不算
@@ -154,17 +165,17 @@
                                      (* clean-count 0.5)))))
                            0 week-list)
         finish-percent (if (= score-pass-all 0) 0 (/ score-have score-pass-all))]
-    {:pass-percent (gstring/format "%.0d%%" (* (/ (- week-index 1) 7.0) 100))
-     :score score-have
-     :hint (if (= week-index 1)
-             "新的一周开始了"
-             (gstring/format "过去每天平均达成 %.0f%% 目标" (* finish-percent 100)))
+    {:pass-percent  (if (= week-index 1)
+                      "100%" (gstring/format "%.0d%%" (* (/ (- week-index 1) 7.0) 100)))
+     :hint          (if (= week-index 1)
+                      week-1-hint (gstring/format week-n-hint (* finish-percent 100)))
      :score-percent finish-percent}))
 
 (defn dashboard-page []
-  (let [today (format/unparse-local
-                (format/formatter "yyyy-MM-dd")
-                (t/time-now))
+  (let [now (t/time-now)
+        today (format/unparse-local (format/formatter "yyyy-MM-dd") now)
+        week-day (condp = (t/day-of-week now)
+                   1 "周一" 2 "周二" 3 "周三" 4 "周四" 5 "周五" 6 "周六" 7 "周日")
         yesterday (format/unparse-local
                     (format/formatter "yyyy-MM-dd")
                     (t/plus (t/time-now) (t/period :days 1)))
@@ -172,7 +183,7 @@
 
         recent @(rf/subscribe [:dashboard/recent-data])
         {:keys [todo fitness blue clean express movie score]} (:data recent)
-        {:keys [active rest]} fitness
+        {:keys [active rest goal-active]} fitness
         {:keys [MorningBrushTeeth MorningCleanFace
                 NightCleanFace NightBrushTeeth]} clean
         ;;CLEAN
@@ -195,37 +206,40 @@
         days (reverse (sort (keys todo)))
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
-        {:keys [pass-percent
-                hint
-                score-percent]} (progress-bar score)]
+        {:keys [pass-percent hint score-percent]} (progress-bar score :goal-active goal-active)]
     [:div.container
      [:div.columns
       [:div.column.pr-0
        [:div.mx-2.mt-3.box {:style {:margin-bottom :1em}}
-        [:p [:span.is-size-5.is-family-code.has-text-weight-bold.is-unselectable
-             "> " today]]
+        [:p
+         [:span.is-size-5.is-family-code.has-text-weight-bold.is-unselectable.mr-3
+          [:span.mr-1 "> " today]
+          [:span.is-size-6.has-text-weight-normal
+           {:style {:vertical-align :1% :font-size :13px}}
+           week-day]]
+         [:span.is-clickable {:style    {:vertical-align :10%
+                                         :font-size      :13px
+                                         :color          :lightgray}
+                              :on-click #(rf/dispatch [:dashboard/recent])}
+          [:i.fa.fa-refresh]]]
         [:div.is-flex {:style {:flex-wrap :wrap}}
-         [:div {:style {:margin-left   :-20px :margin-right :-20px
-                        :margin-bottom :-30px}}
-          [chart-1 {:title "健康" :value non-blue-percent
-                    :hint  (simple-print blue)}]]
-         [:div {:style {:margin-left   :-20px :margin-right :-20px
-                        :margin-bottom :-30px}}
+         [:div {:style {:margin-left :-20px :margin-right :-20px :margin-bottom :-30px}}
           [chart-1 {:title "锻炼" :value (/ active goal-active)
                     :start "#EE0000" :stop "#EE9572"
                     :hint  (simple-print fitness)}]]
-         [:div {:style {:margin-left   :-20px :margin-right :-20px
-                        :margin-bottom :-30px}}
+         [:div {:style {:margin-left :-20px :margin-right :-20px :margin-bottom :-30px}}
           [chart-1 {:title "习惯" :value (/ clean-count 4)
                     :start "#D8BFD8" :stop "#DDA0DD"
                     :hint  (simple-print clean)}]]
-         [:div {:style {:margin-left   :-20px :margin-right :-10px
-                        :margin-bottom :-30px}}
+         [:div {:style {:margin-left :-20px :margin-right :-20px :margin-bottom :-30px}}
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"
                     :hint  (simple-print {:total    (count today-todo)
                                           :finished (- (count today-todo)
-                                                       not-finished)})}]]]]
+                                                       not-finished)})}]]
+         [:div {:style {:margin-left :-20px :margin-right :-10px :margin-bottom :-30px}}
+          [chart-1 {:title "自省" :value 0.9
+                    :hint  (simple-print {:hint "等待施工"})}]]]]
        [:div.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom    :1em
                                                  :padding-top      :0px
                                                  :overflow         :hidden
@@ -271,19 +285,41 @@
          [:div.mx-2.mt-3.is-unselectable.box
           (for [day days]
             ^{:key day}
-            [:div.mb-4
-             [:span.has-text-weight-bold.is-family-code
-              (cond (= day (keyword today)) "今天"
-                    (= day (keyword yesterday)) "昨天"
-                    :else day)]
-             (let [data (get todo day)
-                   data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
-                                        (str/includes? (:list %) "任务"))) data)]
-               (for [{:keys [time finish_at modified_at create_at
-                             title status list importance] :as todo} data]
-                 ^{:key todo}
-                 [:p.mt-1
-                  [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
-                  [:span.is-size-7 title]
-                  [:span.is-size-7.has-text-weight-light.has-text-danger
-                   (if (not= status "completed") " ×")]]))])])]]]))
+            [:<>
+             (if (= day (keyword today))
+               [:div.mb-5 {:style {:background-color "#f5f5f5"
+                                   :outline          "10px solid #f5f5f5"
+                                   :border-radius    :1px}}
+                (let [data (get todo day)
+                      data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
+                                           (str/includes? (:list %) "任务"))) data)
+                      finished-count (count (filter #(= (:status %) "completed") data))
+                      all-count (count data)]
+                  [:<>
+                   [:span.has-text-weight-bold.is-family-code "我的一天"
+                    [:span.has-text-weight-normal
+                     (gstring/format "（完成 %s / 合计 %s）" finished-count all-count)]]
+                   (for [{:keys [time finish_at modified_at create_at
+                                 title status list importance] :as todo} data]
+                     ^{:key todo}
+                     [:p.mt-1
+                      [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
+                      [:span.is-size-7 title]
+                      [:span.is-size-7.has-text-weight-light.has-text-danger
+                       (if (not= status "completed") " ×")]])])]
+               [:div.mb-4 {:style {:opacity 0.5}}
+                [:span.has-text-weight-bold.is-family-code
+                 (cond (= day (keyword today)) "今天"
+                       (= day (keyword yesterday)) "昨天"
+                       :else day)]
+                (let [data (get todo day)
+                      data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
+                                           (str/includes? (:list %) "任务"))) data)]
+                  (for [{:keys [time finish_at modified_at create_at
+                                title status list importance] :as todo} data]
+                    ^{:key todo}
+                    [:p.mt-1
+                     [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
+                     [:span.is-size-7 title]
+                     [:span.is-size-7.has-text-weight-light.has-text-danger
+                      (if (not= status "completed") " ×")]]))])])])]]]))

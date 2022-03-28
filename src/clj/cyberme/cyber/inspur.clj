@@ -638,7 +638,7 @@
   以及一个方便生成本周表现的积分系统，其包含了最近一周每天的数据，格式为：
   :score {:2022-03-01
            {:blue true
-            :fitness {:rest 2000 :active 300}
+            :fitness {:rest 2000 :active 300 :goal-active 500}
             :todo {:total 27 :finished 27}
             :clean {:m1xx :m2xx :n1xx :n2xx}}}"
   [{:keys [day] :or {day 7}}]

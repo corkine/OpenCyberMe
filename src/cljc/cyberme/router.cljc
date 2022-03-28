@@ -56,6 +56,14 @@
                                              (rf/dispatch [:hcm/month])
                                              (rf/dispatch [:hcm/todo]))}]}))]
 
+   ["/diary"
+    (merge {:name :diary}
+           #?(:cljs {:view        #'core/diary-page
+                     :controllers [{:parameters {:query []}
+                                    :start      (fn [{query :query}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (rf/dispatch [:diary/list]))}]}))]
+
    ["/goods"
     (merge {:name :goods}
            #?(:cljs {:view        #'core/goods-page

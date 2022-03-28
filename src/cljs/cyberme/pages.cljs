@@ -9,6 +9,7 @@
     [cyberme.place.filter :as place-filter]
     [cyberme.place.core :as place]
     [cyberme.work.core :as work]
+    [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
     [clojure.string :as string]))
 
@@ -99,6 +100,16 @@
     [:div.hero-body.has-text-centered
      [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
      [:p.subtitle.is-family-code  "正在施工"]]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn diary-page []
+  [:<>
+   [top-point]
+   [diary/diary-page]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "
