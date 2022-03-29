@@ -534,13 +534,15 @@
         {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day day})
         {:keys [mark-night-failed mark-morning-failed]} info
         count-not-check-failed (+ (if mark-morning-failed 1 0)
-                                  (if mark-night-failed 1 0))]
+                                  (if mark-night-failed 1 0))
+        exist-count (count (filter (comp not nil?) [r1start r1end r2start r2end]))]
     {:exist   (not (and (nil? r1start) (nil? r1end)
                         (nil? r2start) (nil? r2end)))
      :pending (count (info-check-status info "ready!"))
      :failed  (+ (count (info-check-status info "failed!"))
                  count-not-check-failed)
-     :success (count (info-check-status info "done!"))}))
+     :success (count (info-check-status info "done!"))
+     :policy-count exist-count}))
 
 (defn handle-serve-month-summary
   "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
@@ -660,7 +662,7 @@
   :movie [{name url data(更新列表) last_update}]
   :express [{id name status(0不追踪1追踪) last_update info(最后更新路由)}]
   :work {:NeedWork :OffWork :NeedMorningCheck :WorkHour :SignIn{:source :time}
-         :Policy{:exist :pending :success :failed}}
+         :Policy{:exist :pending :success :failed :policy-count}}
   :score {:2022-03-01
            {:blue true
             :fitness {:rest 2000 :active 300}

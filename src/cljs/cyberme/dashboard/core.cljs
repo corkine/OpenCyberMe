@@ -126,8 +126,6 @@
       (str/replace "{" " ")
       (str/replace "}" " ")))
 
-;;TODO 加一个更新按钮，获取 API 时进度条显示正在加载而非 50%，今日完毕则直接入条
-
 (defn progress-bar
   "根据 API 信息返回计算好的每周进度条指示，数据如下：
   :score {:2022-03-01
@@ -228,9 +226,12 @@
         ;;WORK
         {:keys [NeedWork OffWork NeedMorningCheck WorkHour SignIn Policy]} work
         ;SignIn ;source, time
-        {:keys [exist pending success failed]} Policy
-        policy-str (if exist (gstring/format "[%s/%s]" success
-                                             (+ pending success failed)) "[0/0]")
+        {:keys [exist pending success failed policy-count]} Policy
+        policy-str (if exist (gstring/format "[%s/%s/%s]"
+                                             success
+                                             (+ pending success failed)
+                                             policy-count)
+                             "[0/0/0]")
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
         {:keys [hint show-pass-percent show-score-percent]}
@@ -250,29 +251,29 @@
                                          :color          :lightgray}
                               :on-click #(rf/dispatch [:dashboard/recent])}
           [:i.fa.fa-refresh]]]
-        [:div.is-flex {:style {:flex-wrap :wrap}}
-         [:div {:style {:margin-left :-20px :margin-right :-20px :margin-bottom :-30px}}
+        [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "锻炼" :value (/ active goal-active)
                     :start "#EE0000" :stop "#EE9572"
                     :hint  (simple-print fitness)}]]
-         [:div {:style {:margin-left :-20px :margin-right :-20px :margin-bottom :-30px}}
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "习惯" :value (/ clean-count 4)
                     :start "#D8BFD8" :stop "#DDA0DD"
                     :hint  (simple-print clean)}]]
-         [:div {:style {:margin-left :-20px :margin-right :-20px :margin-bottom :-30px}}
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"
                     :hint  (simple-print {:total    (count today-todo)
                                           :finished (- (count today-todo)
                                                        not-finished)})}]]
          ;TODO 等待完善日志系统并提供自评得分
-         [:div {:style {:margin-left :-20px :margin-right :-10px :margin-bottom :-30px}}
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "自省" :value 0.9
                     :hint  (simple-print {:hint "等待施工"})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
-         {:style {:margin-left :-30px :margin-top :20px :margin-bottom :3px}}
-         [:div.is-align-self-center {:style {:margin-left :-10px :margin-right :-20px}}
-          [:p.mb-1
+         {:style { :margin-top :20px :margin-bottom :3px}}
+         [:div.is-align-self-center.px-3 {:style {:margin-left :-10px :margin-right :-20px}}
+          [:p.mb-1.mt-1
            (when NeedMorningCheck "⏰ ")
            "已工作 "
            [(if OffWork
@@ -287,13 +288,13 @@
              [:<>
               (let [{:keys [source time]} (get SignIn index)]
                 [:span.tag "#" " " (tool/datetime->time time)])])]]
-         [:div.is-align-self-center.is-hidden-touch {:style {:margin-left :-10px}}
+         [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
           [:p.mt-2 "健康已坚持 "
-           [:span.is-size-4.is-family-code MaxNoBlueDay] " 天"]
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} MaxNoBlueDay] " 天"]
           [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " MaxNoBlueDay " 天"]]
-         [:div.is-align-self-center.is-hidden-touch
+         [:div.is-align-self-center.is-hidden-touch1.px-3
           [:p.mt-2 "习惯已坚持 "
-           [:span.is-size-4.is-family-code HabitCountUntilNow] " 天"]
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} HabitCountUntilNow] " 天"]
           [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " HabitCountUntilNow " 天"]]]]
        [:div.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom    :1em
                                                  :padding-top      :0px
@@ -362,7 +363,7 @@
                                          {:style {:text-decoration :line-through}})
                        title]
                       #_[:span.is-size-7.has-text-weight-light.has-text-danger
-                       (if (not= status "completed") " ×")]])])]
+                         (if (not= status "completed") " ×")]])])]
                [:div.mb-4 {:style {:opacity 0.5}}
                 [:span.has-text-weight-bold.is-family-code
                  (cond (= day (keyword today)) "今天"

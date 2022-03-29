@@ -277,7 +277,7 @@ order by date(start) desc;
 ---------------------- Diary -------------------
 -- :name all-diary :? :*
 select * from diary
-order by (info->>'day')::date, create_at desc
+order by (info->>'day')::date desc, create_at desc
 limit 100;
 -- :name diary-by-id :? :1
 select * from diary
@@ -294,7 +294,8 @@ values (:title, :content, :info);
 -- :name update-diary :! :1
 update diary set title = :title,
                  content = :content,
-                 info = :info
+                 info = :info,
+                 update_at = current_timestamp
 where id = :id;
 -- :name delete-diary :! :1
 delete from diary
