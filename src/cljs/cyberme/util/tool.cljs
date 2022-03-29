@@ -15,3 +15,8 @@
 (defn today-str []
   (format/unparse-local (format/formatter "yyyy-MM-dd")
                         (t/time-now)))
+
+(defn datetime->time
+  "将 2022-03-29T08:11:46 转换为 08:11"
+  [local-date-str]
+  (second (re-find #"\d+-\d+-\d+T(\d+:\d+):\d+" local-date-str)))

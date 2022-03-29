@@ -527,6 +527,21 @@
 
 (defn local-time [] (LocalTime/now))
 
+(defn policy-oneday
+  "返回每天的策略：是否存在，阻塞的、失败的和成功的计数"
+  [^LocalDate day]
+  (let [info-check-status #(filter (fn [c] (= (:status c) %2)) (or (:check %1) []))
+        {:keys [r1start r1end r2start r2end info]} (db/get-today-auto {:day day})
+        {:keys [mark-night-failed mark-morning-failed]} info
+        count-not-check-failed (+ (if mark-morning-failed 1 0)
+                                  (if mark-night-failed 1 0))]
+    {:exist   (not (and (nil? r1start) (nil? r1end)
+                        (nil? r2start) (nil? r2end)))
+     :pending (count (info-check-status info "ready!"))
+     :failed  (+ (count (info-check-status info "failed!"))
+                 count-not-check-failed)
+     :success (count (info-check-status info "done!"))}))
+
 (defn handle-serve-month-summary
   "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
   用于前端页面展示考勤日历。
@@ -535,18 +550,6 @@
   [{:keys [user secret] :as all}]
   (try
     (let [date-list (month-days 0 true)
-          info-check-status #(filter (fn [c] (= (:status c) %2)) (or (:check %1) []))
-          policy-res #(let [{:keys [r1start r1end r2start r2end info]}
-                            (db/get-today-auto {:day %})
-                            {:keys [mark-night-failed mark-morning-failed]} info
-                            count-not-check-failed (+ (if mark-morning-failed 1 0)
-                                                      (if mark-night-failed 1 0))]
-                        {:exist   (not (and (nil? r1start) (nil? r1end)
-                                            (nil? r2start) (nil? r2end)))
-                         :pending (count (info-check-status info "ready!"))
-                         :failed  (+ (count (info-check-status info "failed!"))
-                                     count-not-check-failed)
-                         :success (count (info-check-status info "done!"))})
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
                            signin (signin-data info)
                            signin (sort-by :time signin)
@@ -556,18 +559,20 @@
                         :check-start (first signin)
                         :check-end   (last signin)
                         :work-day    work-day?
-                        :policy      (policy-res %)})
+                        :policy      (policy-oneday %)})
           pass-data (apply assoc {}
                            (flatten
-                             (mapv (fn [date] [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
-                                               (calc-info date)])
+                             (mapv (fn [date]
+                                     [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
+                                      (calc-info date)])
                                    date-list)))
           rest-data (apply assoc {}
                            (flatten
-                             (mapv (fn [date] [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
-                                               {:work-hour 0
-                                                :work-day  (do-need-work (.atStartOfDay date))
-                                                :policy    (policy-res date)}])
+                             (mapv (fn [date]
+                                     [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
+                                      {:work-hour 0
+                                       :work-day  (do-need-work (.atStartOfDay date))
+                                       :policy    (policy-oneday date)}])
                                    (month-rest-days 0))))
           res (merge pass-data rest-data)]
       {:message "获取成功！"
@@ -577,68 +582,88 @@
       {:message (str "获取失败：" (.getMessage e))
        :status  0})))
 
+(defn get-hcm-hint
+  "当日提醒的 HCM 部分计算"
+  [{:keys [user secret token] :as all}]
+  (let [adjust 0
+        info (get-hcm-info {:time (.plusDays (LocalDateTime/now) adjust) :token token})
+        info-data (-> info :data)
+        signin (signin-data info)
+        {:keys [needWork offWork needMorningCheck workHour]} (signin-hint signin)]
+    (array-map
+      :NeedWork needWork
+      :OffWork offWork
+      :NeedMorningCheck needMorningCheck
+      :WorkHour workHour
+      ;;兼容性保留，不过 Go 返回的原始信息为首字母大写版本
+      :SignIn signin)))
+
 (defn handle-serve-hint
   "当日提示服务 - 包括打卡、加班、策略以及健身锻炼、清洁等数据。"
   [{:keys [user secret token] :as all}]
   (try
-    (let [adjust 0
-          info (get-hcm-info {:time (.plusDays (LocalDateTime/now) adjust) :token token})
-          info-data (-> info :data)
-          signin (signin-data info)
-          {:keys [needWork offWork needMorningCheck workHour]} (signin-hint signin)
+    (let [hcm-data (get-hcm-hint all)
           {:keys [active rest]} (fitness/today-active)]
-      (array-map
-        :NeedWork needWork
-        :OffWork offWork
-        :NeedMorningCheck needMorningCheck
-        :WorkHour workHour
-        ;;兼容性保留，不过 Go 返回的原始信息为首字母大写版本
-        :OriginData info-data
-        :Date (.format (LocalDateTime/now)
-                       DateTimeFormatter/ISO_LOCAL_DATE)
-        ;;兼容性保留
-        :Overtime {:Planned false
-                   :Ordered false
-                   :Checked false}
-        :Breath (array-map
-                  :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
-                  :TodayBreathMinutes 0
-                  :DayCountNow 2
-                  :LastUpdate "2022-03-07T08:48:02.804888789+08:00"
-                  :MaxDayCount 13
-                  :MaxDayLastUpdate "2022-03-07T08:48:02.804888789+08:00")
-
-        :Blue (clean/handle-blue-show)
-        :FitnessEnergy
+      (merge
+        hcm-data
         (array-map
-          :Fitness (array-map
-                     :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
-                     :TodayCalories (d-format active 0)
-                     :TodayRestingCalories (d-format rest 0)
-                     :IsOK false
-                     :CountNow 94
-                     :LastUpdate "2022-03-07T08:48:02.804888789+08:00"
-                     :MaxCount 94
-                     :MaxLastUpdate "2022-03-07T08:48:02.804888789+08:00"
-                     :FitnessHint "0-0?")
-          :Energy (array-map
+          :Date (.format (LocalDateTime/now) DateTimeFormatter/ISO_LOCAL_DATE)
+          ;;兼容性保留
+          :Overtime {:Planned false
+                     :Ordered false
+                     :Checked false}
+          :Breath (array-map
                     :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
-                    :TodayEnergy 0
-                    :WeenAvgEnergy 0
-                    :MonthAvgEnergy 0)
-          :TodayNetCalories 0
-          :TodayCutCalories 0
-          :AchievedCutGoal false)
-        :Clean (clean/handle-clean-show {})))
+                    :TodayBreathMinutes 0
+                    :DayCountNow 2
+                    :LastUpdate "2022-03-07T08:48:02.804888789+08:00"
+                    :MaxDayCount 13
+                    :MaxDayLastUpdate "2022-03-07T08:48:02.804888789+08:00")
+
+          :Blue (clean/handle-blue-show)
+          :FitnessEnergy
+          (array-map
+            :Fitness (array-map
+                       :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
+                       :TodayCalories (d-format active 0)
+                       :TodayRestingCalories (d-format rest 0)
+                       :IsOK false
+                       :CountNow 94
+                       :LastUpdate "2022-03-07T08:48:02.804888789+08:00"
+                       :MaxCount 94
+                       :MaxLastUpdate "2022-03-07T08:48:02.804888789+08:00"
+                       :FitnessHint "0-0?")
+            :Energy (array-map
+                      :UpdateTime "2022-03-07T08:48:02.804888789+08:00"
+                      :TodayEnergy 0
+                      :WeenAvgEnergy 0
+                      :MonthAvgEnergy 0)
+            :TodayNetCalories 0
+            :TodayCutCalories 0
+            :AchievedCutGoal false)
+          :Clean (clean/handle-clean-show {}))))
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
 (defn handle-dashboard
-  "返回前端大屏显示用数据，包括 Blue、Fitness、Clean 和 TODO、快递和电影电视跟踪。
+  "返回前端大屏显示用数据，包括每日 Blue 和 Blue 计数、每日 Fitness 活动、静息和总目标卡路里
+  每日 Clean 和 Clean 计数，每日 TODO 列表、正在追踪的快递、正在追踪的美剧，
   以及一个方便生成本周表现的积分系统，其包含了最近一周每天的数据，格式为：
+  :blue {UpdateTime IsTodayBlue WeekBlueCount MonthBlueCount
+         MaxNoBlueDay MaxNoBlueDayFirstDay}
+  :fitness {:active 200 :rest 1000 :goal-active 500}
+  :clean {MorningBrushTeeth NightBrushTeeth MorningCleanFace
+          NightCleanFace HabitCountUntilNow HabitHint}
+  :todo {:2022-03-01 [{title list create_at modified_at
+                       due_at finish_at status(finished,notStarted.)
+                       importance}]}
+  :movie [{name url data(更新列表) last_update}]
+  :express [{id name status(0不追踪1追踪) last_update info(最后更新路由)}]
+  :work {:NeedWork :OffWork :NeedMorningCheck :WorkHour :SignIn{:source :time}
+         :Policy{:exist :pending :success :failed}}
   :score {:2022-03-01
            {:blue true
-            :fitness {:rest 2000 :active 300 :goal-active 500}
+            :fitness {:rest 2000 :active 300}
             :todo {:total 27 :finished 27}
             :clean {:m1xx :m2xx :n1xx :n2xx}}}"
   ;TODO 增加自评系统和接口数据
@@ -658,15 +683,17 @@
                 :todo    (todo/handle-recent {:day day})
                 :express (express/recent-express)
                 :movie   (mini4k/recent-update {:day day})
+                :work    (assoc (get-hcm-hint {})
+                           :Policy (policy-oneday (local-date)))
                 :score   (reduce #(assoc % (keyword %2)
                                            {:blue    (get blue-week %2)
                                             :clean   (get clean-week %2)
                                             :fitness (get fitness-week %2)
                                             :todo    (get todo-week %2 [])})
                                  {} all-week-day)}]
-      {:message "获取数据成功！" :status  1 :data data})
+      {:message "获取数据成功！" :status 1 :data data})
     (catch Exception e
-      {:message (str "获取大屏信息失败！" (.getMessage e)) :status  0})))
+      {:message (str "获取大屏信息失败！" (.getMessage e)) :status 0})))
 
 (defn handle-serve-hint-summary-with-debug [{:keys [kpi token focus]}]
   (let [hint (time (let [res (handle-serve-hint {:token token})]

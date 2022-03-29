@@ -4,6 +4,7 @@
             [cljs-time.format :as format]
             [goog.string :as gstring]
             [cljs-time.core :as t]
+            [cyberme.util.tool :as tool]
             [cyberme.util.echarts :refer [ECharts EChartsR EChartsM]]
             [cljs.pprint :refer [pprint]]))
 
@@ -153,8 +154,9 @@
         week-index (t/day-of-week now)
         week-start (t/minus now (t/days (- week-index 1)))
         ;分别计算包含/不包含今天的数据
-        week-list-f (take (- week-index 1) (iterate #(t/plus % (t/days 1)) week-start))
-        week-list (mapv (comp keyword format-date) week-list-f)
+        week-gen (iterate #(t/plus % (t/days 1)) week-start)
+        week-list-f (mapv (comp keyword format-date) (take week-index week-gen))
+        week-list (mapv (comp keyword format-date) (take (- week-index 1) week-gen))
         each-day-score 8
         score-pass-all-f (* week-index each-day-score)
         score-pass-all (* (- week-index 1) each-day-score)
@@ -165,16 +167,18 @@
                                is-blue? (boolean blue)
                                finish-active! (>= (or (:active fitness) 0) goal-active)
                                todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
-                               clean-count (count (filter true? (vals clean)))]
-                           (+ (if is-blue? 0 2)
-                              (if finish-active! 2 0)
-                              (if todo-all-done! 2 0)
-                              (* clean-count 0.5))))
+                               clean-count (count (filter true? (vals clean)))
+                               score (+ (if is-blue? 0 2)
+                                        (if finish-active! 2 0)
+                                        (if todo-all-done! 2 0)
+                                        (* clean-count 0.5))]
+                           ;(println "for day " day-str ", score " score)
+                           score))
         score-have (fn [week-list] (reduce #(+ %1 (compute-oneday %2)) 0 week-list))
         finish-percent-f (/ (score-have week-list-f) score-pass-all-f)
         finish-percent (if (= score-pass-all 0)
                          0 (/ (score-have week-list) score-pass-all))]
-    (let [today-all-finished? (>= (compute-oneday (format-date now)) each-day-score)
+    (let [today-all-finished? (>= (compute-oneday (keyword (format-date now))) each-day-score)
           pass-percent (if (= week-index 1)
                          "100%" (gstring/format "%.0d%%" (* (/ (- week-index 1) 7.0) 100)))
           pass-percent-f (gstring/format "%.0d%%" (* (/ week-index 7.0) 100))
@@ -198,11 +202,12 @@
         month-days (t/number-of-days-in-the-month (t/time-now))
 
         recent @(rf/subscribe [:dashboard/recent-data])
-        {:keys [todo fitness blue clean express movie score]} (:data recent)
+        {:keys [todo fitness blue clean express movie score work]} (:data recent)
+        ;;FITNESS
         {:keys [active rest goal-active]} fitness
-        {:keys [MorningBrushTeeth MorningCleanFace
-                NightCleanFace NightBrushTeeth]} clean
         ;;CLEAN
+        {:keys [MorningBrushTeeth MorningCleanFace
+                NightCleanFace NightBrushTeeth HabitCountUntilNow]} clean
         clean-count (+ (if MorningBrushTeeth 1 0)
                        (if MorningCleanFace 1 0)
                        (if NightCleanFace 1 0)
@@ -210,7 +215,7 @@
         ;;EXPRESS
         express (filterv #(not= (:status %) 0) express)
         ;;BLUE
-        {:keys [MonthBlueCount]} blue
+        {:keys [MonthBlueCount MaxNoBlueDay]} blue
         non-blue-percent (- 1 (/ MonthBlueCount month-days))
         ;;MOVIE
         movie (reverse (sort :last_update movie))
@@ -220,6 +225,12 @@
         finish-percent (if (= (count today-todo) 0)
                          1 (- 1 (/ not-finished (count today-todo))))
         days (reverse (sort (keys todo)))
+        ;;WORK
+        {:keys [NeedWork OffWork NeedMorningCheck WorkHour SignIn Policy]} work
+        ;SignIn ;source, time
+        {:keys [exist pending success failed]} Policy
+        policy-str (if exist (gstring/format "[%s/%s]" success
+                                             (+ pending success failed)) "[0/0]")
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
         {:keys [hint show-pass-percent show-score-percent]}
@@ -259,25 +270,31 @@
           [chart-1 {:title "自省" :value 0.9
                     :hint  (simple-print {:hint "等待施工"})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
-         {:style {:margin-left :-30px :margin-top :20px :margin-bottom :7px}}
+         {:style {:margin-left :-30px :margin-top :20px :margin-bottom :3px}}
          [:div.is-align-self-center {:style {:margin-left :-10px :margin-right :-20px}}
-          [:p.mb-2
+          [:p.mb-1
+           (when NeedMorningCheck "⏰ ")
            "已工作 "
-           [:span.tag.is-rounded.is-small.is-light.is-success
-            {:style {:vertical-align :10%}} "10.3"]
-           " 小时"
-           " [2/2] "]
+           [(if OffWork
+              :span.tag.is-rounded.is-small.is-light.is-success
+              :span.tag.is-rounded.is-small.is-light.is-warning)
+            {:style {:vertical-align :10%}} WorkHour]
+           " 小时" (when-not NeedWork "*")
+           " " [:span.is-family-code.is-size-7 policy-str] " "]
           [:div.tags
-           [:span.tag  "上午打卡：08:20"]
-           [:span.tag "下午打卡：17:50"]]]
+           (for [index (range (count SignIn))]
+             ^{:key index}
+             [:<>
+              (let [{:keys [source time]} (get SignIn index)]
+                [:span.tag "#" " " (tool/datetime->time time)])])]]
          [:div.is-align-self-center.is-hidden-touch {:style {:margin-left :-10px}}
-          [:p.mt-2 "健身已坚持 "
-           [:span.is-size-4.is-family-code "100"] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 100 天"]]
+          [:p.mt-2 "健康已坚持 "
+           [:span.is-size-4.is-family-code MaxNoBlueDay] " 天"]
+          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " MaxNoBlueDay " 天"]]
          [:div.is-align-self-center.is-hidden-touch
           [:p.mt-2 "习惯已坚持 "
-           [:span.is-size-4.is-family-code "100"] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 100 天"]]]]
+           [:span.is-size-4.is-family-code HabitCountUntilNow] " 天"]
+          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " HabitCountUntilNow " 天"]]]]
        [:div.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom    :1em
                                                  :padding-top      :0px
                                                  :overflow         :hidden
