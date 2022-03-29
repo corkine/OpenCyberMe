@@ -358,8 +358,10 @@
                      ^{:key todo}
                      [:p.mt-1
                       [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
-                      [:span.is-size-7 title]
-                      [:span.is-size-7.has-text-weight-light.has-text-danger
+                      [:span.is-size-7 (when (= status "completed")
+                                         {:style {:text-decoration :line-through}})
+                       title]
+                      #_[:span.is-size-7.has-text-weight-light.has-text-danger
                        (if (not= status "completed") " ×")]])])]
                [:div.mb-4 {:style {:opacity 0.5}}
                 [:span.has-text-weight-bold.is-family-code

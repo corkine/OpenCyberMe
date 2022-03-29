@@ -116,6 +116,36 @@
           "Marvin Studio."
           " All Right Reserved.")]]])
 
+(defn diary-edit-page []
+  [:<>
+   [top-point]
+   [diary/diary-edit-page]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn diary-new-page []
+  [:<>
+   [top-point]
+   [diary/diary-new-page]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn diary-view-page []
+  [:<>
+   [top-point]
+   [diary/diary-view-page]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
 (defn hcm-page []
   [:<>
    [top-point]

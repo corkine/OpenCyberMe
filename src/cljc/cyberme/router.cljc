@@ -59,10 +59,35 @@
    ["/diary"
     (merge {:name :diary}
            #?(:cljs {:view        #'core/diary-page
-                     :controllers [{:parameters {:query []}
+                     :controllers [{:parameters {:query [:labels :contains]}
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  #_(rf/dispatch [:diary/list]))}]}))]
+                                                  (rf/dispatch [:diary/set-filter query])
+                                                  (rf/dispatch [:diary/current-data-clean])
+                                                  (rf/dispatch [:diary/list]))}]}))]
+
+   ["/diary-new"
+    (merge {:name :diary-new}
+           #?(:cljs {:view        #'core/diary-new-page
+                     :controllers [{:parameters {:query []}
+                                    :start      (fn [_]
+                                                  (rf/dispatch [:user/fetch-from-local]))}]}))]
+
+   ["/diary/:id/edit"
+    (merge {:name :diary-edit}
+           #?(:cljs {:view        #'core/diary-edit-page
+                     :controllers [{:parameters {:path [:id]}
+                                    :start      (fn [{path :path}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (rf/dispatch [:diary/current (:id path)]))}]}))]
+
+   ["/diary/:id"
+    (merge {:name :diary-view}
+           #?(:cljs {:view        #'core/diary-view-page
+                     :controllers [{:parameters {:path [:id]}
+                                    :start      (fn [{path :path}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (rf/dispatch [:diary/current (:id path)]))}]}))]
 
    ["/goods"
     (merge {:name :goods}

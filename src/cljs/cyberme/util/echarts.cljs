@@ -33,8 +33,8 @@
         _ (set! (.-onresize js/window)
                 (clj->js (fn [_]
                            (when-let [chart-inst (get @echarts-instance dom)]
-                             (.resize chart-inst))
-                           (r/force-update comp))))]
+                             (.resize chart-inst)
+                             (r/force-update comp)))))]
     (.setOption chart props)))
 
 (defn rerender-chart [comp]

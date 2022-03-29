@@ -8,6 +8,8 @@
     [clojure.string :as string]
     [clojure.set :as set]
     [cyberme.util.request :refer [ajax-flow] :as req]
+    [cyberme.diary.core :as diary]
+    [cyberme.diary.util :refer [satisfy-date]]
     [clojure.string :as str]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; 日记 ;;;;;;;;;;;;;;;;;;;;;;
@@ -17,7 +19,7 @@
   (fn [db _]
     (set (remove nil?
                  (flatten
-                   (map #(-> % :info :tags)
+                   (map #(-> % :info :labels)
                         (-> db :diary/list-data :data)))))))
 
 (rf/reg-event-db
@@ -35,10 +37,15 @@
   (fn [db _]
     (let [{:keys [data]} (:diary/list-data db)
           {:keys [labels contains]} (:diary/filter db)
-          label-contain-fn #(contains? (-> % :info :tags set) labels)
-          ;;TODO contains 过滤
-          new-data (if (or (nil? labels) (str/blank? labels))
-                     data (filter label-contain-fn data))]
+          label-contain-fn #(contains? (-> % :info :labels set) labels)
+          contains-contain-fn #(satisfy-date contains %)
+          new-data (cond
+                     (and (str/blank? labels) (str/blank? contains)) data
+                     (str/blank? contains) (filter label-contain-fn data)
+                     (str/blank? labels) (filter contains-contain-fn data)
+                     :else (->> data
+                                (filter label-contain-fn)
+                                (filter contains-contain-fn)))]
       (vec new-data))))
 
 ;最近日记

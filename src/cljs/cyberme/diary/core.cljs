@@ -3,7 +3,11 @@
             [re-frame.core :as rf]
             [reagent.core :as r]
             [clojure.string :as string]
-            [cyberme.util.storage :as storage]))
+            [cyberme.util.storage :as storage]
+            [cyberme.util.tool :as tool]
+            [cljs-time.format :as format]
+            [cyberme.diary.util :refer [diary-date-str]]
+            [cljs-time.core :as t]))
 
 (def help-message "日记支持通用 Markdown 语法、链接高亮以及如下特殊语法：
 TODO 标记：
@@ -70,7 +74,7 @@ Image 宽高：
                                     mg (if (= sel-o "所有标签")
                                          (dissoc filter :labels)
                                          (assoc filter :labels sel-o))]
-                                (rf/dispatch [:daily/set-filter mg])
+                                (rf/dispatch [:diary/set-filter mg])
                                 (storage/set-item "daily_filter" mg)
                                 (reitit.frontend.easy/replace-state :diary nil mg)))
            :value     (or (:labels filter) "")}
@@ -89,54 +93,41 @@ Image 宽高：
           [:option "所有时间"]
           [:option {:value "week"} "一周以内"]
           [:option {:value "month"} "一月以内"]
-          [:option {:value "session"} "一季以内"]
+          [:option {:value "month2"} "两月以内"]
           [:option {:value "year"} "一年以内"]]]]]]]))
 
-(defn diary-card [{:keys [id title content info create_at update_at]}
-                  {:keys [with-footer with-description with-big-pic with-edit]}]
+(defn diary-card [{:keys [id title content info create_at update_at] :as diary}
+                  {:keys [with-footer with-description]}]
   (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
-        filter-now @(rf/subscribe [:blog/filter])]
-    [(if with-footer :div.box.columns.mt-5
-                     :div.columns.mt-5)
+        ;用于过滤特定标签和日期的日记
+        filter-now @(rf/subscribe [:diary/filter])]
+    [:div.box.columns.mt-5
      [:div.column {:style {:z-index :2}}
-      [:p.title
-       [:span {:on-click #(rf/dispatch [:common/navigate! :blog-view {:id id}])
-               :style    {:cursor       :pointer
-                          :margin-right (if-not with-edit :10px :0px)}}
+      [:p.subtitle.is-family-code {:style {:margin-top    "-7px"
+                                           :margin-bottom "10px"}}
+       (diary-date-str diary)]
+      [:p.is-size-4.mb-0
+       [:span.is-clickable
+        {:on-click #(rf/dispatch [:common/navigate! :diary-view {:id id}])}
         title]
-       (when with-edit
-         [:span [:a {:on-click #(rf/dispatch [:common/navigate! :blog-edit {:id id}])
-                     :style    {:cursor         :pointer
-                                :font-size      :8px
-                                :margin-left    :7px
-                                :margin-right   :10px
-                                :vertical-align :80%}}
-                 [:i.material-icons {:style {:font-size :15px
-                                             :color     :grey}} "border_color"]]])]
-      (let [{labels :labels} info
-            labels (or labels [])]
-        [:<>
-         [:p {:style {:margin-left :-7px :margin-top :-20px}}
-          (for [label labels]
-            ^{:key label}
-            [:a.ml-1 {:on-click #(js/alert "此处应该更新 URL 并过滤")}
-             [:span.tag.is-rounded (str "#" label)]])]
-         [:p {:style {:margin-top :30px}}
-          (let [author-in-db (string/join " " (get info :authors []))]
-            (if (string/blank? author-in-db) "佚名" author-in-db))]])
-      [:div.tags.mt-0.mb-0
-       (for [tag (get info :tags [])]
-         ^{:key tag}
-         [:span.tag.is-rounded.is-small.is-light.is-success.is-clickable
-          {:on-click (fn [_]
-                       (let [filter-after (assoc filter-now :labels tag)]
-                         (rf/dispatch [:blog/set-filter filter-after])
-                         (reitit.frontend.easy/push-state :blog-list nil filter-after)))}
-          "# " tag])]
-      [:p [:i.material-icons {:style {:vertical-align :-18%
-                                      :padding-left   :1px
-                                      :padding-right  :4px
-                                      :font-size      :18px}} "query_builder"] update_at]]
+       [:span [:a {:on-click #(rf/dispatch [:common/navigate! :diary-edit {:id id}])
+                   :style    {:cursor         :pointer
+                              :font-size      :8px
+                              :margin-left    :10px
+                              :margin-right   :10px
+                              :vertical-align :10%}}
+               [:i.material-icons {:style {:font-size :15px
+                                           :color     :lightgray
+                                           :opacity   0.5}} "border_color"]]]]
+      (when-let [labels (:labels info)]
+        [:p {:style {:margin-left :-7px :margin-top :10px}}
+         (for [label labels]
+           ^{:key label}
+           [:a.ml-1 {:on-click (fn [_]
+                                 (let [filter-after (assoc filter-now :labels label)]
+                                   (rf/dispatch [:diary/set-filter filter-after])
+                                   (reitit.frontend.easy/push-state :diary nil filter-after)))}
+            [:span.tag.is-rounded (str "# " label)]])])]
      (when with-description
        [:div.tile.notification.column
         (when (not with-footer)
@@ -144,7 +135,7 @@ Image 宽高：
                    :background-color "rgba(159, 219, 180, 0.19)"}})
         [:div.card-content
          [:div.content (if (clojure.string/blank? description)
-                         "尚无介绍.." description)]]])]))
+                         "还没有内容.." description)]]])]))
 
 (defn diary-page
   "Diary 主页展示"
@@ -163,6 +154,29 @@ Image 宽高：
         [:div.hero-body
          [:div.container.has-text-centered
           [:h3.subtitle.mt-6
-           "Oops... 暂无符合条件的日记"]]]]))]
-  #_[:div.container>div.content.mt-5
-     [edit/edit-page]])
+           "Oops... 暂无符合条件的日记"]]]]))])
+
+(defn diary-edit-page
+  "Diary 修改页面"
+  []
+  [:div.container>div.content.mt-5
+   (let [{data :data} @(rf/subscribe [:diary/current-data])]
+     (if data
+       [edit/edit-page data]
+       [:p.ml-6.mt-6 "正在加载..."]))])
+
+(defn diary-view-page
+  "Diary 展示页面"
+  []
+  [:div.container>div.content.mt-5
+   (let [{data :data} @(rf/subscribe [:diary/current-data])]
+     (if data
+       [edit/edit-page data true]
+       [:p.ml-6.mt-6 "正在加载..."]))])
+
+(defn diary-new-page
+  "Diary 新建页面"
+  []
+  [:div.container>div.content.mt-5
+   [edit/edit-page]])
+

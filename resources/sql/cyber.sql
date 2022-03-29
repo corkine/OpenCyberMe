@@ -273,3 +273,29 @@ where (category = 'restactivity' or category = 'activeactivity')
   and start > (current_date - (:day || ' day')::interval)
 group by date(start), category
 order by date(start) desc;
+
+---------------------- Diary -------------------
+-- :name all-diary :? :*
+select * from diary
+order by (info->>'day')::date, create_at desc
+limit 100;
+-- :name diary-by-id :? :1
+select * from diary
+where id = :id;
+-- :name diaries-by-day :? :*
+select * from diary
+where (info->>'day')::date = :day;
+-- :name diaries-by-label :? :*
+select * from diary
+where :label = any((info->>'labels')::text[]);
+-- :name insert-diary :! :1
+insert into diary (title, content, info)
+values (:title, :content, :info);
+-- :name update-diary :! :1
+update diary set title = :title,
+                 content = :content,
+                 info = :info
+where id = :id;
+-- :name delete-diary :! :1
+delete from diary
+where id = :id;
