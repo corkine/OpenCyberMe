@@ -132,7 +132,8 @@
           {:blue true
            :fitness {:rest 2000 :active 300}
            :todo {:total 27 :finished 27}}
-           :clean {:m1xx :m2xx :n1xx :n2xx}}}
+           :clean {:m1xx :m2xx :n1xx :n2xx}}
+           :today 23}
   返回的规则如下：
   pass-percent 返回本周过了多久，粒度为天，返回百分比字符串，对于周一返回 100%
   hint 返回字符串提示，周一返回一句话，其余时间返回过去每天平均达成百分比，
@@ -147,6 +148,7 @@
         week-n-hint (condp = (t/day-of-week now)
                       1 "%.0f%%"
                       2 "%.0f%%"
+                      3 "平均 %.0f%%"
                       7 "本周平均达成 %.0f%%"
                       "平均达成 %.0f%%")
         week-index (t/day-of-week now)
@@ -159,17 +161,17 @@
         score-pass-all-f (* week-index each-day-score)
         score-pass-all (* (- week-index 1) each-day-score)
         ;计算规则：blue 计 2 分，active 完成计 2 分，to-do 完成计 2 分，clean 完成计 2 分
-        ;TODO 等待日志系统完善后使用自评而非 blue 评分，但是接口也需要提供自评而非 blue 得分
         compute-oneday (fn [day-str]
-                         (let [{:keys [blue fitness todo clean]} (get score day-str)
+                         (let [{:keys [blue fitness todo clean today]} (get score day-str)
                                is-blue? (boolean blue)
                                finish-active! (>= (or (:active fitness) 0) goal-active)
                                todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
                                clean-count (count (filter true? (vals clean)))
-                               score (+ (if is-blue? 0 2)
-                                        (if finish-active! 2 0)
-                                        (if todo-all-done! 2 0)
-                                        (* clean-count 0.5))]
+                               score (+ #_(if is-blue? 0 2)
+                                       (* (or today 0) 0.02)
+                                       (if finish-active! 2 0)
+                                       (if todo-all-done! 2 0)
+                                       (* clean-count 0.5))]
                            ;(println "for day " day-str ", score " score)
                            score))
         score-have (fn [week-list] (reduce #(+ %1 (compute-oneday %2)) 0 week-list))
@@ -201,6 +203,8 @@
 
         recent @(rf/subscribe [:dashboard/recent-data])
         {:keys [todo fitness blue clean express movie score work]} (:data recent)
+        ;;TODAY-SCORE
+        today-score (* (or (:today (:data recent)) 0) 0.01)
         ;;FITNESS
         {:keys [active rest goal-active]} fitness
         ;;CLEAN
@@ -257,21 +261,20 @@
                     :start "#EE0000" :stop "#EE9572"
                     :hint  (simple-print fitness)}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "习惯" :value (/ clean-count 4)
-                    :start "#D8BFD8" :stop "#DDA0DD"
-                    :hint  (simple-print clean)}]]
-         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"
                     :hint  (simple-print {:total    (count today-todo)
                                           :finished (- (count today-todo)
                                                        not-finished)})}]]
-         ;TODO 等待完善日志系统并提供自评得分
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "自省" :value 0.9
-                    :hint  (simple-print {:hint "等待施工"})}]]]
+          [chart-1 {:title "习惯" :value (/ clean-count 4)
+                    :start "#D8BFD8" :stop "#DDA0DD"
+                    :hint  (simple-print clean)}]]
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
+          [chart-1 {:title "自省" :value today-score
+                    :hint  (simple-print {:score (* today-score 100)})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
-         {:style { :margin-top :20px :margin-bottom :3px}}
+         {:style {:margin-top :20px :margin-bottom :3px}}
          [:div.is-align-self-center.px-3 {:style {:margin-left :-10px :margin-right :-20px}}
           [:p.mb-1.mt-1
            (when NeedMorningCheck "⏰ ")

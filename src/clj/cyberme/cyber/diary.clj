@@ -1,5 +1,7 @@
 (ns cyberme.cyber.diary
-  (:require [cyberme.db.core :as db])
+  (:require [cyberme.db.core :as db]
+            [clojure.tools.logging :as log]
+            [next.jdbc :as jdbc])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time LocalDate)))
@@ -102,28 +104,57 @@
        :status  0})))
 
 (defn handle-insert-diary
-  "添加一篇日记"
+  "添加一篇日记，info->score 中可能有当日评分，将其加入 days 表中"
   [{:keys [title content info]}]
   (try
-    {:message "添加成功"
-     :status  1
-     :data    (db/insert-diary {:title   title
-                                :content content
-                                :info    info})}
+    (jdbc/with-transaction
+      [t db/*db*]
+      (let [day (or (try
+                      (LocalDate/parse (:day info) (DateTimeFormatter/ISO_LOCAL_DATE))
+                      (catch Exception e
+                        (log/error "[diary-save] parse (:day info) error: "
+                                   info ", e: " (.getMessage e))
+                        nil)) (LocalDate/now))
+            insert-diary-action (db/insert-diary t
+                                                 {:title   title
+                                                  :content content
+                                                  :info    info})]
+        (if-let [score (:score info)]
+          {:message "添加成功并成功更新每日分数"
+           :status  1
+           :data    {:diary insert-diary-action
+                     :score (db/set-someday-info t {:day day :info {:score score}})}}
+          {:message "添加成功"
+           :status  1
+           :data    {:diary insert-diary-action}})))
     (catch Exception e
       {:message (str "添加日记 " title " 失败： " (.getMessage e))
        :status  0})))
 
 (defn handle-update-diary
-  "更新一篇日记"
+  "更新一篇日记，info->score 中可能有当日评分，将其加入 days 表中"
   [{:keys [title content info id]}]
   (try
-    {:message "更新成功"
-     :status  1
-     :data    (db/update-diary {:title   title
-                                :content content
-                                :info    info
-                                :id      id})}
+    (jdbc/with-transaction
+      [t db/*db*]
+      (let [day (or (try
+                      (LocalDate/parse (:day info) (DateTimeFormatter/ISO_LOCAL_DATE))
+                      (catch Exception e
+                        (log/error "[diary-save] parse (:day info) error: "
+                                   info ", e: " (.getMessage e))
+                        nil)) (LocalDate/now))
+            update-action (db/update-diary t {:title   title
+                                              :content content
+                                              :info    info
+                                              :id      id})]
+        (if-let [score (:score info)]
+          {:message "更新成功并成功更新每日分数"
+           :status  1
+           :data    {:diary update-action
+                     :score (db/set-someday-info t {:day day :info {:score score}})}}
+          {:message "更新成功"
+           :status  1
+           :data    {:diary update-action}})))
     (catch Exception e
       {:message (str "更新日记 " title " 失败： " (.getMessage e))
        :status  0})))

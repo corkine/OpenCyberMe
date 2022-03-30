@@ -216,6 +216,11 @@ insert into days (day, info, update_at)
 values (:day, :info, current_timestamp)
 on conflict (day) do update set info      = :info,
                                 update_at = current_timestamp;
+-- :name set-someday-info :! :1
+insert into days (day, info, update_at)
+values (:day, :info, current_timestamp)
+on conflict (day) do update set info      = days.info || :info,
+                                update_at = current_timestamp;
 -- :name delete-day :! :1
 delete
 from days

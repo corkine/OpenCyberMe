@@ -535,13 +535,13 @@
         {:keys [mark-night-failed mark-morning-failed]} info
         count-not-check-failed (+ (if mark-morning-failed 1 0)
                                   (if mark-night-failed 1 0))
-        exist-count (count (filter (comp not nil?) [r1start r1end r2start r2end]))]
-    {:exist   (not (and (nil? r1start) (nil? r1end)
-                        (nil? r2start) (nil? r2end)))
-     :pending (count (info-check-status info "ready!"))
-     :failed  (+ (count (info-check-status info "failed!"))
-                 count-not-check-failed)
-     :success (count (info-check-status info "done!"))
+        exist-count (count (filter (comp not nil?) [(and r1start r1end) (and r2start r2end)]))]
+    {:exist        (not (and (nil? r1start) (nil? r1end)
+                             (nil? r2start) (nil? r2end)))
+     :pending      (count (info-check-status info "ready!"))
+     :failed       (+ (count (info-check-status info "failed!"))
+                      count-not-check-failed)
+     :success      (count (info-check-status info "done!"))
      :policy-count exist-count}))
 
 (defn handle-serve-month-summary
@@ -649,7 +649,7 @@
 
 (defn handle-dashboard
   "返回前端大屏显示用数据，包括每日 Blue 和 Blue 计数、每日 Fitness 活动、静息和总目标卡路里
-  每日 Clean 和 Clean 计数，每日 TODO 列表、正在追踪的快递、正在追踪的美剧，
+  每日 Clean 和 Clean 计数，每日 TODO 列表、正在追踪的快递、正在追踪的美剧，今日自评得分
   以及一个方便生成本周表现的积分系统，其包含了最近一周每天的数据，格式为：
   :blue {UpdateTime IsTodayBlue WeekBlueCount MonthBlueCount
          MaxNoBlueDay MaxNoBlueDayFirstDay}
@@ -663,18 +663,21 @@
   :express [{id name status(0不追踪1追踪) last_update info(最后更新路由)}]
   :work {:NeedWork :OffWork :NeedMorningCheck :WorkHour :SignIn{:source :time}
          :Policy{:exist :pending :success :failed :policy-count}}
+  :today 98
   :score {:2022-03-01
            {:blue true
             :fitness {:rest 2000 :active 300}
             :todo {:total 27 :finished 27}
-            :clean {:m1xx :m2xx :n1xx :n2xx}}}"
-  ;TODO 增加自评系统和接口数据
+            :clean {:m1xx :m2xx :n1xx :n2xx}
+            :today 99}}"
   [{:keys [day] :or {day 7}}]
   (try
     (let [all-week-day (mapv (comp keyword str) (tool/all-week-day))
+          today (keyword (tool/today-str))
           ;每一个子项都是 {:2022-03-01 xxx}
           ;要合并为 {:2022-03-01 {:blue xxx}}
           blue-week (clean/handle-blue-week)
+          score-week (clean/handle-score-week)
           clean-week (clean/handle-clean-week)
           fitness-week (fitness/week-active)
           todo-week (todo/handle-week-static)
@@ -687,8 +690,10 @@
                 :movie   (mini4k/recent-update {:day day})
                 :work    (assoc (get-hcm-hint {})
                            :Policy (policy-oneday (local-date)))
+                :today   (get score-week today)
                 :score   (reduce #(assoc % (keyword %2)
                                            {:blue    (get blue-week %2)
+                                            :today   (get score-week %2)
                                             :clean   (get clean-week %2)
                                             :fitness (get fitness-week %2)
                                             :todo    (get todo-week %2 [])})

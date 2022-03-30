@@ -59,6 +59,22 @@
                (boolean (-> (get db-data-map %2) :info :blue)))
             {} all-week-day)))
 
+(defn handle-score-week
+  "获取本周的 score 数据：{:2022-03-01 33 :2022-03-02 79..}"
+  []
+  (let [today (LocalDate/now)
+        today-day-of-week (.getValue (.getDayOfWeek today))
+        week-first (.minusDays today (- today-day-of-week 1))
+        all-week-day (take 7 (iterate #(.plusDays % 1) week-first))
+        ;type: [{:day date :info {:blue t/f} :create_at :update_at ts}]
+        data-in-db (db/day-range {:from week-first :to today})
+        ;type: {:2022-03-01 {:day 2022-03-01 :info :create_at :update_at}
+        db-data-map (reduce #(assoc % (:day %2) %2) {} data-in-db)]
+    (reduce #(assoc %
+               (-> %2 str keyword)
+               (or (-> (get db-data-map %2) :info :score) 0))
+            {} all-week-day)))
+
 (defn handle-blue-show []
   (try
     (let [today (LocalDate/now)
