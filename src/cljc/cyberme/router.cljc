@@ -107,4 +107,10 @@
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local])
                                              (rf/dispatch [:fetch-usage])
-                                             (rf/dispatch [:fetch-wishlist]))}]}))]])
+                                             (rf/dispatch [:fetch-wishlist]))}]}))]
+
+   ["/cook"
+    (merge {:name :cook}
+           #?(:cljs {:view        #'core/cook-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]])

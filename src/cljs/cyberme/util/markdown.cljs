@@ -1,8 +1,8 @@
 (ns cyberme.util.markdown
   (:require ["react-markdown" :default ReactMarkdown]
             ["remark-gfm" :default remarkGfm]
-            ["react-syntax-highlighter" :default SyntaxHighlighter]
-            ["react-syntax-highlighter/dist/esm/styles/hljs" :refer (a11yLight)]
+            #_["react-syntax-highlighter" :default SyntaxHighlighter]
+            #_["react-syntax-highlighter/dist/esm/styles/hljs" :refer (a11yLight)]
             [re-frame.core :as rf]
             [clojure.string :as string]
             [reagent.core :as r]))
@@ -39,8 +39,8 @@
                                 (println "error when parsing markdown :alt info, you should set {desc}::23px*34px
                                 to hint img width and height, eg ::*34px ::230px*：" e)
                                 (r/as-element [:img {:src (str src)}])))))
-                        :code
-                        (fn [args]
+                        #_:code
+                        #_(fn [args]
                           (let [{:keys [node inline className children]
                                  :as   all} (js->clj args :keywordize-keys true)]
                             (if (string/includes? (or className "") "language-")

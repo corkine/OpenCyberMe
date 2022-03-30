@@ -60,7 +60,7 @@
   :target-path "target/%s/"
   :main ^:skip-aot cyberme.core
 
-  :plugins [[lein-shadow "0.2.0"]] 
+  :plugins [[lein-shadow "0.4.0"]]
   :clean-targets ^{:protect false}
   [:target-path "target/cljsbuild"]
   :shadow-cljs
@@ -87,7 +87,7 @@
              [react-markdown "8.0.0"]
              [hastscript "7.0.2"]
              [remark-gfm "3.0.1"]
-             [react-syntax-highlighter "15.4.5"]]
+             #_[react-syntax-highlighter "15.4.5"]]
   :npm-dev-deps [[xmlhttprequest "1.8.0"]]
 
   :profiles

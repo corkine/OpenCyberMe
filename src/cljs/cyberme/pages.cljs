@@ -157,6 +157,17 @@
           "Marvin Studio."
           " All Right Reserved.")]]])
 
+(defn cook-page []
+  [:<>
+   [top-point]
+   [:div.container>div.content.mt-6
+    [:p "正在施工..."]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
 (defn package-page []
   [:<>
    [top-point]
