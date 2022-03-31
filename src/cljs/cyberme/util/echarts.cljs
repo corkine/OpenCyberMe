@@ -3,11 +3,33 @@
             [reagent.core :as r]
             [reagent.dom :as d]
             [echarts :as echarts]
+            ;["echarts/core" :as echarts]
+            ;["echarts/charts" :refer (PieChart)]
+            ;["echarts/components" :refer
+            ; (TitleComponent
+            ;   TooltipComponent
+            ;   GridComponent
+            ;   DatasetComponent
+            ;   TransformComponent)]
+            ;["echarts/features" :refer (LabelLayout UniversalTransition)]
+            ;["echarts/renderers" :refer (SVGRenderer)]
             [echarts-liquidfill :as liquid]
             [goog.string :as gstring]
             [cljs-time.core :as t]
             [clojure.string :as str]
             [re-frame.core :as rf]))
+
+;ref https://echarts.apache.org/handbook/zh/basics/import
+;ref https://shadow-cljs.github.io/docs/UsersGuide.html#_using_npm_packages
+#_(echarts/use [TitleComponent,
+              TooltipComponent,
+              GridComponent,
+              DatasetComponent,
+              TransformComponent,
+              PieChart,
+              LabelLayout,
+              UniversalTransition,
+              SVGRenderer])
 
 (defn ECharts [options]
   (r/as-element
@@ -55,13 +77,13 @@
 
 (defn EChartsM [_]
   (r/create-class
-    {:component-did-mount  render-chart
-     :component-did-update rerender-chart
+    {:component-did-mount    render-chart
+     :component-did-update   rerender-chart
      :component-will-unmount dispose-charts
-     :reagent-render       (fn [config]
-                             [:div {:style (or (:style config)
-                                               {:width "100px"
-                                                :height "100px"})}])}))
+     :reagent-render         (fn [config]
+                               [:div {:style (or (:style config)
+                                                 {:width  "100px"
+                                                  :height "100px"})}])}))
 
 (defn EChartsR [options]
   (r/as-element

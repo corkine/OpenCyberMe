@@ -8,7 +8,8 @@
     [muuntaja.middleware :refer [wrap-format wrap-params]]
     [cyberme.config :refer [env]]
     [ring-ttl-session.core :refer [ttl-memory-store]]
-    [ring.middleware.defaults :refer [site-defaults wrap-defaults]])
+    [ring.middleware.defaults :refer [site-defaults wrap-defaults]]
+    [ring.middleware.gzip :as gzip])
   )
 
 (defn wrap-internal-error [handler]
@@ -43,4 +44,5 @@
         (-> site-defaults
             (assoc-in [:security :anti-forgery] false)
             (assoc-in  [:session :store] (ttl-memory-store (* 60 30)))))
+      (gzip/wrap-gzip)
       wrap-internal-error))

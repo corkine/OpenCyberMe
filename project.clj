@@ -44,6 +44,7 @@
                  [ring-webjars "0.2.0"]
                  [ring/ring-core "1.8.2"]
                  [ring/ring-defaults "0.3.2"]
+                 [bk/ring-gzip "0.3.0"]
                  [selmer "1.12.31"]
                  [hickory "0.7.1"]
                  [com.andrewmcveigh/cljs-time "0.5.2"]
