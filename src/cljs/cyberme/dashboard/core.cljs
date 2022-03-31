@@ -257,10 +257,6 @@
           [:i.fa.fa-refresh]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "锻炼" :value (/ active goal-active)
-                    :start "#EE0000" :stop "#EE9572"
-                    :hint  (simple-print fitness)}]]
-         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "待办" :value finish-percent
                     :start "#4F94CD" :stop "#87CEEB"
                     :hint  (simple-print {:total    (count today-todo)
@@ -270,6 +266,10 @@
           [chart-1 {:title "习惯" :value (/ clean-count 4)
                     :start "#D8BFD8" :stop "#DDA0DD"
                     :hint  (simple-print clean)}]]
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
+          [chart-1 {:title "锻炼" :value (/ active goal-active)
+                    :start "#EE0000" :stop "#EE9572"
+                    :hint  (simple-print fitness)}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "自省" :value today-score
                     :hint  (simple-print {:score (* today-score 100)})}]]]

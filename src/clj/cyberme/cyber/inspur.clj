@@ -562,20 +562,25 @@
                         :check-end   (last signin)
                         :work-day    work-day?
                         :policy      (policy-oneday %)})
-          pass-data (apply assoc {}
-                           (flatten
-                             (mapv (fn [date]
-                                     [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
-                                      (calc-info date)])
-                                   date-list)))
-          rest-data (apply assoc {}
-                           (flatten
-                             (mapv (fn [date]
-                                     [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
-                                      {:work-hour 0
-                                       :work-day  (do-need-work (.atStartOfDay date))
-                                       :policy    (policy-oneday date)}])
-                                   (month-rest-days 0))))
+          pass-data (if-not (empty? date-list)
+                      (apply assoc {}
+                             (flatten
+                               (mapv (fn [date]
+                                       [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
+                                        (calc-info date)])
+                                     date-list)))
+                      {})
+          rest-list (month-rest-days 0)
+          rest-data (if-not (empty? rest-list)
+                      (apply assoc {}
+                             (flatten
+                               (mapv (fn [date]
+                                       [(keyword (.format date DateTimeFormatter/ISO_LOCAL_DATE))
+                                        {:work-hour 0
+                                         :work-day  (do-need-work (.atStartOfDay date))
+                                         :policy    (policy-oneday date)}])
+                                     rest-list)))
+                      {})
           res (merge pass-data rest-data)]
       {:message "获取成功！"
        :status  1
