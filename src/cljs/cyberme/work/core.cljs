@@ -21,6 +21,7 @@
         after-noon? (> (t/hour now) 12)
         last_day (t/last-day-of-the-month now)
         date-format #(gstring/format "%02d-%02d-%02d" year month %)
+        calendar-range (gstring/format "%02d-%02d" year month)
         date-key #(keyword (date-format %))
         status-fn #(if-not (->> % date-key (get data) :work-day) "休" "")
         plan-fn #(let [{:keys [exist failed success pending]} (->> % date-key (get data) :policy)]
@@ -38,7 +39,9 @@
         work-list (mapv (fn [d]
                           (let [{hour :work-hour} (get data (date-key d))]
                             [(date-format d)
-                             hour])) day-list)]
+                             hour])) day-list)
+        _ (println month-list)
+        _ (println work-list)]
     [EChartsM
      {:style {:width "500px" :height "320px"}
       :option
@@ -88,7 +91,7 @@
                     :dayLabel   {:firstDay 1
                                  :nameMap  "cn"}
                     :monthLabel {:show false}
-                    :range      "2022-03"}]
+                    :range      calendar-range}]
        :series    [{:type             "heatmap"
                     :name             "工作时长"
                     :coordinateSystem "calendar"
