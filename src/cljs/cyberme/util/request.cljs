@@ -112,7 +112,7 @@
         (when failure-notice
           (rf/dispatch [:global/notice
                         {:message  (let [error (or (:last-error error) (str error))]
-                                     (if (str/includes? error "Forbidden")
+                                     (if (str/includes? error "403")
                                        (str "请求调用失败，没有权限，请点击“确定”登录后再试。")
                                        (str "请求调用失败：" error)))
                          :callback (if (str/includes? (str (:last-error error)) "403")

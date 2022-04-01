@@ -172,7 +172,7 @@
                                        (if finish-active! 2 0)
                                        (if todo-all-done! 2 0)
                                        (* clean-count 0.5))]
-                           ;(println "for day " day-str ", score " score)
+                           #_(println "for day " day-str ", today " today ", score " score)
                            score))
         score-have (fn [week-list] (reduce #(+ %1 (compute-oneday %2)) 0 week-list))
         finish-percent-f (/ (score-have week-list-f) score-pass-all-f)

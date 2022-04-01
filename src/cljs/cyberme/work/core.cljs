@@ -39,9 +39,7 @@
         work-list (mapv (fn [d]
                           (let [{hour :work-hour} (get data (date-key d))]
                             [(date-format d)
-                             hour])) day-list)
-        _ (println month-list)
-        _ (println work-list)]
+                             hour])) day-list)]
     [EChartsM
      {:style {:width "500px" :height "320px"}
       :option
