@@ -40,7 +40,7 @@
   (testing "handle list test"
     (let [a (atom {})
           name (str (UUID/randomUUID))]
-      (with-redefs [db/to-do-recent-day (fn [{:keys [day]}]
+      (with-redefs [db/to-do-recent-day-2 (fn [{:keys [day]}]
                                           (swap! a assoc :day day)
                                           (mapv (fn [_] {:day day
                                                          :list name})
@@ -55,7 +55,7 @@
   (testing "handle list test without list name match"
     (let [a (atom {})
           name (str (UUID/randomUUID))]
-      (with-redefs [db/to-do-recent-day (fn [{:keys [day]}]
+      (with-redefs [db/to-do-recent-day-2 (fn [{:keys [day]}]
                                           (swap! a assoc :day day)
                                           (mapv (fn [_] {:day day
                                                          :list (str name "-hello")})

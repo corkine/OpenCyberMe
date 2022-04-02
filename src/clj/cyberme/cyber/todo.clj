@@ -208,7 +208,7 @@
           (sync-server-to-db access-token)
           (log/warn "[todo-today] need focus but miss access-token, "
                     "may not enable by todologin or not refresh token frequently."))))
-    (let [all (db/to-do-recent-day {:day 15})
+    (let [all (db/to-do-recent-day-2 {:day 15})
           recent (filterv #(and (= (:importance %) "high")
                                 (= (:status %) "notStarted")) all)
           recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)]
@@ -245,7 +245,7 @@
   (if (nil? listName)
     {:message "没有传入列表名称"
      :status 0}
-    (let [data-recent (db/to-do-recent-day {:day day})
+    (let [data-recent (db/to-do-recent-day-2 {:day day})
           final-data (filter #(= (:list %) listName) data-recent)
           with-due-full (map (fn [{:keys [due_at create_at finish_at] :as all}]
                                (cond due_at all
@@ -269,10 +269,10 @@
   (user/migrate)
   (cyberme.db.core/bind)
   (db/all-to-do)
-  (db/to-do-recent-day {:day 7})
+  (db/to-do-recent-day-2 {:day 7})
   (in-ns 'cyberme.db.core)
   (conman/bind-connection *db* "sql/queries.sql" "sql/goods.sql" "sql/cyber.sql")
   (db/insert-to-do {:id "WR" :title "HELLO A" :info {:a "HELLO"}})
-  (db/to-do-recent-day {:day 15})
+  (db/to-do-recent-day-2 {:day 15})
   (take 10 (db/to-do-all))
   (take 10 (db/to-do-modify-in-2-days)))
