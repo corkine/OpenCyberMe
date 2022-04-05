@@ -279,6 +279,10 @@ where (category = 'restactivity' or category = 'activeactivity' or category = 'd
 group by date(start at time zone 'Asia/Shanghai'), category
 order by date(start at time zone 'Asia/Shanghai') desc;
 
+select * from fitness
+where category = 'dietaryenergy'
+order by start desc;
+
 ---------------------- Diary -------------------
 -- :name all-diary :? :*
 select * from diary

@@ -49,6 +49,10 @@
                              (catch Exception e
                                (log/warn "not except value: " % ", message: "
                                          (.getMessage e))))
+        hash-fn (fn [category start-str value-str]
+                  (if (= (name category) "dietaryenergy")
+                    (str (.hashCode (str category (str start-str) (str value-str))))
+                    (str (.hashCode (str category (str start-str))))))
         full-data (reduce #(let [{:keys [start value end unit duration]} (get data %2)
                                  lines (fn [data] (str/split-lines data))
                                  category %2]
@@ -64,7 +68,7 @@
                                              ;category, value, unit, start, "end", duration, hash
                                              [(name category) (value->double v) u (str->time s)
                                               (str->time e) (duration->seconds d)
-                                              (str (.hashCode (str category (str s))))]))
+                                              (hash-fn category s v)]))
                                          (lines start) (lines value)
                                          (lines end) (lines unit) (lines duration)))) [] need-keys)]
     (if return-map?
@@ -94,7 +98,7 @@
      :rest        (or (:sum (first (in-cat "restactivity"))) 0.0)
      :diet        (or (:sum (first (in-cat "dietaryenergy"))) 0.0)
      :goal-active goal-active
-     :goal-cut goal-cut}))
+     :goal-cut    goal-cut}))
 
 (defn week-active
   "获取本周的活动记录，格式 {:2022-03-01 {:active, :rest, :diet}}"
