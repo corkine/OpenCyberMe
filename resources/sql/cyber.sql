@@ -249,16 +249,16 @@ limit :limit;
 -- :name all-fitness-after :? :*
 select *
 from fitness
-where start >= :day;
+where start at time zone 'Asia/Shanghai' >= :day;
 -- :name all-fitness-after-limit :? :*
 select *
 from fitness
-where start >= :day
+where start at time zone 'Asia/Shanghai' >= :day
 limit :limit;
 -- :name all-fitness-by-cat-after-limit :? :*
 select *
 from fitness
-where start >= :day
+where start at time zone 'Asia/Shanghai' >= :day
   and category = :category
 limit :limit;
 -- :name insert-fitness-batch :! :*
@@ -272,12 +272,12 @@ delete
 from fitness
 where 1 = 1;
 -- :name recent-activity :? :*
-select date(start), category, sum(value)
+select date(start at time zone 'Asia/Shanghai'), category, sum(value)
 from fitness
-where (category = 'restactivity' or category = 'activeactivity')
-  and start > (current_date - (:day || ' day')::interval)
-group by date(start), category
-order by date(start) desc;
+where (category = 'restactivity' or category = 'activeactivity' or category = 'dietaryenergy')
+  and start at time zone 'Asia/Shanghai' > (current_date - (:day || ' day')::interval)
+group by date(start at time zone 'Asia/Shanghai'), category
+order by date(start at time zone 'Asia/Shanghai') desc;
 
 ---------------------- Diary -------------------
 -- :name all-diary :? :*

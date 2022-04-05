@@ -92,7 +92,7 @@
   [EChartsM
    {:style {:width width :height height}
     :option
-    {:backgroundColor "#0F224C"
+    {:backgroundColor "transparent" #_"#0F224C"
      :series
      [{:type            "liquidFill"
        :radius          "60%"
@@ -108,7 +108,7 @@
                                         {:offset 1 :color "#2ca3e2"}]
                           :globalCoord false}]
        :backgroundStyle {:borderWidth 10
-                         :color       "#0F224C"
+                         :color       "transparent" #_"#0F224C"
                          :borderColor "transparent"
                          :shadowColor "red"
                          :shadowBlur  100}
@@ -119,6 +119,8 @@
        :outline         {:show false}}]}}])
 
 (def max-word 43)
+
+(def default-score 0.1)
 
 (defn simple-print [data]
   (-> (with-out-str (pprint data))
@@ -141,7 +143,7 @@
   score-percent 返回此百分比的数值
   show-pass-percent 为了激发完成潜力，每天如果所有圆环满则将今天的数据也纳入计算
   show-score-percent 同上，今天圆环满则将今天数据也纳入计算"
-  [score & {:keys [goal-active]}]
+  [score & {:keys [goal-active goal-cut]}]
   (let [now (t/time-now)
         format-date #(format/unparse-local (format/formatter "yyyy-MM-dd") %)
         week-1-hint (str "Week #" (t/week-number-of-year now))
@@ -164,16 +166,32 @@
         compute-oneday (fn [day-str]
                          (let [{:keys [blue fitness todo clean today]} (get score day-str)
                                is-blue? (boolean blue)
-                               finish-active! (>= (or (:active fitness) 0) goal-active)
+                               ;运动能量大于目标值 && 消耗能量大于目标值
+                               finish-active!-1 (>= (or (:active fitness) 0) goal-active)
+                               finish-active!-2 (>= (- (+ (:rest fitness) (:active fitness))
+                                                       (:diet fitness)) goal-cut)
                                todo-all-done! (>= (or (:finished todo) 0) (or (:total todo) 0))
                                clean-count (count (filter true? (vals clean)))
                                score (+ #_(if is-blue? 0 2)
                                        (* (or today 0) 0.02)
-                                       (if finish-active! 2 0)
+                                       (if (and finish-active!-1 finish-active!-2) 2 0)
                                        (if todo-all-done! 2 0)
                                        (* clean-count 0.5))]
                            #_(println "for day " day-str ", today " today ", score " score)
                            score))
+        compute-one-day-item (fn [day-str]
+                               (let [{:keys [blue fitness todo clean today]} (get score day-str)
+                                     ;运动能量大于目标值 && 消耗能量大于目标值
+                                     finish-active!-1 (>= (or (:active fitness) 0) goal-active)
+                                     finish-active!-2 (>= (- (+ (:rest fitness) (:active fitness))
+                                                             (:diet fitness)) goal-cut)]
+                                 #_(println "for day " day-str ", today " today ", score " score)
+                                 {:clean  (every? true? (vals clean))
+                                  :blue   (boolean blue)
+                                  :energy (and finish-active!-1 finish-active!-2)
+                                  :today  (not= today 0)}))
+        week-items (mapv compute-one-day-item week-list)
+        week-items-f (mapv compute-one-day-item week-list-f)
         score-have (fn [week-list] (reduce #(+ %1 (compute-oneday %2)) 0 week-list))
         finish-percent-f (/ (score-have week-list-f) score-pass-all-f)
         finish-percent (if (= score-pass-all 0)
@@ -189,7 +207,8 @@
        :score-percent      finish-percent
        :hint               (if today-all-finished? hint-f hint)
        :show-pass-percent  (if today-all-finished? pass-percent-f pass-percent)
-       :show-score-percent (if today-all-finished? finish-percent-f finish-percent)})))
+       :show-score-percent (if today-all-finished? finish-percent-f finish-percent)
+       :week-items         (if today-all-finished? week-items-f week-items)})))
 
 (defn dashboard-page []
   (let [now (t/time-now)
@@ -205,8 +224,11 @@
         {:keys [todo fitness blue clean express movie score work]} (:data recent)
         ;;TODAY-SCORE
         today-score (* (or (:today (:data recent)) 0) 0.01)
+        ;不论怎样，都将分数至少设置为 0.15，哪怕还没有日记
+        today-score (if (= today-score 0.0) default-score today-score)
         ;;FITNESS
-        {:keys [active rest goal-active]} fitness
+        {:keys [active rest diet goal-active goal-cut]} fitness
+        now-cost-energy (- (+ active rest) diet)
         ;;CLEAN
         {:keys [MorningBrushTeeth MorningCleanFace
                 NightCleanFace NightBrushTeeth HabitCountUntilNow]} clean
@@ -223,9 +245,13 @@
         movie (reverse (sort :last_update movie))
         ;;TO-DO
         today-todo (get todo (keyword today) [])
+        nothing-in-todo (or (= (count today-todo) 0) (nil? today-todo))
         not-finished (count (filter #(not= (:status %) "completed") today-todo))
         finish-percent (if (= (count today-todo) 0)
                          1 (- 1 (/ not-finished (count today-todo))))
+        ;如果说有待办，但是一个都没有完成，也要区分开完全没有待办的情况，将前者百分比设置为 0.15
+        finish-percent (if (and (= 0.0 finish-percent) (not nothing-in-todo))
+                         default-score finish-percent)
         days (reverse (sort (keys todo)))
         ;;WORK
         {:keys [NeedWork OffWork NeedMorningCheck WorkHour SignIn Policy]} work
@@ -238,8 +264,9 @@
                              "[0/0/0]")
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
-        {:keys [hint show-pass-percent show-score-percent]}
-        (progress-bar score :goal-active goal-active)]
+        {:keys [hint show-pass-percent show-score-percent week-items]}
+        (progress-bar score :goal-active goal-active :goal-cut goal-cut)
+        _ (println week-items)]
     [:div.container
      [:div.columns
       [:div.column.pr-0
@@ -267,11 +294,11 @@
                     :start "#D8BFD8" :stop "#DDA0DD"
                     :hint  (simple-print clean)}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "锻炼" :value (/ active goal-active)
+          [chart-1 {:title "能量" :value (min (/ now-cost-energy goal-cut) (/ active goal-active))
                     :start "#EE0000" :stop "#EE9572"
                     :hint  (simple-print fitness)}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "自省" :value today-score
+          [chart-1 {:title "日记" :value today-score
                     :hint  (simple-print {:score (* today-score 100)})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
          {:style {:margin-top :20px :margin-bottom :3px}}
@@ -291,25 +318,53 @@
              [:<>
               (let [{:keys [source time]} (get SignIn index)]
                 [:span.tag "#" " " (tool/datetime->time time)])])]]
-         [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
-          [:p.mt-2 "健康已坚持 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} MaxNoBlueDay] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " MaxNoBlueDay " 天"]]
          [:div.is-align-self-center.is-hidden-touch1.px-3
           [:p.mt-2 "习惯已坚持 "
            [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} HabitCountUntilNow] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " HabitCountUntilNow " 天"]]]]
-       [:div#progress-info.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom    :1em
-                                                 :padding-top      :0px
-                                                 :overflow         :hidden
-                                                 :height           :100px
-                                                 :background-color "#0F224C"}}
+          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " HabitCountUntilNow " 天"]]
+         [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
+          [:p.mt-2 "静心已坚持 "
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} MaxNoBlueDay] " 天"]
+          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " MaxNoBlueDay " 天"]]]]
+       [:div#week-info.mx-2.box {:style {:margin-bottom :1em
+                                         :position      :relative
+                                         :border-radius "6px 6px 0 0"
+                                         ;:background-color "#0f224c"
+                                         ;:color :white
+                                         ;:box-shadow :none
+                                         :z-index       10}}
+        [:div.columns
+         (for [day [0 1 2 3 4 5 6]]
+           ^{:key day}
+           [:div.column
+            [:p (condp = day 0 "周一" 1 "周二" 2 "周三" 3 "周四" 4 "周五" 5 "周六" 6 "周日")]
+            (let [{:keys [clean blue energy today]} (get week-items day)
+                  check-fnn (fn [check good bad]
+                              (cond (nil? check) ""
+                                    check (if (str/blank? good) "" [:p.mr-1 good])
+                                    :else (if (str/blank? bad) "" [:p.mr-1 bad])))]
+              [:div.is-size-6.is-family-code {:style {:white-space :nowrap}}
+               [:div.is-flex.is-flex-wrap-wrap
+                (check-fnn energy "" "🥮")
+                (check-fnn blue "" "🕯")
+                (check-fnn clean "🛁" "")
+                (check-fnn today "🔰️" "")]])])]]
+       [:div#progress-info.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom :1em
+                                                               :padding-top   :0px
+                                                               :overflow      :hidden
+                                                               :height        :100px
+                                                               ;:background-color "#0F224C"
+                                                               :position      :relative
+                                                               :border-radius "0 0 6px 6px"
+                                                               :top           :-20px
+                                                               :z-index       11}}
         [chart-2 {:width show-pass-percent :hint hint :finish show-score-percent}]
         #_[:div.is-family-code.has-text-white
            {:style {:font-size     :70px
                     :line-height   :80px
                     :margin-bottom :-20px}} "27"]]
-       [:div#express-info.mx-2.box {:style {:margin-bottom :1em}}
+       [:div#express-info.mx-2.box {:style {:margin-bottom :1em
+                                            :margin-top    :-20px}}
         [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
         (if (empty? express)
           [:p.is-size-6.has-text-grey "暂无正在追踪的快递。"]

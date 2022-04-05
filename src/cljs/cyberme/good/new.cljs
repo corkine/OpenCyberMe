@@ -27,6 +27,8 @@
                    (assoc fix-labels-status-data :uid (string/upper-case uid))
                    (assoc fix-labels-status-data :uid nil))})))
 
+;;TODO 抽象表单，提供基于模型的输入、验证和输出流
+
 (defn new-good-btn []
   (r/with-let
     [fields (r/atom {})
