@@ -263,10 +263,11 @@ where start at time zone 'Asia/Shanghai' >= :day
 limit :limit;
 -- :name insert-fitness-batch :! :*
 insert into fitness (category, value, unit, start, "end", duration, hash)
-values
-:tuple*:records
+values :tuple*:records
 on conflict (hash)
-do nothing;
+do update set "end" = excluded."end",
+              value = excluded.value,
+              duration = excluded.duration;
 -- :name remote-all-fitness :! :*
 delete
 from fitness
@@ -278,10 +279,6 @@ where (category = 'restactivity' or category = 'activeactivity' or category = 'd
   and start at time zone 'Asia/Shanghai' > (current_date - (:day || ' day')::interval)
 group by date(start at time zone 'Asia/Shanghai'), category
 order by date(start at time zone 'Asia/Shanghai') desc;
-
-select * from fitness
-where category = 'dietaryenergy'
-order by start desc;
 
 ---------------------- Diary -------------------
 -- :name all-diary :? :*

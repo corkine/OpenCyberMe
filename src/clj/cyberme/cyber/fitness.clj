@@ -50,6 +50,11 @@
                                (log/warn "not except value: " % ", message: "
                                          (.getMessage e))))
         hash-fn (fn [category start-str value-str]
+                  ;对于 active 和 rest，hash 基于 category 和 start 时间，因为一旦生成一个小时的数据
+                  ;其不会再变化，不基于 end 时间原因是存在当前一个小时数据不完全的情况，这时基于 start 时间
+                  ;hash 将冲突并且能够覆盖。
+                  ;对于 diet 而言，薄荷健康当前策略是生成 0 点的多条数据，iOSUpload 将其合为一插入，每天只有
+                  ;一条数据，因此基于 category 和 start 时间，每次更新数据都能覆盖。
                   (if (= (name category) "dietaryenergy")
                     (str (.hashCode (str category (str start-str) (str value-str))))
                     (str (.hashCode (str category (str start-str))))))
@@ -120,6 +125,7 @@
 (defn handle-upload [json-data]
   (try
     (let [data (json->data json-data false)
+          ;_ (clojure.pprint/pprint data)
           line-in (count data)
           [{count :next.jdbc/update-count}] (db/insert-fitness-batch {:records data})]
       {:message (str "批量上传成功，共 " line-in " 条数据，插入结果：" count)
