@@ -5,19 +5,6 @@
             [cyberme.validation :as va]
             [clojure.string :as string]))
 
-(declare dialog)
-
-(dialog :add-movie
-        "添加追踪美剧"
-        [[:name "名称 *" "美剧名"]
-         [:url "追踪地址 *" "http 或 https 开头"]]
-        "确定"
-        (fn [f e] (println f) {})
-        {:subscribe-ajax    [:movie-data]
-         :call-when-exit    [[:movie-data-clean]
-                             [:common/navigate! :dashboard]]
-         :call-when-success [[:movie-data-clean]]})
-
 (defn dialog
   ;validate-submit (fields, errors) -> data map
   ;bodies:
@@ -68,13 +55,14 @@
       (let [server-back (if subscribe-ajax @(rf/subscribe subscribe-ajax) nil)]
         (modals/modal-card
           id title
-          [:div {:style {:color "black"}}
-           (mapv #(into [common-fields] %) bodies)
-           (when server-back
-             [(if (= (:status server-back) 1)
-                :div.notification.is-success.mt-4
-                :div.notification.is-danger.mt-4)
-              [:blockquote (:message server-back)]])]
+          (conj
+            (into [:div {:style {:color "black"}}]
+                  (mapv #(into [common-fields] %) bodies))
+            (when server-back
+              [(if (= (:status server-back) 1)
+                 :div.notification.is-success.mt-4
+                 :div.notification.is-danger.mt-4)
+               [:blockquote (:message server-back)]]))
           (let [is-success-call (and (not (nil? server-back))
                                      (= (:status server-back) 1))]
             [:button.button.is-primary.is-fullwidth

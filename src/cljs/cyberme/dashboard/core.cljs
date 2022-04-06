@@ -5,7 +5,10 @@
             [goog.string :as gstring]
             [cljs-time.core :as t]
             [cyberme.util.tool :as tool]
+            [cyberme.validation :as va]
+            [cyberme.util.form :refer [dialog]]
             [cyberme.util.echarts :refer [ECharts EChartsR EChartsM]]
+            [cyberme.util.request :refer [ajax-flow] :as req]
             [cljs.pprint :refer [pprint]]))
 
 (defn chart-1
@@ -100,7 +103,7 @@
        :center          ["50%" "50%"]
        :amplitude       10
        :data            [finish finish finish]
-       :itemStyle       {:opacity :0.4
+       :itemStyle       {:opacity    :0.4
                          :shadowBlur :0.0}
        :shape           "container"
        :color           [{:type        "linear"
@@ -116,7 +119,8 @@
        :label           {:position  ["50%" "53%"]
                          :formatter hint
                          :textStyle {:fontSize "24px"
-                                     :color    "#fff"}}
+                                     :color    (if (> finish 0.4)
+                                                 "#fff" "#5cafeb")}}
        :outline         {:show false}}]}}])
 
 (def max-word 43)
@@ -196,7 +200,7 @@
                                   :blue   (boolean blue)
                                   :energy (and finish-active!-1 finish-active!-2)
                                   :today  (not= today 0)
-                                  :todo todo-all-done!}))
+                                  :todo   todo-all-done!}))
         week-items (mapv compute-one-day-item week-list)
         week-items-f (mapv compute-one-day-item week-list-f)
         score-have (fn [week-list] (reduce #(+ %1 (compute-oneday %2)) 0 week-list))
@@ -217,6 +221,48 @@
        :show-pass-percent  (if today-all-finished? pass-percent-f pass-percent)
        :show-score-percent (if today-all-finished? finish-percent-f finish-percent)
        :week-items         (if today-all-finished? week-items-f week-items)})))
+
+(defn movie-add-dialog
+  []
+  (dialog :add-movie!
+          "添加追踪美剧"
+          [[:name "名称 *" "美剧名"]
+           [:url "追踪地址 *" "http 或 https 开头"]]
+          "确定"
+          (fn [f e] (if (not (or (str/blank? (:name @f)) (str/blank? (:url @f))))
+                      (rf/dispatch [:movie/movie-add @f])
+                      (do
+                        (when (str/blank? (:name @f)) (swap! e assoc :name "名称不能为空"))
+                        (when (str/blank? (:url @f)) (swap! e assoc :url "地址不能为空")))))
+          {:subscribe-ajax    [:movie/movie-data]
+           :call-when-exit    [[:movie/movie-data-clean]]
+           :call-when-success [[:movie/movie-data-clean]]}))
+
+(ajax-flow {:call           :movie/movie-add
+            :uri-fn         #(str "/cyber/movie/?name=" (:name %) "&url=" (:url %))
+            :is-post        true
+            :data           :movie/movie-data
+            :clean          :movie/movie-data-clean})
+
+(defn express-add-dialog
+  []
+  (dialog :add-express!
+          "添加追踪快递"
+          [[:no "编号 *" "顺丰快递需要在末尾输入 :xxxx 收货人手机号后四位"]
+           [:note "备注 *" "此快递的别名"]]
+          "确定"
+          #(if-let [err (va/validate! @%1 [[:no va/required] [:note va/required]])]
+            (reset! %2 err)
+            (rf/dispatch [:express/express-add @%1]))
+          {:subscribe-ajax    [:express/express-data]
+           :call-when-exit    [[:express/express-data-clean]]
+           :call-when-success [[:express/express-data-clean]
+                               [:dashboard/recent]]}))
+
+(ajax-flow {:call           :express/express-add
+            :uri-fn         #(str "/cyber/express/track?no=" (:no %) "&note=" (:note %))
+            :data           :express/express-data
+            :clean          :express/express-data-clean})
 
 (defn dashboard-page []
   (let [now (t/time-now)
@@ -357,7 +403,7 @@
                [:div.is-flex.is-flex-wrap-wrap
                 (check-fnn todo "✅" "❌")
                 (check-fnn clean "🧼" "")
-                (check-fnn energy "🥦" "🧀" )
+                (check-fnn energy "🥦" "🧀")
                 (check-fnn blue "🕳" "🎭")
                 (check-fnn today "🔰️" "")]])])]]
        [:div#progress-info.mx-2.box.px-0.wave.is-flex {:style {:margin-bottom :1em
@@ -368,7 +414,7 @@
                                                                :position      :relative
                                                                :border-radius "0 0 6px 6px"
                                                                :top           :-40px
-                                                               :box-shadow "0 .5em 1em -.125em rgba(10,10,10,.1),0 0 0 1px rgba(10,10,10,0)"
+                                                               :box-shadow    "0 .5em 1em -.125em rgba(10,10,10,.1),0 0 0 1px rgba(10,10,10,0)"
                                                                ;:z-index       11
                                                                }}
         [chart-2 {:width show-pass-percent :hint hint :finish show-score-percent}]
@@ -378,7 +424,9 @@
                     :margin-bottom :-20px}} "27"]]
        [:div#express-info.mx-2.box {:style {:margin-bottom :1em
                                             :margin-top    :-40px}}
-        [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
+        [express-add-dialog]
+        [:p.is-size-5.mb-3.has-text-weight-light "快递更新"
+         [:span.is-size-7.is-clickable {:on-click #(rf/dispatch [:app/show-modal :add-express!])} " +"]]
         (if (empty? express)
           [:p.is-size-6.has-text-grey "暂无正在追踪的快递。"]
           [:<>
@@ -394,7 +442,9 @@
                                                                 max-word
                                                                 (count info)))]])])]
        [:div#tv-info.mx-2.box {:style {:margin-bottom :1em}}
-        [:p.is-size-5.mb-3.has-text-weight-light "影视更新"]
+        [movie-add-dialog]
+        [:p.is-size-5.mb-3.has-text-weight-light "影视更新"
+         [:span.is-size-7.is-clickable {:on-click #(rf/dispatch [:app/show-modal :add-movie!])} " +"]]
         (if (empty? movie)
           [:p.is-size-6.has-text-grey "暂无最近更新的影视剧。"]
           [:div.tags.mb-1

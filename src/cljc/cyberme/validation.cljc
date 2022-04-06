@@ -38,3 +38,6 @@
 
 (defn validate-add-package [p]
   (first (st/validate p add-package-schema)))
+
+(defn validate! [f s]
+  (first (st/validate f s)))
