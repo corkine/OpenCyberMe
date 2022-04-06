@@ -652,13 +652,70 @@
     (catch Exception e
       {:message (str "获取数据失败！" (.getMessage e))})))
 
+(def start-day (LocalDate/of 1996 3 3))
+
+(defn fetch-marvel
+  "从数据库获取配置项"
+  []
+  (try
+    (or (:info (db/someday {:day start-day})) {})
+    (catch Exception e
+      (log/error "[marvel] fetch failed. " (.getMessage e))
+      {})))
+
+(defn set-marvel
+  "设置数据库配置项"
+  [info]
+  (try
+    (db/set-someday {:day start-day :info info})
+    (catch Exception e
+      (log/error "[marvel] insert marvel failed." (.getMessage e)))))
+
+(defn dashboard-set-marvel
+  "handle-dashboard 数据重映射，如果获取到的 :clean :HabitCountUntilNow 存在且大于 marvel :clean-max
+  或者 :blue :MaxNoBlueDay 存在且大于 marvel :blue-max，那么更新记录，反之则不更新。
+  remap 后的 dashboard data 添加了 :clean :MarvelCount 和 :blue :MarvelCount 字段。"
+  [data]
+  (try
+    (let [{:keys [blue-max clean-max] :as all-old-marvel} (fetch-marvel)
+          blue-max (or blue-max 0)
+          clean-max (or clean-max 0)
+          blue (or (-> data :blue :MaxNoBlueDay) 0)
+          clean (or (-> data :clean :HabitCountUntilNow) 0)
+          blue-marvel? (> blue blue-max)
+          clean-marvel? (> clean clean-max)
+          _ (if (or blue-marvel? clean-marvel?)
+              (log/info "[marvel-re-mapping] set new marvel: old b bm c cm is: "
+                        blue blue-max clean clean-max))]
+      (cond (and blue-marvel? clean-marvel?)
+            (set-marvel (assoc all-old-marvel
+                          :blue-max blue
+                          :clean-max clean
+                          :blue-update (local-date-time)
+                          :clean-update (local-date-time)))
+            blue-marvel?
+            (set-marvel (assoc all-old-marvel
+                          :blue-max blue
+                          :blue-update (local-date-time)))
+            clean-marvel?
+            (set-marvel (assoc all-old-marvel
+                          :clean-max clean
+                          :clean-update (local-date-time)))
+            :else :no-marvel-set)
+      (-> data
+          (assoc-in [:blue :MarvelCount] (max blue-max blue))
+          (assoc-in [:clean :MarvelCount] (max clean-max clean))))
+    (catch Exception e
+      (log/error "[marvel-re-mapping] compare and set marvel failed: " (.getMessage e))
+      data)))
+
 (defn handle-dashboard
   "返回前端大屏显示用数据，包括每日 Blue 和 Blue 计数、每日 Fitness 活动、静息和总目标卡路里
   每日 Clean 和 Clean 计数，每日 TODO 列表、正在追踪的快递、正在追踪的美剧，今日自评得分
   以及一个方便生成本周表现的积分系统，其包含了最近一周每天的数据，格式为：
   :blue {UpdateTime IsTodayBlue WeekBlueCount MonthBlueCount
          MaxNoBlueDay MaxNoBlueDayFirstDay}
-  :fitness {:active 200 :rest 1000 :goal-active 500}
+  :fitness {:active 200 :rest 1000 :diet 300 :goal-active 500}
   :clean {MorningBrushTeeth NightBrushTeeth MorningCleanFace
           NightCleanFace HabitCountUntilNow HabitHint}
   :todo {:2022-03-01 [{title list create_at modified_at
@@ -671,7 +728,7 @@
   :today 98
   :score {:2022-03-01
            {:blue true
-            :fitness {:rest 2000 :active 300}
+            :fitness {:rest 2000 :active 300 :diet 300}
             :todo {:total 27 :finished 27}
             :clean {:m1xx :m2xx :n1xx :n2xx}
             :today 99}}"
@@ -703,7 +760,7 @@
                                             :fitness (get fitness-week %2)
                                             :todo    (get todo-week %2 [])})
                                  {} all-week-day)}]
-      {:message "获取数据成功！" :status 1 :data data})
+      {:message "获取数据成功！" :status 1 :data (dashboard-set-marvel data)})
     (catch Exception e
       {:message (str "获取大屏信息失败！" (.getMessage e)) :status 0})))
 
