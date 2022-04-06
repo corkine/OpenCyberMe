@@ -100,7 +100,8 @@
        :center          ["50%" "50%"]
        :amplitude       10
        :data            [finish finish finish]
-       :itemStyle       {:opacity :0.4}
+       :itemStyle       {:opacity :0.4
+                         :shadowBlur :0.0}
        :shape           "container"
        :color           [{:type        "linear"
                           :x           0 :y 0 :x2 0 :y2 1
@@ -366,7 +367,8 @@
                                                                ;:background-color "#0F224C"
                                                                :position      :relative
                                                                :border-radius "0 0 6px 6px"
-                                                               :top           :-20px
+                                                               :top           :-40px
+                                                               :box-shadow "0 .5em 1em -.125em rgba(10,10,10,.1),0 0 0 1px rgba(10,10,10,0)"
                                                                ;:z-index       11
                                                                }}
         [chart-2 {:width show-pass-percent :hint hint :finish show-score-percent}]
@@ -375,7 +377,7 @@
                     :line-height   :80px
                     :margin-bottom :-20px}} "27"]]
        [:div#express-info.mx-2.box {:style {:margin-bottom :1em
-                                            :margin-top    :-20px}}
+                                            :margin-top    :-40px}}
         [:p.is-size-5.mb-3.has-text-weight-light "快递更新"]
         (if (empty? express)
           [:p.is-size-6.has-text-grey "暂无正在追踪的快递。"]
