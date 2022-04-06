@@ -55,9 +55,7 @@
                   ;hash 将冲突并且能够覆盖。
                   ;对于 diet 而言，薄荷健康当前策略是生成 0 点的多条数据，iOSUpload 将其合为一插入，每天只有
                   ;一条数据，因此基于 category 和 start 时间，每次更新数据都能覆盖。
-                  (if (= (name category) "dietaryenergy")
-                    (str (.hashCode (str category (str start-str) (str value-str))))
-                    (str (.hashCode (str category (str start-str))))))
+                  (str (.hashCode (str category (str start-str) (str value-str)))))
         full-data (reduce #(let [{:keys [start value end unit duration]} (get data %2)
                                  lines (fn [data] (str/split-lines data))
                                  category %2]
