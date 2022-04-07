@@ -285,7 +285,10 @@
                    1 "周一" 2 "周二" 3 "周三" 4 "周四" 5 "周五" 6 "周六" 7 "周日")
         yesterday (format/unparse-local
                     (format/formatter "yyyy-MM-dd")
-                    (t/plus (t/time-now) (t/period :days 1)))
+                    (t/minus (t/time-now) (t/period :days 1)))
+        tomorrow (format/unparse-local
+                   (format/formatter "yyyy-MM-dd")
+                   (t/plus (t/time-now) (t/period :days 1)))
         month-days (t/number-of-days-in-the-month (t/time-now))
 
         recent @(rf/subscribe [:dashboard/recent-data])
@@ -509,6 +512,7 @@
                 [:span.has-text-weight-bold.is-family-code
                  (cond (= day (keyword today)) "今天"
                        (= day (keyword yesterday)) "昨天"
+                       (= day (keyword tomorrow)) "明天"
                        :else day)]
                 (let [data (get todo day)
                       data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
