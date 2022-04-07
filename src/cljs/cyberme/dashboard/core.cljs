@@ -238,11 +238,11 @@
            :call-when-exit    [[:movie/movie-data-clean]]
            :call-when-success [[:movie/movie-data-clean]]}))
 
-(ajax-flow {:call           :movie/movie-add
-            :uri-fn         #(str "/cyber/movie/?name=" (:name %) "&url=" (:url %))
-            :is-post        true
-            :data           :movie/movie-data
-            :clean          :movie/movie-data-clean})
+(ajax-flow {:call    :movie/movie-add
+            :uri-fn  #(str "/cyber/movie/?name=" (:name %) "&url=" (:url %))
+            :is-post true
+            :data    :movie/movie-data
+            :clean   :movie/movie-data-clean})
 
 (defn express-add-dialog
   []
@@ -252,17 +252,31 @@
            [:note "备注 *" "此快递的别名"]]
           "确定"
           #(if-let [err (va/validate! @%1 [[:no va/required] [:note va/required]])]
-            (reset! %2 err)
-            (rf/dispatch [:express/express-add @%1]))
+             (reset! %2 err)
+             (rf/dispatch [:express/express-add @%1]))
           {:subscribe-ajax    [:express/express-data]
            :call-when-exit    [[:express/express-data-clean]]
            :call-when-success [[:express/express-data-clean]
                                [:dashboard/recent]]}))
 
-(ajax-flow {:call           :express/express-add
-            :uri-fn         #(str "/cyber/express/track?no=" (:no %) "&note=" (:note %))
-            :data           :express/express-data
-            :clean          :express/express-data-clean})
+(ajax-flow {:call   :express/express-add
+            :uri-fn #(str "/cyber/express/track?no=" (:no %) "&note=" (:note %))
+            :data   :express/express-data
+            :clean  :express/express-data-clean})
+
+(ajax-flow {:call           :hcm/sync
+            :uri-fn         #(str "/cyber/check/now?useCache=false&plainText=false")
+            :data           :hcm/sync-data
+            :clean          :hcm/sync-data-clean
+            :success-notice true
+            :failure-notice true})
+
+(ajax-flow {:call           :note/last
+            :uri-fn         #(str "/cyber/note/last")
+            :data           :note/last-data
+            :clean          :note/last-data-clean
+            :success-notice true
+            :failure-notice true})
 
 (defn dashboard-page []
   (let [now (t/time-now)
@@ -366,7 +380,9 @@
               :span.tag.is-rounded.is-small.is-light.is-warning)
             {:style {:vertical-align :10%}} WorkHour]
            " 小时" (when-not NeedWork "*")
-           " " [:span.is-family-code.is-size-7 policy-str] " "]
+           " " [:span.is-family-code.is-size-7.is-clickable.dui-tips
+                {:on-click     #(rf/dispatch [:hcm/sync])
+                 :data-tooltip "同步 HCM"} policy-str] " "]
           [:div.tags
            (for [index (range (count SignIn))]
              ^{:key index}
@@ -425,8 +441,10 @@
        [:div#express-info.mx-2.box {:style {:margin-bottom :1em
                                             :margin-top    :-40px}}
         [express-add-dialog]
-        [:p.is-size-5.mb-3.has-text-weight-light "快递更新"
-         [:span.is-size-7.is-clickable {:on-click #(rf/dispatch [:app/show-modal :add-express!])} " +"]]
+        [:p.is-size-5.mb-3.has-text-weight-light [:span.mr-1 "快递更新"]
+         [:span.is-size-7.is-clickable.dui-tips
+          {:on-click     #(rf/dispatch [:app/show-modal :add-express!])
+           :data-tooltip "新建快递追踪"} " +"]]
         (if (empty? express)
           [:p.is-size-6.has-text-grey "暂无正在追踪的快递。"]
           [:<>
@@ -443,8 +461,10 @@
                                                                 (count info)))]])])]
        [:div#tv-info.mx-2.box {:style {:margin-bottom :1em}}
         [movie-add-dialog]
-        [:p.is-size-5.mb-3.has-text-weight-light "影视更新"
-         [:span.is-size-7.is-clickable {:on-click #(rf/dispatch [:app/show-modal :add-movie!])} " +"]]
+        [:p.is-size-5.mb-3.has-text-weight-light [:span.mr-1 "影视更新"]
+         [:span.is-size-7.is-clickable.dui-tips
+          {:on-click     #(rf/dispatch [:app/show-modal :add-movie!])
+           :data-tooltip "新建影视追踪"} " +"]]
         (if (empty? movie)
           [:p.is-size-6.has-text-grey "暂无最近更新的影视剧。"]
           [:div.tags.mb-1

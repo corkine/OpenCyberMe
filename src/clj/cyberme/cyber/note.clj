@@ -2,7 +2,10 @@
   (:require [cyberme.db.core :as db])
   (:import (java.time LocalDateTime Duration)))
 
-(defn fetch-last-id-note []
+(defn fetch-last-id-note
+  "Go 兼容，如果成功，返回 {:Id :Form :Content :LiveSeconds :LastUpdate} 结构
+  如果失败，返回 {:message :status} 结构"
+  []
   (try
     (let [{:keys [id from content info create_at] :as all} (db/note-last)
           live (:liveSeconds info)
@@ -64,6 +67,15 @@
                      :else
                      (fetch-note id))]
       (if justContent (:Content data) data))))
+
+(defn handle-fetch-last-note []
+  (let [{:keys [status] :as all} (fetch-last-id-note)]
+    (if-not (nil? status)
+      all ;如果返回了 message status 数组，则表明获取失败，原样返回
+      ;反之，将内容插入 message，数据作为 data 返回
+      {:message (or (:Content all) "")
+       :data all
+       :status 1})))
 
 (defn handle-add-note [{:keys [id from content liveSeconds]}]
   (try

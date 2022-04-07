@@ -102,7 +102,10 @@
                      "新建打包"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :create-new-good])}
-                     "物品入库"]]]
+                     "物品入库"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:note/last])}
+                     "最近笔记"]]]
                   (let [{login-hint :user} @(rf/subscribe [:api-auth])
                         login-hint (or login-hint "登录")]
                     [:div.navbar-item.mx-0

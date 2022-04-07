@@ -346,22 +346,29 @@
 
 (def note-route
   ["/note"
-   {:tags #{"笔记记录"}
-    :get  {:summary    "便签信息查询"
-           :parameters {:query (s/keys :req-un []
-                                       :opt-un [:global/user :global/secret
-                                                :note/id :note/justContent
-                                                :note/quick :note/content])}
-           :handler    (fn [{{query :query} :parameters}]
-                         (let [just-content (:justContent query)
-                               resp (hr/response (note/handle-fetch-note query))]
-                           (if just-content (content-type resp "text/plain") resp)))}
-    :post {:summary    "便签信息新建"
-           :parameters {:query (s/keys :opt-un [:global/user :global/secret])
-                        :body  (s/keys :req-un [:note/from :note/content]
-                                       :opt-un [:note/id :note/liveSeconds])}
-           :handler    (fn [{{body :body} :parameters}]
-                         (hr/response (note/handle-add-note body)))}}])
+   {:tags #{"笔记记录"}}
+   [""
+    {:get  {:summary    "便签信息查询"
+            :parameters {:query (s/keys :req-un []
+                                        :opt-un [:global/user :global/secret
+                                                 :note/id :note/justContent
+                                                 :note/quick :note/content])}
+            :handler    (fn [{{query :query} :parameters}]
+                          (let [just-content (:justContent query)
+                                resp (hr/response (note/handle-fetch-note query))]
+                            (if just-content (content-type resp "text/plain") resp)))}
+     :post {:summary    "便签信息新建"
+            :parameters {:query (s/keys :opt-un [:global/user :global/secret])
+                         :body  (s/keys :req-un [:note/from :note/content]
+                                        :opt-un [:note/id :note/liveSeconds])}
+            :handler    (fn [{{body :body} :parameters}]
+                          (hr/response (note/handle-add-note body)))}}]
+   ["/last"
+    {:get {:summary     "获取最后一条便签"
+           :description "用于前端快捷获取最后一条便签，内容将被复制到 message 中。"
+           :handler     (fn [_] (hr/response (note/handle-fetch-last-note)))}}]])
+
+
 
 (def movie-route
   ["/movie"
