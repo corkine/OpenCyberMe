@@ -197,8 +197,11 @@
   "返回今日任务，Go API 兼容：{:startCount :tasks []}
   这里 startCount 表示优先级为 high 且状态为 notStarted 的
   focus 是尽力而为的服务，即如果无法获取到 access-token 则不执行同步，
-  需要手动先执行一遍登录或者 refresh-token 刷新
-  写入 access-token 才能在下次调用时生效"
+  需要手动先执行一遍登录或者 refresh-token 刷新，写入 access-token 才能在下次调用时生效。
+
+  这里使用 high + notStart 的原因是，Exchange 没有 Today 的逻辑，因此通过
+  点亮星星，即 high importance 来表示 Today 的 TODO。因此安排的非今天任务要摘掉星星，
+  安排给今天的任务要加上星星才能完成此逻辑。"
   [{:keys [focus showCompleted]}]
   (try
     (when focus

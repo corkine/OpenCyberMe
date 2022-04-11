@@ -20,6 +20,7 @@
       date (r/atom (if id (diary-date-str old) (libs/today-str)))
       tags-in (r/atom (libs/l->s (:labels info)))]
      [:section.section.pt-5>div.container>div.content
+      {:style {:margin :auto :max-width :60em}}
       (let [title-str @title
             content-str @content
             date-str @date

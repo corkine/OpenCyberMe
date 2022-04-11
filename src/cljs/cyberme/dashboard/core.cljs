@@ -289,6 +289,9 @@
         tomorrow (format/unparse-local
                    (format/formatter "yyyy-MM-dd")
                    (t/plus (t/time-now) (t/period :days 1)))
+        tomorrow+1 (format/unparse-local
+                     (format/formatter "yyyy-MM-dd")
+                     (t/plus (t/time-now) (t/period :days 2)))
         month-days (t/number-of-days-in-the-month (t/time-now))
 
         recent @(rf/subscribe [:dashboard/recent-data])
@@ -513,6 +516,7 @@
                  (cond (= day (keyword today)) "今天"
                        (= day (keyword yesterday)) "昨天"
                        (= day (keyword tomorrow)) "明天"
+                       (= day (keyword tomorrow+1)) "后天"
                        :else day)]
                 (let [data (get todo day)
                       data (filter #(not (or #_(str/includes? (:list %) "INSPUR")

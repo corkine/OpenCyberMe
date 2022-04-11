@@ -7,8 +7,6 @@
 
 (def good-status ["活跃","收纳","移除"])
 
-(def default-place-id "1")
-
 (defn validate-map-good-add
   "一定要提供的字段：name,uid,label(默认空列表),status(默认活跃),placeId"
   [{:keys [name uid status note labels placeId]
@@ -26,8 +24,6 @@
                  (if have-uid
                    (assoc fix-labels-status-data :uid (string/upper-case uid))
                    (assoc fix-labels-status-data :uid nil))})))
-
-;;TODO 抽象表单，提供基于模型的输入、验证和输出流
 
 (defn new-good-btn []
   (r/with-let
@@ -66,7 +62,7 @@
             (submit-add []
               (let [raw-data @fields
                     raw-data (if (string/blank? (:placeId raw-data))
-                               (assoc raw-data :placeId default-place-id) raw-data)
+                               (assoc raw-data :placeId @(rf/subscribe [:place/default-place])) raw-data)
                     {:keys [data error]} (validate-map-good-add raw-data)]
                 (if error (reset! errors error)
                           (rf/dispatch [:good/new data]))))]

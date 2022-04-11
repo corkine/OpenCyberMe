@@ -14,6 +14,11 @@
                 :data           :place/fetch-data
                 :clean          :place/clean-data})
 
+(rf/reg-sub
+  :place/default-place
+  (fn [db _]
+    (:id (first (sort-by :id (-> db :place/fetch-data :data))))))
+
 ;新建位置，失败后由对话框获取数据展示并自行清除
 (req/ajax-flow {:call    :place/new
                 :is-post true
