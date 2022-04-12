@@ -5,7 +5,8 @@
         :cljs [[spec-tools.data-spec :as ds]
                [re-frame.core :as rf]
                [cyberme.pages :as core]
-               [cyberme.about :as about]])))
+               [cyberme.about :as about]
+               [cyberme.util.storage :as storage]])))
 
 (defn share-router []
   ["" #?(:clj {:middleware [middleware/wrap-csrf
@@ -23,30 +24,28 @@
            #?(:cljs {:view        #'core/properties-page
                      :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
+                                                  (if (or (nil? query) (empty? query))
+                                                    (let [data-db (storage/get-item "good-filter")]
+                                                      (rf/dispatch [:set-filter data-db])
+                                                      (reitit.frontend.easy/replace-state :properties nil data-db))
+                                                    (rf/dispatch [:set-filter query]))
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:place/fetch])
-                                                  (rf/dispatch [:recent/fetch])
-                                                  (rf/dispatch [:set-filter query]))}]}))]
+                                                  (rf/dispatch [:recent/fetch]))}]}))]
 
-   ["/foods"
-    (merge {:name :foods}
-           #?(:cljs {:view        #'core/foods-page
-                     :controllers [{:parameters {:query [:status :location :labels]}
-                                    :start      (fn [{query :query}]
-                                                  (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:place/fetch])
-                                                  (rf/dispatch [:recent/fetch])
-                                                  (rf/dispatch [:set-filter query]))}]}))]
-
-   ["/clothes"
+   #_["/clothes"
     (merge {:name :clothes}
            #?(:cljs {:view        #'core/clothes-page
                      :controllers [{:parameters {:query [:status :location :labels]}
                                     :start      (fn [{query :query}]
+                                                  (if (or (nil? query) (empty? query))
+                                                    (let [data-db (storage/get-item "good_filter")]
+                                                      (rf/dispatch [:set-filter data-db])
+                                                      (reitit.frontend.easy/replace-state :properties nil data-db))
+                                                    (rf/dispatch [:set-filter query]))
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:place/fetch])
-                                                  (rf/dispatch [:recent/fetch])
-                                                  (rf/dispatch [:set-filter query]))}]}))]
+                                                  (rf/dispatch [:recent/fetch]))}]}))]
 
    ["/work"
     (merge {:name :work}
@@ -61,8 +60,12 @@
            #?(:cljs {:view        #'core/diary-page
                      :controllers [{:parameters {:query [:labels :contains]}
                                     :start      (fn [{query :query}]
+                                                  (if (or (nil? query) (empty? query))
+                                                    (let [data-db (storage/get-item "diary_filter")]
+                                                      (rf/dispatch [:diary/set-filter data-db])
+                                                      (reitit.frontend.easy/replace-state :diary nil data-db))
+                                                    (rf/dispatch [:diary/set-filter query]))
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:diary/set-filter query])
                                                   (rf/dispatch [:diary/current-data-clean])
                                                   (rf/dispatch [:diary/list]))}]}))]
 

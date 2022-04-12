@@ -87,7 +87,7 @@
                   [nav-link "/diary" "日记" :diary]
                   #_[nav-link "/cook" "厨记" :cook]
                   [nav-link "/properties" "物品" :properties]
-                  [nav-link "/clothes" "衣物" :clothes]
+                  #_[nav-link "/clothes" "衣物" :clothes]
                   #_[nav-link "/foods" "耗材" :foods]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}

@@ -75,7 +75,7 @@ Image 宽高：
                                          (dissoc filter :labels)
                                          (assoc filter :labels sel-o))]
                                 (rf/dispatch [:diary/set-filter mg])
-                                (storage/set-item "daily_filter" mg)
+                                (storage/set-item "diary_filter" mg)
                                 (reitit.frontend.easy/replace-state :diary nil mg)))
            :value     (or (:labels filter) "")}
           [:option "所有标签"]
@@ -88,6 +88,7 @@ Image 宽高：
                                          (dissoc filter :contains)
                                          (assoc filter :contains sel-o))]
                                 (rf/dispatch [:diary/set-filter mg])
+                                (storage/set-item "diary_filter" mg)
                                 (reitit.frontend.easy/replace-state :diary nil mg)))
            :value     (or (:contains filter) "")}
           [:option "所有时间"]
@@ -95,6 +96,47 @@ Image 宽高：
           [:option {:value "month"} "一月以内"]
           [:option {:value "month2"} "两月以内"]
           [:option {:value "year"} "一年以内"]]]]]]]))
+
+#_(defn diary-card [{:keys [id title content info create_at update_at] :as diary}
+                    {:keys [with-footer with-description]}]
+    (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
+          ;用于过滤特定标签和日期的日记
+          filter-now @(rf/subscribe [:diary/filter])]
+      [:div.box.columns.mt-5
+       [:div.column {:style {:z-index :2}}
+        [:p.subtitle.is-family-code {:style {:margin-top    "-7px"
+                                             :margin-bottom "10px"}}
+         (diary-date-str diary)]
+        [:p.is-size-4.mb-0
+         [:span.is-clickable
+          {:on-click #(rf/dispatch [:common/navigate! :diary-view {:id id}])}
+          title]
+         [:span [:a {:on-click #(rf/dispatch [:common/navigate! :diary-edit {:id id}])
+                     :style    {:cursor         :pointer
+                                :font-size      :8px
+                                :margin-left    :10px
+                                :margin-right   :10px
+                                :vertical-align :10%}}
+                 [:i.material-icons {:style {:font-size :15px
+                                             :color     :lightgray
+                                             :opacity   0.5}} "border_color"]]]]
+        (when-let [labels (:labels info)]
+          [:p {:style {:margin-left :-7px :margin-top :10px}}
+           (for [label labels]
+             ^{:key label}
+             [:a.ml-1 {:on-click (fn [_]
+                                   (let [filter-after (assoc filter-now :labels label)]
+                                     (rf/dispatch [:diary/set-filter filter-after])
+                                     (reitit.frontend.easy/push-state :diary nil filter-after)))}
+              [:span.tag.is-rounded (str "# " label)]])])]
+       (when with-description
+         [:div.tile.notification.column
+          (when (not with-footer)
+            {:style {:color            :white
+                     :background-color "rgba(159, 219, 180, 0.19)"}})
+          [:div.card-content
+           [:div.content (if (clojure.string/blank? description)
+                           "还没有内容.." description)]]])]))
 
 (defn diary-card [{:keys [id title content info create_at update_at] :as diary}
                   {:keys [with-footer with-description]}]
@@ -107,8 +149,7 @@ Image 宽高：
                                            :margin-bottom "10px"}}
        (diary-date-str diary)]
       [:p.is-size-4.mb-0
-       [:span.is-clickable
-        {:on-click #(rf/dispatch [:common/navigate! :diary-view {:id id}])}
+       [:span.is-clickable {:on-click #(rf/dispatch [:common/navigate! :diary-view {:id id}])}
         title]
        [:span [:a {:on-click #(rf/dispatch [:common/navigate! :diary-edit {:id id}])
                    :style    {:cursor         :pointer
@@ -119,23 +160,47 @@ Image 宽高：
                [:i.material-icons {:style {:font-size :15px
                                            :color     :lightgray
                                            :opacity   0.5}} "border_color"]]]]
-      (when-let [labels (:labels info)]
-        [:p {:style {:margin-left :-7px :margin-top :10px}}
-         (for [label labels]
+      [:p {:style {:border-left "3px solid #dbdbdb"
+                   :padding     "0 0 0 0.8em"
+                   :margin      "0.5em 0 1em 0"
+                   :max-height  "3em"
+                   :min-height  "3em"
+                   :font-size   "0.9em"
+                   :color       "#a8a8a8"
+                   :overflow    :hidden}}
+       (if (> (count description) 63)
+         (str (.slice description 0 60) "...")
+         description)]
+      (if (> (count (:labels info)) 0)
+        [:p {:style {:margin-left :-7px :margin-top :10px :margin-bottom :-5px}}
+         (for [label (:labels info)]
            ^{:key label}
            [:a.ml-1 {:on-click (fn [_]
                                  (let [filter-after (assoc filter-now :labels label)]
                                    (rf/dispatch [:diary/set-filter filter-after])
                                    (reitit.frontend.easy/push-state :diary nil filter-after)))}
-            [:span.tag.is-rounded (str "# " label)]])])]
-     (when with-description
-       [:div.tile.notification.column
-        (when (not with-footer)
-          {:style {:color            :white
-                   :background-color "rgba(159, 219, 180, 0.19)"}})
-        [:div.card-content
-         [:div.content (if (clojure.string/blank? description)
-                         "还没有内容.." description)]]])]))
+            [:span.tag.is-rounded (str "# " label)]])]
+        [:p {:style {:margin-left :-7px :margin-top :10px}}
+         [:a.ml-1]])]]))
+
+#_(defn diary-page
+    "Diary 主页展示"
+    []
+    [:<>
+     [diary-filter]
+     (let [datas @(rf/subscribe [:diary/list-data-filtered])]
+       (if-not (empty? datas)
+         [:section.section>div.container>div.content.mx-3 {:style {:margin-top "-40px"}}
+          (for [data datas]
+            ^{:key (:id data)}
+            [diary-card data {:with-footer      true
+                              :with-description true
+                              :with-edit        false}])]
+         [:div.hero.is-small.pl-0.pr-0
+          [:div.hero-body
+           [:div.container.has-text-centered
+            [:h3.subtitle.mt-6
+             "Oops... 暂无符合条件的日记"]]]]))])
 
 (defn diary-page
   "Diary 主页展示"
@@ -144,12 +209,20 @@ Image 宽高：
    [diary-filter]
    (let [datas @(rf/subscribe [:diary/list-data-filtered])]
      (if-not (empty? datas)
-       [:section.section>div.container>div.content.mx-3 {:style {:margin-top "-40px"}}
-        (for [data datas]
-          ^{:key (:id data)}
-          [diary-card data {:with-footer      true
-                            :with-description true
-                            :with-edit        false}])]
+       (let [datas (vec (partition-all 2 datas))]
+         [:section.section>div.container>div.content {:style {:margin-top "-50px"}}
+          (for [pair datas]
+            ^{:key (:id (first pair))}
+            [:div.columns
+             [:div.column {:style {:margin "-10px 10px"}}
+              [diary-card (first pair) {:with-footer      true
+                                        :with-description true
+                                        :with-edit        false}]]
+             [:div.column {:style {:margin "-10px 10px"}}
+              (when (second pair)
+                [diary-card (second pair) {:with-footer      true
+                                           :with-description true
+                                           :with-edit        false}])]])])
        [:div.hero.is-small.pl-0.pr-0
         [:div.hero-body
          [:div.container.has-text-centered

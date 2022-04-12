@@ -1,6 +1,7 @@
 (ns cyberme.place.filter
   (:require [re-frame.core :as rf]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [cyberme.util.storage :as storage]))
 
 (def route-to :properties)
 
@@ -28,6 +29,7 @@
                                      (dissoc filter :location)
                                      (assoc filter :location sel-o))]
                             (rf/dispatch [:set-filter mg])
+                            (storage/set-item "good-filter" mg)
                             (reitit.frontend.easy/replace-state route-to nil mg)))
              :value (or (:location filter) "")
              :id :module}
@@ -41,6 +43,7 @@
                                           (dissoc filter :labels)
                                           (assoc filter :labels sel-o))]
                                  (rf/dispatch [:set-filter mg])
+                                 (storage/set-item "good-filter" mg)
                                  (reitit.frontend.easy/replace-state route-to nil mg)))
             :value (or (:labels filter) "")}
            [:option "任何标签"]
@@ -53,8 +56,9 @@
                                           (dissoc filter :status)
                                           (assoc filter :status sel-o))]
                                  (rf/dispatch [:set-filter mg])
+                                 (storage/set-item "good-filter" mg)
                                  (reitit.frontend.easy/replace-state route-to nil mg)))
-            :value (or (:status filter) "")}
+            :value     (or (:status filter) "")}
            [:option "任何状态"]
            (for [status statuses]
              ^{:key status}
@@ -68,6 +72,7 @@
                                            (dissoc filter :search)
                                            (assoc filter :search origin))]
                                   (rf/dispatch [:set-filter mg])
+                                  (storage/set-item "good-filter" mg)
                                   (reitit.frontend.easy/replace-state route-to nil mg)))}]
            [:span.icon.is-left
             [:i.fa.fa-search {:aria-hidden "true"}]]]]]]]]]))
