@@ -214,9 +214,12 @@
     (let [all (db/to-do-recent-day-2 {:day 15})
           recent (filterv #(and (= (:importance %) "high")
                                 (= (:status %) "notStarted")) all)
-          recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)]
-      {:starCount (count recent)
-       :tasks     (if showCompleted recent-start-and-not-start recent)})
+          ;使用新计算方法：不管是否 high importance，只要 due or finish or create 是今天就算
+          ;recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)
+          today (LocalDate/now)
+          today-todo (filterv #(and (:time %) (.isEqual today (:time %))) all)]
+      {:starCount (count today-todo)
+       :tasks     today-todo})
     (catch Exception e
       {:starCount -1
        :tasks     []
@@ -224,7 +227,7 @@
 
 (defn handle-recent
   "返回最近 n 天的 TODO 待办事项，按照天数进行分组"
-  [{day :day :or { day 7}}]
+  [{day :day :or {day 7}}]
   (let [data (db/to-do-recent-day-2 {:day day})]
     (group-by #(str (:time %)) data)))
 
@@ -238,16 +241,16 @@
                 (assoc acc
                   (-> one-date str keyword)
                   {:finished (count (filter #(= (:status %) "completed") collect))
-                   :total (count collect) })))
+                   :total    (count collect)})))
             {} days-date)))
 
 (defn handle-list
   "获取倒序排列的最近 TODO 任务，限制某个列表和某个时期"
   [{:keys [day listName]
-    :or {day 7}}]
+    :or   {day 7}}]
   (if (nil? listName)
     {:message "没有传入列表名称"
-     :status 0}
+     :status  0}
     (let [data-recent (db/to-do-recent-day-2 {:day day})
           final-data (filter #(= (:list %) listName) data-recent)
           with-due-full (map (fn [{:keys [due_at create_at finish_at] :as all}]
@@ -262,8 +265,8 @@
                                              (compare cy cx))))
                            with-due-full)]
       {:message "获取成功"
-       :data final-data
-       :status 1})))
+       :data    final-data
+       :status  1})))
 
 (comment
   (user/start)
