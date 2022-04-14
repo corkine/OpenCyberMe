@@ -48,7 +48,8 @@
                  [selmer "1.12.31"]
                  [hickory "0.7.1"]
                  [com.andrewmcveigh/cljs-time "0.5.2"]
-                 [thheller/shadow-cljs "2.11.5" :scope "provided"]]
+                 [thheller/shadow-cljs "2.11.5" :scope "provided"]
+                 [com.aliyun.oss/aliyun-sdk-oss "2.8.3"]]
 
   ;:repositories [["central" "https://maven.aliyun.com/nexus/content/groups/public"]
   ;               ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]

@@ -12,7 +12,10 @@
     [ring.util.http-response :refer :all]
     [cyberme.auth :as auth]
     [cyberme.db.core :as db]
-    [cyberme.goods :as goods]))
+    [cyberme.goods :as goods]
+    [clojure.java.io :as io]
+    [cyberme.config :as config]
+    [cyberme.cyber.file :as file]))
 
 (defn service-routes []
   ["/api"
@@ -173,24 +176,22 @@
                                  (hr/response (db/insert-wishlist body)))}
      :get         {:handler (fn [_]
                               (hr/response (db/find-all-wish)))}}]
-   #_["/files"
-      {:swagger {:tags ["files"]}}
+   ["/files"
+    {:swagger {:tags ["OSS 服务"]}}
 
-      ["/upload"
-       {:post {:summary    "upload a file"
-               :parameters {:multipart {:file multipart/temp-file-part}}
-               :responses  {200 {:body {:name string?, :size int?}}}
-               :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
-                             {:status 200
-                              :body   {:name (:filename file)
-                                       :size (:size file)}})}}]
+    ["/upload"
+     {:post {:summary    "上传文件到 OSS"
+             :parameters {:multipart {:file multipart/temp-file-part}}
+             :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
+                           (let [{:keys [size filename tempfile]} file]
+                             (hr/response (file/handle-upload size filename tempfile))))}}]
 
-      ["/download"
-       {:get {:summary "downloads a file"
-              :swagger {:produces ["image/png"]}
-              :handler (fn [_]
-                         {:status  200
-                          :headers {"Content-Type" "image/png"}
-                          :body    (-> "public/img/warning_clojure.png"
-                                       (io/resource)
-                                       (io/input-stream))})}}]]])
+    #_["/download"
+     {:get {:summary "从 OSS 上下载文件"
+            :swagger {:produces ["image/png"]}
+            :handler (fn [_]
+                       {:status  200
+                        :headers {"Content-Type" "image/png"}
+                        :body    (-> "public/img/warning_clojure.png"
+                                     (io/resource)
+                                     (io/input-stream))})}}]]])
