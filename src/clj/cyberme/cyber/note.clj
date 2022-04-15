@@ -15,7 +15,7 @@
                 :LiveSeconds live
                 :LastUpdate  create_at}
           expired? (if (or (nil? all)
-                           (and (not (nil? live)) (int? live)
+                           (and (int? live)
                                 (< live
                                    (.getSeconds (Duration/between create_at
                                                                   (LocalDateTime/now))))))
@@ -36,7 +36,7 @@
                 :Content     content
                 :LiveSeconds live
                 :LastUpdate  create_at}
-          expired? (if (and (not (nil? live)) (int? live)
+          expired? (if (and (int? live)
                             (< live
                                (.getSeconds (Duration/between create_at
                                                               (LocalDateTime/now)))))
@@ -71,11 +71,11 @@
 (defn handle-fetch-last-note []
   (let [{:keys [status] :as all} (fetch-last-id-note)]
     (if-not (nil? status)
-      all ;如果返回了 message status 数组，则表明获取失败，原样返回
+      all                                                   ;如果返回了 message status 数组，则表明获取失败，原样返回
       ;反之，将内容插入 message，数据作为 data 返回
       {:message (or (:Content all) "")
-       :data all
-       :status 1})))
+       :data    all
+       :status  1})))
 
 (defn handle-add-note [{:keys [id from content liveSeconds]}]
   (try
