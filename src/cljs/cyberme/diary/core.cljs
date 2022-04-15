@@ -6,6 +6,7 @@
             [cyberme.util.storage :as storage]
             [cyberme.util.tool :as tool]
             [cljs-time.format :as format]
+            [goog.string :as gstring]
             [cyberme.diary.util :refer [diary-date-str]]
             [cljs-time.core :as t]))
 
@@ -97,54 +98,20 @@ Image 宽高：
           [:option {:value "month2"} "两月以内"]
           [:option {:value "year"} "一年以内"]]]]]]]))
 
-#_(defn diary-card [{:keys [id title content info create_at update_at] :as diary}
-                    {:keys [with-footer with-description]}]
-    (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
-          ;用于过滤特定标签和日期的日记
-          filter-now @(rf/subscribe [:diary/filter])]
-      [:div.box.columns.mt-5
-       [:div.column {:style {:z-index :2}}
-        [:p.subtitle.is-family-code {:style {:margin-top    "-7px"
-                                             :margin-bottom "10px"}}
-         (diary-date-str diary)]
-        [:p.is-size-4.mb-0
-         [:span.is-clickable
-          {:on-click #(rf/dispatch [:common/navigate! :diary-view {:id id}])}
-          title]
-         [:span [:a {:on-click #(rf/dispatch [:common/navigate! :diary-edit {:id id}])
-                     :style    {:cursor         :pointer
-                                :font-size      :8px
-                                :margin-left    :10px
-                                :margin-right   :10px
-                                :vertical-align :10%}}
-                 [:i.material-icons {:style {:font-size :15px
-                                             :color     :lightgray
-                                             :opacity   0.5}} "border_color"]]]]
-        (when-let [labels (:labels info)]
-          [:p {:style {:margin-left :-7px :margin-top :10px}}
-           (for [label labels]
-             ^{:key label}
-             [:a.ml-1 {:on-click (fn [_]
-                                   (let [filter-after (assoc filter-now :labels label)]
-                                     (rf/dispatch [:diary/set-filter filter-after])
-                                     (reitit.frontend.easy/push-state :diary nil filter-after)))}
-              [:span.tag.is-rounded (str "# " label)]])])]
-       (when with-description
-         [:div.tile.notification.column
-          (when (not with-footer)
-            {:style {:color            :white
-                     :background-color "rgba(159, 219, 180, 0.19)"}})
-          [:div.card-content
-           [:div.content (if (clojure.string/blank? description)
-                           "还没有内容.." description)]]])]))
-
-(defn diary-card [{:keys [id title content info create_at update_at] :as diary}
-                  {:keys [with-footer with-description]}]
+(defn diary-card [{:keys [id title content info create_at update_at] :as diary}]
   (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
+        ;文章中的第一个图片 URL 或 nil
+        first-content-url (second (re-find #"!\[.*?\]\((.*?)\)" (or content "")))
         ;用于过滤特定标签和日期的日记
         filter-now @(rf/subscribe [:diary/filter])]
-    [:div.box.columns.mt-5
-     [:div.column {:style {:z-index :2}}
+    [:div.box.columns.mt-5 {:style (if first-content-url
+                                     {:background
+                                      (gstring/format "%s,url(%s)"
+                                                      "linear-gradient(rgba(255,255,255,0.98),rgba(255,255,255,0.85))"
+                                                      first-content-url)
+                                      :background-size "cover"} {})}
+     [:div.column {:style {:z-index :2
+                           :opacity 1}}
       [:p.subtitle.is-family-code {:style {:margin-top    "-7px"
                                            :margin-bottom "10px"}}
        (diary-date-str diary)]
@@ -182,25 +149,6 @@ Image 宽高：
             [:span.tag.is-rounded (str "# " label)]])]
         [:p {:style {:margin-left :-7px :margin-top :10px}}
          [:a.ml-1]])]]))
-
-#_(defn diary-page
-    "Diary 主页展示"
-    []
-    [:<>
-     [diary-filter]
-     (let [datas @(rf/subscribe [:diary/list-data-filtered])]
-       (if-not (empty? datas)
-         [:section.section>div.container>div.content.mx-3 {:style {:margin-top "-40px"}}
-          (for [data datas]
-            ^{:key (:id data)}
-            [diary-card data {:with-footer      true
-                              :with-description true
-                              :with-edit        false}])]
-         [:div.hero.is-small.pl-0.pr-0
-          [:div.hero-body
-           [:div.container.has-text-centered
-            [:h3.subtitle.mt-6
-             "Oops... 暂无符合条件的日记"]]]]))])
 
 (defn diary-page
   "Diary 主页展示"

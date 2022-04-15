@@ -8,7 +8,8 @@
            (java.time LocalDate)))
 
 (defn handle-upload
-  "上传文件到 OSS 并且返回 URL"
+  "上传文件到 OSS 并且返回 URL，
+  URL 规则：{bucket-url}/{bucket-path}/{current-month}/{short-uuid}_{file-name}"
   [size filename file]
   (let [max-size (edn-in [:oss :max-size])
         bucket-name (edn-in [:oss :bucket-name])

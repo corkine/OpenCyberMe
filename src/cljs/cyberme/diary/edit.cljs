@@ -2,11 +2,13 @@
   (:require ["react-markdown" :default ReactMarkdown]
             ["remark-gfm" :default remarkGfm]
             [reagent.core :as r]
+            [goog.string :as gstring]
             [re-frame.core :as rf]
             [clojure.string :as string]
             [cyberme.util.tool :as libs]
             [cyberme.diary.util :refer [diary-date-str]]
-            [cyberme.util.markdown :as md]))
+            [cyberme.util.markdown :as md]
+            [cyberme.util.upload :as up]))
 
 (defn edit-page [{:keys [id title content info]
                   :or   {title "未命名日记" content ""}
@@ -84,6 +86,7 @@
               :button.button.is-link.is-pulled-right.mr-2.ml-2.is-align-self-flex-end)
             {:on-click #(reset! show-preview (not preview?))}
             (if preview? "编辑" "预览")]]]
+         ;标签和评分框
          [:div.columns {:style {:margin-left "-10px" :margin-bottom "20px"}}
           [:div.column.py-0
            [:div.control.has-icons-left
@@ -115,16 +118,34 @@
           (if preview?
             [md/mark-down content-str]
             [:textarea.textarea.is-light
-             {:type      :textarea
-              :style     {:box-shadow    "none"
-                          :border-radius 0
-                          :border-color  "lightgrey transparent lightgrey transparent"
-                          :border-style  "double none solid none"
-                          :border-width  :3px
-                          :padding       "10px 3px 10px 3px"}
-              :rows      15
-              :value     content-str
-              :on-change #(reset! content (.. % -target -value))}])]
+             {:type          :textarea
+              :style         {:box-shadow    "none"
+                              :border-radius 0
+                              :border-color  "lightgrey transparent lightgrey transparent"
+                              :border-style  "double none solid none"
+                              :border-width  :3px
+                              :padding       "10px 3px 10px 3px"}
+              :rows          15
+              :value         content-str
+              :on-change     #(reset! content (.. % -target -value))
+              :on-drop       (fn [e]
+                               (let [files (-> e .-dataTransfer .-files)]
+                                 (up/upload-file
+                                   files
+                                   #(let [{:keys [message data status]} %]
+                                      (set! (.. e -target -style -background) "")
+                                      (if (= status 1)
+                                        (swap! content str (gstring/format "\n![](%s)\n\n" data))
+                                        (rf/dispatch [:global/notice {:message (or message "上传图片失败！")}])))))
+                               (.preventDefault e)
+                               (.stopPropagation e))
+              :on-drag-over  (fn [e] (.preventDefault e))
+              :on-drag       (fn [e])
+              :on-drag-start (fn [e] (set! (.. e -target -style -opacity) 0.2))
+              :on-drag-enter (fn [e] (set! (.. e -target -style -background) "lightyellow"))
+              ;:on-drag-end   (fn [e] (set! (.. e -target -style -opacity) ""))
+              ;:on-drag-leave (fn [e] (set! (.. e -target -style -background) ""))
+              }])]
          (when (and (not (nil? id)) preview?)
            [:div.has-text-danger.is-clickable
             {:on-click #(rf/dispatch [:global/notice
