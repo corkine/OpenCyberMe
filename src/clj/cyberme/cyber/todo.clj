@@ -217,7 +217,9 @@
           ;使用新计算方法：不管是否 high importance，只要 due or finish or create 是今天就算
           ;recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)
           today (LocalDate/now)
-          today-todo (filterv #(and (:time %) (.isEqual today (:time %))) all)]
+          today-todo (filterv #(and (:time %)
+                                    (.isEqual today (:time %))
+                                    (not (= "completed" (:status %)))) all)]
       {:starCount (count today-todo)
        :tasks     today-todo})
     (catch Exception e
