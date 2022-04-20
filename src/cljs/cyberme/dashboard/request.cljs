@@ -26,4 +26,5 @@
             :is-post        true
             :data           :dashboard/day-work-edit-data
             :clean          :dashboard/day-work-edit-clean
+            :success-callback-event [[:dashboard/day-work]]
             :failure-notice true})
