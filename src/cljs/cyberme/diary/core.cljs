@@ -7,8 +7,9 @@
             [cyberme.util.tool :as tool]
             [cljs-time.format :as format]
             [goog.string :as gstring]
-            [cyberme.diary.util :refer [diary-date-str]]
-            [cljs-time.core :as t]))
+            [cyberme.diary.util :refer [diary-date-str oss-process]]
+            [cljs-time.core :as t]
+            [clojure.string :as str]))
 
 (def help-message "日记支持通用 Markdown 语法、链接高亮以及如下特殊语法：
 TODO 标记：
@@ -102,6 +103,10 @@ Image 宽高：
   (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
         ;文章中的第一个图片 URL 或 nil
         first-content-url (second (re-find #"!\[.*?\]\((.*?)\)" (or content "")))
+        first-content-url (if (and first-content-url
+                                   (str/includes? first-content-url "static2.mazhangjing.com"))
+                            (str first-content-url oss-process)
+                            first-content-url)
         ;用于过滤特定标签和日期的日记
         filter-now @(rf/subscribe [:diary/filter])]
     [:div.box.columns.mt-5 {:style (if first-content-url

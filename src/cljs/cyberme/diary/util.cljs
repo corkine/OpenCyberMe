@@ -3,6 +3,8 @@
             [cyberme.util.tool :as tool]
             [cljs-time.core :as t]))
 
+(def oss-process "?x-oss-process=style/fit")
+
 (defn diary-date
   "定位出一篇笔记的日期，首先判断 :info -> :day 2022-03-01 如果为空则
   试图从 create_at 字符串解析，返回 cljs date 实例"

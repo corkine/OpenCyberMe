@@ -6,7 +6,7 @@
             [re-frame.core :as rf]
             [clojure.string :as string]
             [cyberme.util.tool :as libs]
-            [cyberme.diary.util :refer [diary-date-str]]
+            [cyberme.diary.util :refer [diary-date-str oss-process]]
             [cyberme.util.markdown :as md]
             [cyberme.util.upload :as up]))
 
@@ -20,7 +20,8 @@
       content (r/atom content)
       score (r/atom (:score info))
       date (r/atom (if id (diary-date-str old) (libs/today-str)))
-      tags-in (r/atom (libs/l->s (:labels info)))]
+      tags-in (r/atom (libs/l->s (:labels info)))
+      is-loading (r/atom false)]
      [:section.section.pt-5>div.container>div.content
       {:style {:margin :auto :max-width :60em}}
       (let [title-str @title
@@ -116,15 +117,16 @@
              [:i.fa.fa-star]]]]]
          [:div.is-size-6.markdown-body {:style {:margin :12px}}
           (if preview?
-            [md/mark-down content-str]
+            [md/mark-down (string/replace content-str #"(https://static2.mazhangjing.com/.*?\.\w+)\)" (str "$1" oss-process ")"))]
             [:textarea.textarea.is-light
              {:type          :textarea
-              :style         {:box-shadow    "none"
-                              :border-radius 0
-                              :border-color  "lightgrey transparent lightgrey transparent"
-                              :border-style  "double none solid none"
-                              :border-width  :3px
-                              :padding       "10px 3px 10px 3px"}
+              :style         (merge {:box-shadow    "none"
+                                     :border-radius 0
+                                     :border-color  "lightgrey transparent lightgrey transparent"
+                                     :border-style  "double none solid none"
+                                     :border-width  :3px
+                                     :padding       "10px 3px 10px 3px"}
+                                    (if @is-loading {:background "lightyellow"} {}))
               :rows          15
               :value         content-str
               :on-change     #(reset! content (.. % -target -value))
@@ -135,7 +137,7 @@
                                    #(let [{:keys [message data status]} %]
                                       (set! (.. e -target -style -background) "")
                                       (if (= status 1)
-                                        (swap! content str (gstring/format "\n![](%s)\n\n" data))
+                                        (swap! content str (gstring/format "\n![](%s)\n" data))
                                         (rf/dispatch [:global/notice {:message (or message "上传图片失败！")}])))))
                                (.preventDefault e)
                                (.stopPropagation e))
@@ -146,7 +148,7 @@
               ;:on-drag-end   (fn [e] (set! (.. e -target -style -opacity) ""))
               ;:on-drag-leave (fn [e] (set! (.. e -target -style -background) ""))
               }])]
-         (when (and (not (nil? id)) preview?)
+         (if (and (not (nil? id)) preview?)
            [:div.has-text-danger.is-clickable
             {:on-click #(rf/dispatch [:global/notice
                                       {:message  "确定删除此日记吗，此操作不可恢复！"
@@ -156,4 +158,20 @@
                         :padding-top "30px"
                         :margin-left "12px"
                         :width       "5em"}}
-            "删除此日记"])])])])
+            "删除此日记"]
+           [:p.file.is-light.is-small {:style {:margin-top :0em :margin-left :1em}}
+            [:label.file-label
+             [:input.file-input
+              {:type "file" :name "file"
+               :on-change
+               (fn [e] (let [files (.. e -target -files)]
+                         (reset! is-loading true)
+                         (up/upload-file
+                           files
+                           #(let [{:keys [message data status]} %]
+                              (reset! is-loading false)
+                              (if (= status 1)
+                                (swap! content str (gstring/format "\n![](%s)\n" (js/encodeURI data)))
+                                (rf/dispatch [:global/notice {:message (or message "上传图片失败！")}]))))))}]
+             [:span.file-cta.mb-3
+              [:span.file-label "上传图片"]]]])])])])
