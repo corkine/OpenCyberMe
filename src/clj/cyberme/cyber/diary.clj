@@ -170,3 +170,13 @@
    :create_at string?
    :update_at string?}
   (db/bind))
+
+(defn handle-day-work []
+  {:message "获取成功"
+   :data (-> (db/today) :info :day-work)
+   :status 1})
+
+(defn handle-day-work-update [data]
+  (let [res (db/set-someday-info {:day (LocalDate/now) :info {:day-work data}})]
+    {:message (str "更新成功: " res)
+     :status 1}))

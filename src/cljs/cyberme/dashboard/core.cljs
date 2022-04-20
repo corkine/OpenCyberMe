@@ -295,6 +295,8 @@
         month-days (t/number-of-days-in-the-month (t/time-now))
 
         recent @(rf/subscribe [:dashboard/recent-data])
+        day-work-res @(rf/subscribe [:dashboard/day-work-data])
+        day-work (-> day-work-res :data)
         {:keys [todo fitness blue clean express movie score work]} (:data recent)
         ;;TODAY-SCORE
         today-score-origin (* (or (:today (:data recent)) 0) 0.01)
@@ -355,7 +357,8 @@
          [:span.is-clickable {:style    {:vertical-align :10%
                                          :font-size      :13px
                                          :color          :lightgray}
-                              :on-click #(rf/dispatch [:dashboard/recent])}
+                              :on-click #(do (rf/dispatch [:dashboard/recent])
+                                             (rf/dispatch [:dashboard/day-work]))}
           [:i.fa.fa-refresh]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap
          [:div {:style {:margin "-10px -30px -40px -30px"}}
@@ -494,14 +497,25 @@
                                    :outline          "13px solid #f5f5f5"
                                    :border-radius    :0px}}
                 (let [data (get todo day)
-                      data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
-                                           (str/includes? (:list %) "任务"))) data)
+                      data (filter #(and (not (or #_(str/includes? (:list %) "INSPUR")
+                                                (str/includes? (:list %) "任务")))
+                                         (= (:importance %) "high")) data)
                       finished-count (count (filter #(= (:status %) "completed") data))
                       all-count (count data)]
                   [:<>
                    [:span.has-text-weight-bold.is-family-code "我的一天"
                     [:span.has-text-weight-normal
-                     (gstring/format "（完成 %s / 合计 %s）" finished-count all-count)]]
+                     (gstring/format "（完成 %s / 合计 %s）" finished-count all-count)]
+                    (if day-work
+                      [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable
+                       {:on-click #(do (rf/dispatch [:dashboard/day-work-edit nil])
+                                       (rf/dispatch [:dashboard/day-work]))}
+                       day-work]
+                      [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable
+                       {:on-click #(do (rf/dispatch [:dashboard/day-work-edit "完成日报"])
+                                       (rf/dispatch [:dashboard/day-work])
+                                       (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
+                       "没有日报"])]
                    (for [{:keys [title status list] :as todo} data]
                      ^{:key todo}
                      [:p.mt-1

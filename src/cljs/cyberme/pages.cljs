@@ -99,7 +99,7 @@
    [:section.hero.is-large
     [:div.hero-body.has-text-centered
      [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
-     [:p.subtitle.is-family-code  "正在施工"]]]
+     [:p.subtitle.is-family-code "正在施工"]]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "
@@ -173,8 +173,96 @@
    [top-point]
    [:selection.hero.is-large
     [:div.hero-body.has-text-centered
-     [:p.title.is-family-code  [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
-     [:p.subtitle.is-family-code  "正在施工"]]]
+     [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
+     [:p.subtitle.is-family-code "正在施工"]]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn command-card [with-header name device]
+  (r/with-let [show (r/atom false)]
+              (let [device (or device "spine-1")]
+                [:div.mx-2.px-4.py-1
+                 (when with-header
+                   [:p.is-size-5.mb-0 [:span.mr-2 name]
+                    [:span.is-family-code.is-size-7.is-text-grey "BgpManager::configBgp"]])
+                 [:a.mb-3.mt-1.is-clickable.is-unselectable {:on-click #(swap! show not)}
+                  [:span.mr-1 "设备：" device] [:span.mx-2 "地址：admin@192.168.1.2"]
+                  #_[:a.button.is-info.is-rounded.is-small.is-outlined.ml-3
+                    (if @show "⚡ 折叠命令" "⭐ 展开命令")]]
+                 (if @show
+                   [:pre.mt-4 (str
+                                "feature lacp\n",
+                                "feature vpc\n",
+                                "vrf context VPC-KPL\n",
+                                "  vpc domain %s\n",
+                                "  peer-keepalive destination %s source %s vrf %s\n",
+                                "  peer-switch\n",
+                                "  peer-gateway\n",
+                                "  auto-recovery\n",
+                                "  ip arp synchronize\n",
+                                "interface port-channel 4095\n",
+                                "  no switchport\n",
+                                "  vrf member VPC-KPL\n",
+                                "  ip address %s/24\n",
+                                "interface port-channel 4096\n",
+                                "  switchport\n",
+                                "  switchport mode trunk\n",
+                                "  vpc peer-link\n",
+                                "interface %s\n",
+                                "  channel-group 4096 force mode active\n",
+                                "  no shutdown")])])))
+
+(defn grouped-card
+  [g-name device-list]
+  (r/with-let
+    [show (r/atom false)]
+    [:<>
+     [:div.mx-2.my-2.px-4.pt-4.pb-2
+      [:p.is-size-5.mb-0 [:span.mr-2 g-name]
+       [:span.is-family-code.is-size-7.is-text-grey "BgpManager::configBgp"]
+       [:a.button.is-info.is-rounded.is-small.is-outlined.ml-3
+        {:on-click #(swap! show not)} (if @show "⚡ 折叠分组" "⭐ 展开分组")]]
+      [:p.mb-2.pb-0.mt-0 [:span.mr-1 "命令：" (rand-int 100) " 个"]]
+      (if @show
+        [:div {:style {:margin-left   "30px"
+                       :margin-bottom "30px"}}
+         (for [{:keys [is-sub-task? name device-list device] :as data} device-list]
+           ^{:key data}
+           (if is-sub-task?
+             [grouped-card name device-list]
+             [command-card false g-name device]))])]
+     [:hr]]))
+
+(defn demo-page []
+  [:<>
+   [top-point]
+   [:div.container.mt-5
+    [grouped-card "BGP 特性配置"
+     [{:device "leaf-1"}
+      {:device "leaf-2"}
+      {:device "leaf-3"}
+      {:device "leaf-4"}]]
+    [grouped-card "BGP 邻居配置"
+     [{:device "leaf-1"}
+      {:device "leaf-2"}
+      {:device "leaf-3"}
+      {:device "leaf-4"}]]
+    [grouped-card "BGP 组播配置"
+     [{:is-sub-task? true
+       :name "Pim RP 配置"
+       :device-list [{:device "leaf-1"}
+                     {:device "leaf-2"}
+                     {:device "leaf-3"}
+                     {:device "leaf-4"}]}
+      {:is-sub-task? true
+       :name "Anycast RP 配置"
+       :device-list [{:device "leaf-1"}
+                     {:device "leaf-2"}
+                     {:device "leaf-3"}
+                     {:device "leaf-4"}]}]]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "

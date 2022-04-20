@@ -17,7 +17,8 @@
            #?(:cljs {:view        #'core/dashboard-page
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local])
-                                             (rf/dispatch [:dashboard/recent]))}]}))]
+                                             (rf/dispatch [:dashboard/recent])
+                                             (rf/dispatch [:dashboard/day-work]))}]}))]
 
    ["/properties"
     (merge {:name :properties}
@@ -111,6 +112,12 @@
                                              (rf/dispatch [:user/fetch-from-local])
                                              (rf/dispatch [:fetch-usage])
                                              (rf/dispatch [:fetch-wishlist]))}]}))]
+
+   ["/demo"
+    (merge {:name :demo}
+           #?(:cljs {:view        #'core/demo-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
 
    ["/cook"
     (merge {:name :cook}
