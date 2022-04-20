@@ -512,7 +512,8 @@
                                        (rf/dispatch [:dashboard/day-work]))}
                        day-work]
                       [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable
-                       {:on-click #(do (rf/dispatch [:dashboard/day-work-edit "完成日报"])
+                       {:on-click #(do (rf/dispatch [:global/notice {:message "已经完成日报吗？"
+                                                                     :callback [:dashboard/day-work-edit "已完成日报"]}])
                                        (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
                        "没有日报"])]
                    (for [{:keys [title status list] :as todo} data]
