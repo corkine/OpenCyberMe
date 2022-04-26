@@ -98,16 +98,17 @@
                          message (if switch
                                    "关闭页面任意位置图床上传功能？"
                                    "需要开启页面任意位置图床上传功能吗？")]
-                     [:a.has-text-white
+                     [:a.has-text-white.dui-tips
                       {:on-click #(rf/dispatch [:global/notice
                                                 {:message message
-                                                 :callback [:set-paste-switch]}])}
+                                                 :callback [:set-paste-switch]}])
+                       :data-tooltip "图床全局监听"}
                       (condp = status
                         :success [:i.fa.fa-check-circle]
                         :failed [:i.fa.fa-times-circle]
                         (if switch
-                          [:i.fa.fa-info-circle]
-                          [:i.fa.fa-exchange]))])]
+                          [:i.fa.fa-exchange]
+                          [:i.fa.fa-info-circle]))])]
                   [:div.navbar-item.has-dropdown.is-hoverable.mx-0
                    [:a.navbar-link "操作"]
                    [:div.navbar-dropdown.is-boxed
@@ -162,10 +163,10 @@
   (set! (.-onpaste js/document)
         (fn [event]
           (let [target (.-clipboardData event)
-                files (.-files target)]
-            (println "paste" files (.-length files))
-            (if (and (> (.-length files) 0)
-                     @(rf/subscribe [:paste-switch]))
+                files (.-files target)
+                switch (rf/subscribe [:paste-switch])]
+            (println "paste" files (.-length files) ", switch is" @switch)
+            (if (and (> (.-length files) 0) @switch)
               (up/upload-file
                 files
                 #(do
@@ -178,6 +179,9 @@
                        (js/setTimeout (fn [_] (rf/dispatch [:set-paste-status nil])) 2000))
                      (do
                        (rf/dispatch [:set-paste-status :failed])
-                       (rf/dispatch [:global/notice {:message (:message %1)}])))))))))
+                       (rf/dispatch [:global/notice {:message (:message %1)}])))))
+              (do
+                (rf/dispatch [:set-paste-status :failed])
+                (js/setTimeout (fn [_] (rf/dispatch [:set-paste-status nil])) 2000))))))
   (ajax/load-interceptors!)
   (mount-components))
