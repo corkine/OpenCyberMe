@@ -95,7 +95,7 @@
                   [:div.navbar-item.is-hoverable.mx-0
                    (let [switch @(rf/subscribe [:paste-switch])
                          status @(rf/subscribe [:paste-status])
-                         message (if-not switch
+                         message (if switch
                                    "关闭页面任意位置图床上传功能？"
                                    "需要开启页面任意位置图床上传功能吗？")]
                      [:a.has-text-white
@@ -164,7 +164,8 @@
           (let [target (.-clipboardData event)
                 files (.-files target)]
             (println "paste" files (.-length files))
-            (if (> (.-length files) 0)
+            (if (and (> (.-length files) 0)
+                     @(rf/subscribe [:paste-switch]))
               (up/upload-file
                 files
                 #(do
