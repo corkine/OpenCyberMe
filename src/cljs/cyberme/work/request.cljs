@@ -20,3 +20,23 @@
             :uri-fn #(str "/cyber/todo/list?listName=%F0%9F%90%A0%20工作&day=20")
             :is-post false
             :failure-notice true})
+
+(rf/reg-event-db
+  :set-paste-status
+  (fn [db [_ status]]
+    (assoc db :paste-status status)))
+
+(rf/reg-event-db
+  :set-paste-switch
+  (fn [db _]
+    (assoc db :paste-switch (not (:paste-switch db)))))
+
+(rf/reg-sub
+  :paste-status
+  (fn [db _]
+    (:paste-status db)))
+
+(rf/reg-sub
+  :paste-switch
+  (fn [db _]
+    (true? (:paste-switch db))))

@@ -8,6 +8,7 @@
     [reitit.core :as reitit]
     [reitit.frontend.easy :as rfe]
     [cyberme.util.ajax :as ajax]
+    [cyberme.util.upload :as up]
     [cyberme.util.events :as events]
     [cyberme.util.request :as req]
     [cyberme.place.request :as req-place]
@@ -91,6 +92,22 @@
                   #_[nav-link "/foods" "耗材" :foods]
                   [nav-link "/about" "关于" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
+                  [:div.navbar-item.is-hoverable.mx-0
+                   (let [switch @(rf/subscribe [:paste-switch])
+                         status @(rf/subscribe [:paste-status])
+                         message (if-not switch
+                                   "关闭页面任意位置图床上传功能？"
+                                   "需要开启页面任意位置图床上传功能吗？")]
+                     [:a.has-text-white
+                      {:on-click #(rf/dispatch [:global/notice
+                                                {:message message
+                                                 :callback [:set-paste-switch]}])}
+                      (condp = status
+                        :success [:i.fa.fa-check-circle]
+                        :failed [:i.fa.fa-times-circle]
+                        (if switch
+                          [:i.fa.fa-info-circle]
+                          [:i.fa.fa-exchange]))])]
                   [:div.navbar-item.has-dropdown.is-hoverable.mx-0
                    [:a.navbar-link "操作"]
                    [:div.navbar-dropdown.is-boxed
@@ -142,5 +159,24 @@
 
 (defn init! []
   (start-router!)
+  (set! (.-onpaste js/document)
+        (fn [event]
+          (let [target (.-clipboardData event)
+                files (.-files target)]
+            (println "paste" files (.-length files))
+            (if (> (.-length files) 0)
+              (up/upload-file
+                files
+                #(do
+                   (println "Upload " %1)
+                   (if (= (:status %1) 1)
+                     (do
+                       (rf/dispatch [:set-paste-status :success])
+                       (.writeText (.-clipboard js/navigator)
+                                   (str "![](" (:data %1) ")"))
+                       (js/setTimeout (fn [_] (rf/dispatch [:set-paste-status nil])) 2000))
+                     (do
+                       (rf/dispatch [:set-paste-status :failed])
+                       (rf/dispatch [:global/notice {:message (:message %1)}])))))))))
   (ajax/load-interceptors!)
   (mount-components))
