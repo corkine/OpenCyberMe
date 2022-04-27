@@ -446,6 +446,7 @@
                            (let [info (get-hcm-info {:time (.atStartOfDay day) :token token})
                                  signin (signin-data info)]
                              (compute-work-hour signin))) %)
+        day-count (fn [date-list] (count (filter #(do-need-work (.atStartOfDay %)) date-list)))
         raw-data #(mapv (fn [day]
                           (:data (get-hcm-info {:time (.atStartOfDay day) :token token}))) %)
         week-date (week-days 0 true)
@@ -458,7 +459,7 @@
         month-raw (raw-data month-date)
         month-work (work-hour month-date)
         month-work-hour (reduce + month-work)
-        avg-work-hour-by-month (/ month-work-hour (count (filter #(not= % 0.0) month-work)))
+        avg-work-hour-by-month (/ month-work-hour (day-count month-date))
         avg-week-work-hour-by-month (* 5 avg-work-hour-by-month)
         {:keys [avg-work-hour-by-month2
                 avg-week-work-hour-by-month2
@@ -468,7 +469,7 @@
                 month2-raw (raw-data month2-date)
                 month2-work (work-hour month2-date)
                 month2-work-hour (reduce + month2-work)
-                avg-work-hour-by-month2 (/ month2-work-hour (count (filter #(not= % 0.0) month2-work)))
+                avg-work-hour-by-month2 (/ month2-work-hour (day-count month2-date))
                 avg-week-work-hour-by-month2 (* 5 avg-work-hour-by-month)]
             {:avg-work-hour-by-month2      avg-work-hour-by-month2
              :avg-week-work-hour-by-month2 avg-week-work-hour-by-month2
@@ -485,7 +486,7 @@
                 ;all-raw (raw-data all-date)
                 all-work (work-hour all-date)
                 all-work-hour (reduce + all-work)
-                avg-work-hour-by-all (/ all-work-hour (count (filter #(not= % 0.0) all-work)))
+                avg-work-hour-by-all (/ all-work-hour (day-count all-date))
                 avg-week-work-hour-by-all (* 5 avg-work-hour-by-month)]
             {:avg-work-hour-by-all      avg-work-hour-by-all
              :avg-week-work-hour-by-all avg-week-work-hour-by-all
