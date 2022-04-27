@@ -24,7 +24,8 @@
     [cyberme.cyber.clean :as clean]
     [cyberme.cyber.fitness :as fitness]
     [cyberme.cyber.diary :as diary]
-    [clojure.tools.logging :as log]))
+    [clojure.tools.logging :as log])
+  (:import (java.time LocalDate)))
 
 (s/def :global/user string?)
 (s/def :global/secret string?)
@@ -226,6 +227,18 @@
                                         :opt-un [:global/user :global/secret])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (inspur/handle-serve-month-summary query)))}}]
+
+   ["/all_summary"
+    {:get {:summary     "HCM 所有时间的信息统计"
+           :description "获取本月打卡、策略、休息等情况"
+           :parameters  {:query (s/keys :req-un []
+                                        :opt-un [:global/user :global/secret])}
+           :handler     (fn [{{query :query} :parameters}]
+                          (hr/response
+                            (inspur/handle-serve-sometime-summary
+                              (merge query
+                                     {:date-list
+                                      (inspur/day-from (LocalDate/of 2021 06 01))}))))}}]
 
    ["/summary"
     {:get {:summary     "HCM 所有信息统计"

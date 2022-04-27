@@ -13,8 +13,8 @@
 
 (def colors ["#c4332b", "#16B644", "#6862FD", "#FDC763"])
 
-(defn hcm-calendar [data]
-  (let [now (t/time-now)
+(defn hcm-calendar [now show-today data]
+  (let [now (or now (t/time-now))
         year (t/year now)
         month (t/month now)
         today (t/day now)
@@ -33,7 +33,7 @@
         day-list (range 1 (+ 1 (t/day last_day)))
         month-list (mapv (fn [d]
                            [(date-format d)
-                            (if (= d today) (str "今 " d) d)
+                            (if (and (= d today) show-today) (str "今 " d) d)
                             (status-fn d)
                             (plan-fn d)]) day-list)
         work-list (mapv (fn [d]
@@ -182,8 +182,10 @@
     [:div.block.ml-6.mr-6.mt-6
      [:p.subtitle "\uD83D\uDCC5 考勤日历 "
       [:span.has-text-grey-light.is-size-6
-       (gstring/format " %2d 年 %2d 月" (t/year now) (t/month now))]]
-     [hcm-calendar month-data]
+       (gstring/format " %2d 年 %2d 月  " (t/year now) (t/month now))]
+      [:a.is-size-7.has-text-grey {:on-click #(rf/dispatch [:common/navigate! :work-all])}
+       "查看全部"]]
+     [hcm-calendar nil true month-data]
      [:div.box {:style {:margin-top :-0px}}
       (if (empty? date)
         [:div {:style {:margin-top :-15px}}

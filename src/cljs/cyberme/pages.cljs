@@ -9,6 +9,7 @@
     [cyberme.place.filter :as place-filter]
     [cyberme.place.core :as place]
     [cyberme.work.core :as work]
+    [cyberme.work.whole :as work-all]
     [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
     [clojure.string :as string]))
@@ -151,6 +152,17 @@
    [top-point]
    [:div.container>div.content
     [work/main-page]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn hcm-all-page []
+  [:<>
+   [top-point]
+   [:div.container>div.content
+    [work-all/main-page]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "

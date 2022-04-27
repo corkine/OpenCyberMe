@@ -56,6 +56,14 @@
                                              (rf/dispatch [:hcm/month])
                                              (rf/dispatch [:hcm/todo]))}]}))]
 
+   ["/work-at-inspur"
+    (merge {:name :work-all}
+           #?(:cljs {:view        #'core/hcm-all-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
+                                             (rf/dispatch [:hcm/all])
+                                             (rf/dispatch [:hcm/hint]))}]}))]
+
    ["/diary"
     (merge {:name :diary}
            #?(:cljs {:view        #'core/diary-page

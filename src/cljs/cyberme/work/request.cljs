@@ -14,6 +14,20 @@
             :is-post false
             :failure-notice true})
 
+(ajax-flow {:call :hcm/all
+            :data :hcm/all-data
+            :clean :hcm/all-data-clean
+            :uri-fn #(str "/cyber/check/all_summary")
+            :is-post false
+            :failure-notice true})
+
+(ajax-flow {:call :hcm/hint
+            :data :hcm/hint-data
+            :clean :hcm/hint-data-clean
+            :uri-fn #(str "/cyber/check/summary?useAllData=true&showDetails=false")
+            :is-post false
+            :failure-notice true})
+
 (ajax-flow {:call :hcm/todo
             :data :hcm/todo-data
             :clean :hcm/todo-data-clean

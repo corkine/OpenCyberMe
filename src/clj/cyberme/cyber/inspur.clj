@@ -331,6 +331,15 @@
         before-now (filter #(not (.isAfter % real-now)) list)]
     (if to-today before-now list)))
 
+(defn day-from
+  "返回从一个日期开始到今天的所有日期，LocalDate list"
+  [^LocalDate start]
+  {:pre  [(.isBefore start (LocalDate/now))]
+   :post [(seq? %) (->> % first (instance? LocalDate))]}
+  (let [day-reader (iterate #(.plusDays % 1) start)
+        today (LocalDate/now)]
+    (take-while #(not (.isAfter % today)) day-reader)))
+
 (defn month-rest-days
   "返回一个月剩下的日期，adjust 用于按照月数往前调整，不包括今天"
   [adjust]
@@ -449,7 +458,7 @@
         month-raw (raw-data month-date)
         month-work (work-hour month-date)
         month-work-hour (reduce + month-work)
-        avg-work-hour-by-month (/ month-work-hour (count month-work))
+        avg-work-hour-by-month (/ month-work-hour (count (filter #(not= % 0.0) month-work)))
         avg-week-work-hour-by-month (* 5 avg-work-hour-by-month)
         {:keys [avg-work-hour-by-month2
                 avg-week-work-hour-by-month2
@@ -459,7 +468,7 @@
                 month2-raw (raw-data month2-date)
                 month2-work (work-hour month2-date)
                 month2-work-hour (reduce + month2-work)
-                avg-work-hour-by-month2 (/ month2-work-hour (count month2-work))
+                avg-work-hour-by-month2 (/ month2-work-hour (count (filter #(not= % 0.0) month2-work)))
                 avg-week-work-hour-by-month2 (* 5 avg-work-hour-by-month)]
             {:avg-work-hour-by-month2      avg-work-hour-by-month2
              :avg-week-work-hour-by-month2 avg-week-work-hour-by-month2
@@ -476,7 +485,7 @@
                 ;all-raw (raw-data all-date)
                 all-work (work-hour all-date)
                 all-work-hour (reduce + all-work)
-                avg-work-hour-by-all (/ all-work-hour (count all-work))
+                avg-work-hour-by-all (/ all-work-hour (count (filter #(not= % 0.0) all-work)))
                 avg-week-work-hour-by-all (* 5 avg-work-hour-by-month)]
             {:avg-work-hour-by-all      avg-work-hour-by-all
              :avg-week-work-hour-by-all avg-week-work-hour-by-all
@@ -544,14 +553,14 @@
      :success      (count (info-check-status info "done!"))
      :policy-count exist-count}))
 
-(defn handle-serve-month-summary
-  "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
+(defn handle-serve-sometime-summary
+  "返回特定时间段内每天的工作时长、上下班时间、检查策略和是否是休息日等信息
   用于前端页面展示考勤日历。
   [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
                 :work-day true :policy true}]"
-  [{:keys [user secret] :as all}]
+  [{:keys [user secret date-list] :as all}]
   (try
-    (let [date-list (month-days 0 true)
+    (let [date-list (or date-list (month-days 0 true))
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
                            signin (signin-data info)
                            signin (sort-by :time signin)
@@ -588,6 +597,15 @@
     (catch Exception e
       {:message (str "获取失败：" (.getMessage e))
        :status  0})))
+
+(defn handle-serve-month-summary
+  "返回本月每天的工作时长、上下班时间、检查策略和是否是休息日等信息
+  用于前端页面展示考勤日历。
+  [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
+                :work-day true :policy true}]"
+  [{:keys [user secret] :as all}]
+  (handle-serve-sometime-summary
+    (merge all {:date-list (month-days 0 true)})))
 
 (defn get-hcm-hint
   "当日提醒的 HCM 部分计算"
