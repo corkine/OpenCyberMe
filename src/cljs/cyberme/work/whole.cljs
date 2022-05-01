@@ -31,5 +31,5 @@
            [:p.subtitle [:span "\uD83D\uDCC5 " y " / " m " "]
             (when (and (= y-now y) (= m-now m))
               [:span.has-text-grey-light.is-size-7
-               (gstring/format "合计 %.1fh, %.1fh/月，%.1fh/天" AllWorkHour MonthWorkHour AvgDayWorkHour)])]
+               (gstring/format "合计 %.1fh, 本月 %.1fh，%.1fh/天" AllWorkHour MonthWorkHour AvgDayWorkHour)])]
            [hcm-calendar fake-now false month-data]])])]))
