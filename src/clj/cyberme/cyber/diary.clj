@@ -1,10 +1,11 @@
 (ns cyberme.cyber.diary
   (:require [cyberme.db.core :as db]
             [clojure.tools.logging :as log]
-            [next.jdbc :as jdbc])
+            [next.jdbc :as jdbc]
+            [cyberme.cyber.inspur :as inspur])
   (:import
     (java.time.format DateTimeFormatter)
-    (java.time LocalDate)))
+    (java.time LocalDate LocalDateTime)))
 
 (comment
   ;Note
@@ -171,10 +172,17 @@
    :update_at string?}
   (db/bind))
 
-(defn handle-day-work []
-  {:message "获取成功"
-   :data (-> (db/today) :info :day-work)
-   :status 1})
+(defn handle-day-work
+  "查找 day 数据库获取当日日报信息，如果非工作日，则直接返回不查找数据库"
+  []
+  (let [is-workday? (inspur/do-need-work (LocalDateTime/now))]
+    (if is-workday?
+      {:message "获取成功"
+       :data (-> (db/today) :info :day-work)
+       :status 1}
+      {:message "获取成功(无需工作)"
+       :data "无需日报"
+       :status 1})))
 
 (defn handle-day-work-update [data]
   (let [res (db/set-someday-info {:day (LocalDate/now) :info {:day-work data}})]

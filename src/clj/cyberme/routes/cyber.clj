@@ -498,7 +498,7 @@
                           (hr/response (inspur/handle-dashboard query)))}}]
    ["/day-work"
     {:get  {:summary     "获取当日日报"
-            :description "获取当日日报情况"
+            :description "获取当日日报情况，如果是非工作日，则拦截数据库读写并返回“无需日报”信息。"
             :handler     (fn [_] (hr/response (diary/handle-day-work)))}
      :post {:summary     "更新当日日报"
             :description "更新当日日报情况"
