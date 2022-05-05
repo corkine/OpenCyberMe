@@ -276,7 +276,8 @@
             :data           :note/last-data
             :clean          :note/last-data-clean
             :success-notice true
-            :failure-notice true})
+            :failure-notice true
+            :notice-with-pre true})
 
 (defn dashboard-page []
   (let [now (t/time-now)

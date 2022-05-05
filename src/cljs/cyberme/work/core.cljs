@@ -41,7 +41,7 @@
                             [(date-format d)
                              hour])) day-list)]
     [EChartsM
-     {:style {:width "500px" :height "320px"}
+     {:style {:width "500px" :height "340px"}
       :option
       {:tooltip   {:formatter (clj->js (fn [param]
                                          (let [pa (js->clj param)
@@ -186,7 +186,7 @@
       [:a.is-size-7.has-text-grey {:on-click #(rf/dispatch [:common/navigate! :work-all])}
        "查看全部"]]
      [hcm-calendar nil true month-data]
-     [:div.box {:style {:margin-top :-0px}}
+     [:div.box {:style {:margin-top :0px}}
       (if (empty? date)
         [:div {:style {:margin-top :-15px}}
          [:p.mt-4 "没有数据"]]

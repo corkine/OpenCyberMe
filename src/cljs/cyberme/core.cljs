@@ -11,6 +11,7 @@
     [cyberme.util.upload :as up]
     [cyberme.util.events :as events]
     [cyberme.util.request :as req]
+    [cyberme.util.form :refer [dialog]]
     [cyberme.place.request :as req-place]
     [cyberme.good.request :as req-good]
     [cyberme.work.request :as req-work]
@@ -25,7 +26,8 @@
     [cyberme.about :refer [log about-page]]
     [cyberme.router :as share]
     [cyberme.modals :as modals]
-    [cyberme.login.core :as login])
+    [cyberme.login.core :as login]
+    [cyberme.validation :as va])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -57,6 +59,27 @@
       "确定"]
      #(rf/dispatch [:global/notice-clean])]))
 
+(defn note-add-dialog
+  []
+  (dialog :note-add-dialog
+          "添加新快速笔记"
+          [[:content "笔记内容" "输入此笔记的内容" {:type :textarea :attr {:rows 4}}]]
+          "确定"
+          #(if-let [err (va/validate! @%1 [[:content va/required]])]
+             (reset! %2 err)
+             (rf/dispatch [:note/add (merge @%1
+                                            {:from        "CyberMe Web Client"
+                                             :liveSeconds 100})]))
+          {:subscribe-ajax    [:note/add-data]
+           :call-when-exit    [[:note/add-data-clean]]
+           :call-when-success [[:note/add-data-clean]]}))
+
+(req/ajax-flow {:call   :note/add
+                :uri-fn #(str "/cyber/note")
+                :is-post true
+                :data   :note/add-data
+                :clean  :note/add-data-clean})
+
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
               [:nav.navbar.is-info {:style {:z-index :5}}
@@ -66,6 +89,7 @@
                 [global-info]
                 [place-edit/place-edit-holder]
                 [good-edit/edit-good-holder]
+                [note-add-dialog]
                 [:div {:style {:width :0px :height :0px :overflow :hidden}}
                  [place-new/new-place-btn]
                  [package-new/new-package-btn]
@@ -99,9 +123,9 @@
                                    "关闭页面任意位置图床上传功能？"
                                    "需要开启页面任意位置图床上传功能吗？")]
                      [:a.has-text-white.dui-tips
-                      {:on-click #(rf/dispatch [:global/notice
-                                                {:message message
-                                                 :callback [:set-paste-switch]}])
+                      {:on-click     #(rf/dispatch [:global/notice
+                                                    {:message  message
+                                                     :callback [:set-paste-switch]}])
                        :data-tooltip "图床全局监听"}
                       (condp = status
                         :success [:i.fa.fa-check-circle]
@@ -121,6 +145,9 @@
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :create-new-good])}
                      "物品入库"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:app/show-modal :note-add-dialog])}
+                     "新建笔记"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:note/last])}
                      "最近笔记"]]]

@@ -45,7 +45,7 @@
 
 ;;;;;;;;;;;;;;;;; ajax-flow 抽象 ;;;;;;;;;;;;;;;;;
 (defn ajax-flow [{:keys [call data clean uri-fn is-post
-                         success-notice failure-notice
+                         success-notice failure-notice notice-with-pre
                          success-callback-event]}]
   "一套基于 Ajax 的事件传递方案：
   通过 ajax 触发：model/action ->
@@ -95,9 +95,13 @@
         (when (= (:status resp) 1)
           (if success-notice
             (rf/dispatch [:global/notice
-                          {:message  (or (:message resp)
-                                         "服务器成功响应，但无回调消息。")
-                           :callback success-callback-event}])
+                          (if notice-with-pre
+                            {:pre-message  (or (:message resp)
+                                           "服务器成功响应，但无回调消息。")
+                             :callback success-callback-event}
+                            {:message  (or (:message resp)
+                                           "服务器成功响应，但无回调消息。")
+                             :callback success-callback-event})])
             (when success-callback-event
               (doseq [sce success-callback-events]
                 (rf/dispatch (vec sce))))))
