@@ -237,8 +237,8 @@
                           (hr/response
                             (inspur/handle-serve-sometime-summary
                               (merge query
-                                     {:date-list
-                                      (inspur/day-from (LocalDate/of 2021 06 01))}))))}}]
+                                     {:date-list (inspur/day-from (LocalDate/of 2021 06 01))
+                                      :with-last-month-all-day true}))))}}]
 
    ["/summary"
     {:get {:summary     "HCM 所有信息统计"

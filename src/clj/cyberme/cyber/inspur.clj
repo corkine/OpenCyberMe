@@ -568,7 +568,7 @@
   用于前端页面展示考勤日历。
   [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
                 :work-day true :policy true}]"
-  [{:keys [user secret date-list use-last-month-include-rest-day] :as all}]
+  [{:keys [user secret date-list with-last-month-all-day] :as all}]
   (try
     (let [date-list (or date-list (month-days 0 true))
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
@@ -589,7 +589,7 @@
                                         (calc-info date)])
                                      date-list)))
                       {})
-          rest-list (if use-last-month-include-rest-day (month-rest-days 0) [])
+          rest-list (if with-last-month-all-day (month-rest-days 0) [])
           rest-data (if-not (empty? rest-list)
                       (apply assoc {}
                              (flatten
@@ -616,7 +616,7 @@
   [{:keys [user secret] :as all}]
   (handle-serve-sometime-summary
     (merge all {:date-list (month-days 0 true)
-                :use-last-month-include-rest-day true})))
+                :with-last-month-all-day true})))
 
 (defn get-hcm-hint
   "当日提醒的 HCM 部分计算"
