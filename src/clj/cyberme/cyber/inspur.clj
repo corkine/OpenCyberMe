@@ -213,8 +213,16 @@
     ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
     (if (empty? hcm-info)
       0.0
-      (let [start (:time (first hcm-info))
-            end (:time (last hcm-info))
+      (let [[start end] (if (= (count hcm-info) 1)
+                          (let [^LocalDateTime dt (-> hcm-info first :time)
+                                dt-time (.toLocalTime dt)
+                                dt-day (.toLocalDate dt)]
+                            (if (.isAfter dt-time (LocalTime/of 12 0))
+                              [(.atTime dt-day 8 30) dt]    ;没打上班卡
+                              [dt (.atTime dt-day 17 30)])) ;没打下班卡
+                          [(-> hcm-info first :time) (-> hcm-info last :time)])
+            ;start (:time (first hcm-info))
+            ;end (:time (last hcm-info))
             day (.toLocalDate start)
             end (if (.isBefore end (.atTime day 17 30))
                   (.atTime day (LocalTime/now)) end)
@@ -560,7 +568,7 @@
   用于前端页面展示考勤日历。
   [:2022-03-01 {:work-hour 23.1 :check-start 8:30 :check-end 17:30
                 :work-day true :policy true}]"
-  [{:keys [user secret date-list] :as all}]
+  [{:keys [user secret date-list use-last-month-include-rest-day] :as all}]
   (try
     (let [date-list (or date-list (month-days 0 true))
           calc-info #(let [info (get-hcm-info {:time (.atStartOfDay %)})
@@ -581,7 +589,7 @@
                                         (calc-info date)])
                                      date-list)))
                       {})
-          rest-list (month-rest-days 0)
+          rest-list (if use-last-month-include-rest-day (month-rest-days 0) [])
           rest-data (if-not (empty? rest-list)
                       (apply assoc {}
                              (flatten
@@ -607,7 +615,8 @@
                 :work-day true :policy true}]"
   [{:keys [user secret] :as all}]
   (handle-serve-sometime-summary
-    (merge all {:date-list (month-days 0 true)})))
+    (merge all {:date-list (month-days 0 true)
+                :use-last-month-include-rest-day true})))
 
 (defn get-hcm-hint
   "当日提醒的 HCM 部分计算"
