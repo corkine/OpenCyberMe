@@ -7,7 +7,8 @@
             [clojure.java.io :as io]
             [cyberme.config :refer [edn edn-in]]
             [cyberme.cyber.slack :as slack]
-            [cyberme.tool :as tool])
+            [cyberme.tool :as tool]
+            [cyberme.cyber.news :as news])
   (:import (java.time LocalDateTime LocalDate LocalTime)
            (java.time.format DateTimeFormatter)))
 
@@ -176,6 +177,7 @@
   (while true
     (try
       (let [sleep-sec (* 60 5)]
+        (future (news/news-push-routine))
         (try
           (log/debug "[todo-service] starting sync with ms-server...")
           (todo-sync-routine)
