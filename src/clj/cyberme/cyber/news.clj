@@ -53,13 +53,14 @@
   (try
     (let [now (LocalTime/now)
           is-ok-to-check (and (.isAfter now at-16) (.isBefore now at-20))]
-      (if (and is-ok-to-check (have-push-already))
-        (log/info "[news] already have data in db, skip...")
-        (let [res (parse-and-find nil)]
-          (if res
-            (do (log/info "[news] find and saving to db...")
-                (slack/notify (format "%s <%s| HERE>" (:title res) (:url res)) "SERVER")
-                (save-news-push-result res))
-            (log/info "[news] no news find, skip...")))))
+      (when is-ok-to-check
+        (if (have-push-already)
+          (log/info "[news] already have data in db, skip...")
+          (let [res (parse-and-find nil)]
+            (if res
+              (do (log/info "[news] find and saving to db...")
+                  (slack/notify (format "%s <%s| HERE>" (:title res) (:url res)) "SERVER")
+                  (save-news-push-result res))
+              (log/info "[news] no news find, skip..."))))))
     (catch Exception e
       (log/error (str "[news] call routine filed: " (.getMessage e))))))
