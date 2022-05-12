@@ -216,35 +216,32 @@
       (let [[start end] (if (= (count hcm-info) 1)
                           (let [^LocalDateTime dt (-> hcm-info first :time)
                                 dt-time (.toLocalTime dt)
-                                dt-day (.toLocalDate dt)]
+                                dt-day (.toLocalDate dt)
+                                clock-today (LocalTime/now)
+                                is-today? (.isEqual dt-day (LocalDate/now))]
                             (if (.isAfter dt-time (LocalTime/of 12 0))
-                              [(.atTime dt-day 8 30) dt]    ;没打上班卡
-                              [dt (.atTime dt-day 17 30)])) ;没打下班卡
-                          [(-> hcm-info first :time) (-> hcm-info last :time)])
-            ;start (:time (first hcm-info))
-            ;end (:time (last hcm-info))
-            day (.toLocalDate start)
-            end (if (.isBefore end (.atTime day 17 30))
-                  (.atTime day (LocalTime/now)) end)
+                              [(LocalTime/of 8 30) dt-time]    ;没打上班卡,已下班
+                              [dt-time (if is-today? clock-today (LocalTime/of 17 30))])) ;没下班 or 没打下班卡
+                          [(.toLocalTime ^LocalDateTime (-> hcm-info first :time))
+                           (.toLocalTime ^LocalDateTime (-> hcm-info last :time))])
             ;如果 end < 11:30 的，则 - 0
             ;如果 end < 13:10 的，则 - 当前时间-11:30 的时间
             ;如果 end < 17:30 的，则 - 午休时间
             ;如果 end < 18:30 的，则 - 当前时间-17:30 的时间和午休时间
             ;如果 end > 18:30 的，则减去晚饭时间和午休时间
-            endLT (.toLocalTime end)
             noon-time (.toMinutes (Duration/between (LocalTime/of 11 30)
                                                     (LocalTime/of 13 10)))
             diner-time (.toMinutes (Duration/between (LocalTime/of 17 30)
                                                      (LocalTime/of 18 30)))
             minusMinutes
-            (cond (.isBefore endLT (LocalTime/of 11 30))
+            (cond (.isBefore end (LocalTime/of 11 30))
                   0
-                  (.isBefore endLT (LocalTime/of 13 10))
-                  (.toMinutes (Duration/between (LocalTime/of 11 30) endLT))
-                  (.isBefore endLT (LocalTime/of 17 30))
+                  (.isBefore end (LocalTime/of 13 10))
+                  (.toMinutes (Duration/between (LocalTime/of 11 30) end))
+                  (.isBefore end (LocalTime/of 17 30))
                   noon-time
-                  (.isBefore endLT (LocalTime/of 18 30))
-                  (+ (.toMinutes (Duration/between (LocalTime/of 17 30) endLT))
+                  (.isBefore end (LocalTime/of 18 30))
+                  (+ (.toMinutes (Duration/between (LocalTime/of 17 30) end))
                      noon-time)
                   :else
                   (+ noon-time diner-time))]
@@ -605,6 +602,7 @@
        :status  1
        :data    res})
     (catch Exception e
+      (log/error e)
       {:message (str "获取失败：" (.getMessage e))
        :status  0})))
 
