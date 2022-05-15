@@ -75,6 +75,7 @@
 (s/def :clean/nt boolean?)
 (s/def :clean/mf boolean?)
 (s/def :clean/nf boolean?)
+(s/def :clean/yesterday boolean?)
 (s/def :blue/blue boolean?)
 (s/def :blue/day string?)
 (s/def :fitness/data any?)
@@ -430,7 +431,8 @@
             未传递的参数看做 false 强行写入。"
            :parameters  {:query (s/keys :opt-un [:global/user :global/secret
                                                  :clean/merge :clean/mt :clean/nt
-                                                 :clean/mf :clean/nf])}
+                                                 :clean/mf :clean/nf
+                                                 :clean/yesterday])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (clean/handle-clean-update query)))}}]])
 

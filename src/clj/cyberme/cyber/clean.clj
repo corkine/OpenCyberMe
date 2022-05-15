@@ -118,10 +118,10 @@
                (-> %2 str keyword)
                (let [{:keys [MorningBrushTeeth NightCleanFace MorningCleanFace NightBrushTeeth]}
                      (-> (get db-data-map %2) :info)]
-                 {:MorningBrushTeeth  (boolean MorningBrushTeeth)
-                  :NightBrushTeeth    (boolean NightBrushTeeth)
-                  :MorningCleanFace   (boolean MorningCleanFace)
-                  :NightCleanFace     (boolean NightCleanFace)}))
+                 {:MorningBrushTeeth (boolean MorningBrushTeeth)
+                  :NightBrushTeeth   (boolean NightBrushTeeth)
+                  :MorningCleanFace  (boolean MorningCleanFace)
+                  :NightCleanFace    (boolean NightCleanFace)}))
             {} all-week-day)))
 
 (defn handle-clean-show [{:keys []}]
@@ -152,9 +152,10 @@
        :HabitHint          "?+1!"                           ;🎀13-1?? 🎀13-1? 🎀13+1? 🎀13+1!
        })))
 
-(defn handle-clean-update [{:keys [merge mt nt mf nf]
-                            :or   {merge true mt false nt false mf false nf false}}]
-  (let [{:keys [info]} (db/today)
+(defn handle-clean-update [{:keys [merge mt nt mf nf yesterday]
+                            :or   {merge true mt false nt false mf false nf false yesterday false}}]
+  (let [{:keys [info]} (if yesterday (db/someday {:day (.minusDays (LocalDate/now) 1)})
+                                     (db/today))
         {:keys [MorningBrushTeeth NightCleanFace MorningCleanFace NightBrushTeeth]} info
         full-data (if merge
                     {:MorningBrushTeeth (or MorningBrushTeeth (boolean mt))
@@ -169,8 +170,11 @@
                         :NightBrushTeeth   NightBrushTeeth
                         :MorningCleanFace  MorningCleanFace
                         :NightCleanFace    NightCleanFace} full-data)
-        _ (db/set-today {:info (clojure.core/merge (or info {}) full-data)})]
-    {:message "今日数据已更新。"
+        _ (if yesterday
+            (db/set-someday {:day  (.minusDays (LocalDate/now) 1)
+                             :info (clojure.core/merge (or info {}) full-data)})
+            (db/set-today {:info (clojure.core/merge (or info {}) full-data)}))]
+    {:message (if yesterday "昨日数据已更新。" "今日数据已更新。")
      :code    500
      :update  changed?}))
 
@@ -183,7 +187,7 @@
                   (catch Exception _ (LocalDate/now))))
           {:keys [info]} (db/someday {:day day})
           old-blue (:blue info)
-          _ (db/set-someday {:day day
+          _ (db/set-someday {:day  day
                              :info (assoc (or info {}) :blue blue)})]
       {:message (str "设置 Blue：" blue " 成功。")
        :status  1
