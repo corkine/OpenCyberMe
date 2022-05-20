@@ -62,7 +62,7 @@
   :target-path "target/%s/"
   :main ^:skip-aot cyberme.core
 
-  :plugins [[lein-shadow "0.4.0"]]
+  :plugins [[lein-shadow "0.4.0"] [lein-cloverage "1.2.3"]]
   :clean-targets ^{:protect false}
   [:target-path "target/cljsbuild"]
   :shadow-cljs
