@@ -20,6 +20,9 @@ jobs:
     - name: Run tests
       run: lein test
       
+    - name: Run coverages
+      run: lein cloverage --codecov
+      
     - uses: codecov/codecov-action@v1.0.2
       with:
         token: ${{secrets.CODECOV_TOKEN}}
