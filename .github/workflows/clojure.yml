@@ -23,7 +23,7 @@ jobs:
     - uses: codecov/codecov-action@v1.0.2
       with:
         token: ${{secrets.CODECOV_TOKEN}}
-        file: ./target/coverage/codecov.json
+        file: target/coverage/codecov.json
 
     - name: Notice to Slack
       id: slack
