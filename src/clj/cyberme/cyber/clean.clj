@@ -13,7 +13,9 @@
             (and MorningCleanFace MorningBrushTeeth) "+1?"
             (and NightBrushTeeth NightCleanFace) "-1!"
             :else "-1!!")
-      (cond (and MorningCleanFace MorningBrushTeeth) "+1?"
+      (cond (and MorningCleanFace MorningBrushTeeth
+                 NightCleanFace NightBrushTeeth) "+1!"
+            (and MorningCleanFace MorningBrushTeeth) "+1?"
             :else "-1?"))))
 
 (defn clean-count [this-year]
