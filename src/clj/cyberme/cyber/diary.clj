@@ -197,8 +197,7 @@
         week-info (db/day-range {:from (first this-week) :to (last this-week)})
         week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
         full-week-info (map #(get week-info-map % {}) this-week)
-        status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)
-        _ (println status)]
+        status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)]
     {:message "获取成功"
      :data    {:status status}
      :status  1}))
