@@ -382,8 +382,6 @@
            :description "用于前端快捷获取最后一条便签，内容将被复制到 message 中。"
            :handler     (fn [_] (hr/response (note/handle-fetch-last-note)))}}]])
 
-
-
 (def movie-route
   ["/movie"
    {:tags #{"电影电视"}}
@@ -506,7 +504,17 @@
             :description "更新当日日报情况"
             :parameters  {:body any?}
             :handler     (fn [{{data :body} :parameters}]
-                           (hr/response (diary/handle-day-work-update data)))}}]])
+                           (hr/response (diary/handle-day-work-update data)))}}]
+
+   ["/plant-week"
+    {:get  {:summary     "获取本周浇花情况"
+            :description "获取本周浇花情况: {:status [0 1 0 1 0 1 0]}"
+            :handler     (fn [_] (hr/response (diary/handle-plant-week)))}
+     :post {:summary     "更新本周浇花情况"
+            :description "不管参数如何，如果今天已经浇花，则设置为未浇花，反之设置为已浇花，返回本周浇花情况"
+            :parameters  {:body any?}
+            :handler     (fn [{{data :body} :parameters}]
+                           (hr/response (diary/handle-plant-week-update-today data)))}}]])
 
 (s/def :diary/id int?)
 

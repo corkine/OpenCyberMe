@@ -344,7 +344,10 @@
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
         {:keys [hint show-pass-percent show-score-percent week-items]}
-        (progress-bar score :goal-active goal-active :goal-cut goal-cut)]
+        (progress-bar score :goal-active goal-active :goal-cut goal-cut)
+        ;;PLANT
+        plant-info @(rf/subscribe [:dashboard/plant-week-data])
+        plant-status (:status (:data plant-info))]
     [:div.container
      [:div.columns
       [:div.column.pr-0
@@ -506,7 +509,17 @@
                   [:<>
                    [:span.has-text-weight-bold.is-family-code "我的一天"
                     [:span.has-text-weight-normal
-                     (gstring/format "（完成 %s / 合计 %s）" finished-count all-count)]
+                     (gstring/format " (%s/%s)" finished-count all-count)]
+                    [:span.has-text-weight-normal.is-size-6.is-clickable
+                     {:on-click #(rf/dispatch [:dashboard/plant-week-set-today])}
+                     " "
+                     [:<>
+                      (for [plant plant-status]
+                        ^{:key (random-uuid)}
+                        [:<>
+                         (if (= plant 1) [:i.fa.fa-pagelines.has-text-success]
+                                         [:i.fa.fa-pagelines {:style {:color "#ddd"}}])])]
+                     " "]
                     (if day-work
                       [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable
                        {:on-click #(do (rf/dispatch [:dashboard/day-work-edit nil])

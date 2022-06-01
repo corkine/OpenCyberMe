@@ -28,3 +28,17 @@
             :clean          :dashboard/day-work-edit-clean
             :success-callback-event [[:dashboard/day-work]]
             :failure-notice true})
+
+(ajax-flow {:call           :dashboard/plant-week
+            :uri-fn         #(str "/cyber/dashboard/plant-week")
+            :is-post        false
+            :data           :dashboard/plant-week-data
+            :clean          :dashboard/plant-week-data-clean
+            :failure-notice true})
+
+(ajax-flow {:call           :dashboard/plant-week-set-today
+            :uri-fn         #(str "/cyber/dashboard/plant-week")
+            :is-post        true
+            :data           :dashboard/plant-week-data
+            :clean          :dashboard/plant-week-data-clean
+            :failure-notice true})

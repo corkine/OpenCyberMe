@@ -18,7 +18,8 @@
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local])
                                              (rf/dispatch [:dashboard/recent])
-                                             (rf/dispatch [:dashboard/day-work]))}]}))]
+                                             (rf/dispatch [:dashboard/day-work])
+                                             (rf/dispatch [:dashboard/plant-week]))}]}))]
 
    ["/properties"
     (merge {:name :properties}

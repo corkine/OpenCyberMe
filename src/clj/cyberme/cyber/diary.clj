@@ -2,7 +2,8 @@
   (:require [cyberme.db.core :as db]
             [clojure.tools.logging :as log]
             [next.jdbc :as jdbc]
-            [cyberme.cyber.inspur :as inspur])
+            [cyberme.cyber.inspur :as inspur]
+            [cyberme.tool :as tool])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time LocalDate LocalDateTime)))
@@ -178,13 +179,51 @@
   (let [is-workday? (inspur/do-need-work (LocalDateTime/now))]
     (if is-workday?
       {:message "获取成功"
-       :data (-> (db/today) :info :day-work)
-       :status 1}
+       :data    (-> (db/today) :info :day-work)
+       :status  1}
       {:message "获取成功(无需工作)"
-       :data "无需日报"
-       :status 1})))
+       :data    "无需日报"
+       :status  1})))
 
 (defn handle-day-work-update [data]
   (let [res (db/set-someday-info {:day (LocalDate/now) :info {:day-work data}})]
     {:message (str "更新成功: " res)
-     :status 1}))
+     :status  1}))
+
+(defn handle-plant-week
+  "查找 day 数据库获取本周浇花情况，返回 {:status [0 1 0 1 0 0]}"
+  []
+  (let [this-week (tool/all-week-day)
+        week-info (db/day-range {:from (first this-week) :to (last this-week)})
+        week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
+        full-week-info (map #(get week-info-map % {}) this-week)
+        status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)
+        _ (println status)]
+    {:message "获取成功"
+     :data    {:status status}
+     :status  1}))
+
+(defn handle-plant-week-update-today
+  "更新当日浇花情况（浇了改为没浇，没浇改为浇了），并查找 day 数据库获取本周浇花情况，返回 {:status [0 1 0 1 0 0]}"
+  [data]
+  (try
+    (let [today-info (:info (db/today))
+          non-plant? (nil? (:plant today-info))
+          _ (db/set-someday {:day  (LocalDate/now)
+                             :info (if non-plant?
+                                     (assoc today-info :plant 1)
+                                     (dissoc today-info :plant))})]
+      (let [this-week (tool/all-week-day)
+            week-info (db/day-range {:from (first this-week) :to (last this-week)})
+            week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
+            full-week-info (map #(get week-info-map % {}) this-week)
+            status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)]
+        {:message (format "之前%s, 现已更新为%s。" (if non-plant? "没浇花" "浇花了")
+                          (if-not non-plant? "没浇花" "浇花了"))
+         :data    {:status status}
+         :status  1}))
+    (catch Exception e
+      (log/error e)
+      {:message (str "遇到了一些错误: " (.getMessage e))
+       :data    {:status [0 0 0 0 0 0]}
+       :status  0})))
