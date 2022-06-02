@@ -183,7 +183,7 @@
                                 (.toLocalDate (of22 (first %) (second %))))
                      (partition 2 (vec d)))
                    (= hint :range)
-                   (and (.isAfter time (of22 (first d) (second d)))
+                   (and (not (.isBefore time (of22 (first d) (second d))))
                         (.isBefore time (.plusDays (of22 (nth d 2) (last d)) 1)))
                    (= hint :weekend)
                    (let [week (.getDayOfWeek time)]
