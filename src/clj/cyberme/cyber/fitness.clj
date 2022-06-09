@@ -89,6 +89,28 @@
   (let [data (db/recent-activity {:day day})]
     (map #(update % :date str) data)))
 
+(def todo-filter #(let [{:keys [list status title]} %]
+                    (and
+                      (and list status title)
+                      (str/includes? list "事项")
+                      (= status "completed")
+                      (str/includes? title "锻炼"))))
+
+(def update-to-do-item (fn [to-do-map] {:active      600
+                                        :rest        4000
+                                        :diet        100
+                                        :from-todo   true
+                                        :origin-todo to-do-map}))
+
+(defn today-active-by-todo
+  "返回当日从 TO-DO 中获取的健身记录，格式为 {:active :rest :diet :from-todo :origin-todo}"
+  []
+  (let [todo-info (get (todo/handle-recent {:day 1}) (tool/today-str))
+        active-todos (filterv todo-filter todo-info)]
+    (if (empty? active-todos)
+      {}
+      (update-to-do-item active-todos))))
+
 (defn today-active
   "获取今日的活动记录，格式 {:active, :rest, :diet, :goal-active, :goal-cut}"
   []
@@ -98,11 +120,12 @@
                  (filter #(and (= (:date %) today)
                                (= (:category %) cate))
                          recent))]
-    {:active      (or (:sum (first (in-cat "activeactivity"))) 0.0)
-     :rest        (or (:sum (first (in-cat "restactivity"))) 0.0)
-     :diet        (or (:sum (first (in-cat "dietaryenergy"))) 0.0)
-     :goal-active goal-active
-     :goal-cut    goal-cut}))
+    (merge {:active      (or (:sum (first (in-cat "activeactivity"))) 0.0)
+            :rest        (or (:sum (first (in-cat "restactivity"))) 0.0)
+            :diet        (or (:sum (first (in-cat "dietaryenergy"))) 0.0)
+            :goal-active goal-active
+            :goal-cut    goal-cut}
+           (today-active-by-todo))))
 
 (defn week-active-by-todo
   "从 Microsoft TODO 待办事项的包含 事项 的列表中获取带有 锻炼 的事项，将此事项的 due_at 看做其日期，如果其已经完成，则看做新条目
@@ -113,10 +136,6 @@
         ;                  :list String, :status completed/..,
         ;                  :due_at LDT, :create_at LDT, :importance high/..}]}
         todo-map (todo/handle-recent 8)
-        todo-filter #(let [{:keys [list status title]} %]
-                       (and (str/includes? list "事项")
-                            (= status "completed")
-                            (str/includes? title "锻炼")))
         update-to-do-item (fn [to-do-map] {:active      (+ goal-active 500)
                                            :rest        (+ goal-active 10000)
                                            :diet        100
