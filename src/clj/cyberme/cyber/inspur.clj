@@ -210,20 +210,25 @@
   [hcm-info is-today-and-need-work]
   (let [hcm-info (sort-by :time hcm-info)
         datetime>12 #(.isAfter (.toLocalTime ^LocalDateTime %) (LocalTime/of 12 0))
-        time>12 #(.isAfter ^LocalTime % (LocalTime/of 12 0))]
+        time>12 #(.isAfter ^LocalTime % (LocalTime/of 12 0))
+        time<8:30 #(.isBefore ^LocalTime % (LocalTime/of 8 30))
+        time-now (LocalTime/now)]
     ;;工作时长计算：无数据返回 0，有数据则开始计算。
     ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
-    (if (and (empty? hcm-info) (not is-today-and-need-work))
-      0.0                                                   ;当日无需工作
+    (if (and (empty? hcm-info)
+             (or
+               (not is-today-and-need-work)
+               (and is-today-and-need-work (time<8:30 time-now))))
+      0.0                                                   ;空数据且当日无需工作或空数据且未到时间
       (let [[start end] (cond (empty? hcm-info)
-                              [(LocalTime/of 8 30) (LocalTime/now)]  ;忘了打上班卡且还没下班
+                              [(LocalTime/of 8 30) time-now] ;空数据且忘了打上班卡并还没下班
                               (= (count hcm-info) 1)
                               (let [^LocalDateTime dt (-> hcm-info first :time)
                                     dt-time (.toLocalTime dt)
                                     is-today? (.isEqual (.toLocalDate dt) (LocalDate/now))]
                                 (if (time>12 dt-time)
                                   [(LocalTime/of 8 30) dt-time] ;没打上班卡但打了一次下班卡
-                                  [dt-time (if is-today? (LocalTime/now) (LocalTime/of 17 30))])) ;正常工作没下班 or 非今天忘记打下班卡
+                                  [dt-time (if is-today? time-now (LocalTime/of 17 30))])) ;正常工作没下班 or 非今天忘记打下班卡
                               (datetime>12 (-> hcm-info first :time)) ;没打上班卡但打了多次下班卡
                               [(LocalTime/of 8 30) (.toLocalTime ^LocalDateTime (-> hcm-info last :time))]
                               :else                         ;正常打了上下班卡
