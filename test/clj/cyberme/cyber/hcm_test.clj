@@ -69,6 +69,112 @@
             {:keys [message status]} (inspur/handle-serve-set-auto data)]
         (is (str/includes? message "不合法"))))))
 
+(deftest compute-work-hour-test
+  (let [t6:30 (LocalTime/of 6 30)
+        t7:00 (LocalTime/of 7 00)
+        t7:30 (LocalTime/of 7 30)
+        t8:20 (LocalTime/of 8 20)
+        t8:30 (LocalTime/of 8 30)
+        t9:30 (LocalTime/of 9 30)
+        t10:00 (LocalTime/of 10 00)
+        t12:00 (LocalTime/of 12 00)
+        t13:10 (LocalTime/of 13 10)
+        t17:30 (LocalTime/of 17 30)
+        t19:30 (LocalTime/of 19 30)
+        t20:00 (LocalTime/of 20 00)
+        t->dt #(.atTime (inspur/ld-now) %)]
+    (testing "正常上班：未打上班卡"
+      (with-redefs [inspur/lt-now (fn [] t7:00)]
+        (let [hcm-info []
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 0.0)))))
+    (testing "正常上班：已打上班卡"
+      (with-redefs [inspur/lt-now (fn [] t8:30)]
+        (let [hcm-info [{:time (t->dt t8:20)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 0.2)))))
+    (testing "正常上班：未打下班卡"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t8:20)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 9.0)))))
+    (testing "正常上班：已打下班卡"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t8:20)}
+                        {:time (t->dt t17:30)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 7.5)))))
+
+    (testing "非工作日：未打上班卡"
+      (with-redefs [inspur/lt-now (fn [] t10:00)]
+        (let [hcm-info []
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 0.0)))))
+    (testing "非工作日：已打上班卡"
+      (with-redefs [inspur/lt-now (fn [] t10:00)]
+        (let [hcm-info [{:time (t->dt t9:30)}]
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 0.5)))))
+    (testing "非工作日：未打下班卡"
+      (with-redefs [inspur/lt-now (fn [] t17:30)]
+        (let [hcm-info [{:time (t->dt t9:30)}]
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 6.3)))))
+    (testing "非工作日：已打下班卡"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t9:30)}
+                        {:time (t->dt t17:30)}]
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 6.3)))))
+
+    (testing "工作日忘打上午卡，未上班(if1)"
+      (with-redefs [inspur/lt-now (fn [] t8:20)]
+        (let [hcm-info []
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 0.0)))))
+    (testing "非工作日没打卡(if1)"
+      (with-redefs [inspur/lt-now (fn [] t13:10)]
+        (let [hcm-info []
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 0.0)))))
+    (testing "工作日忘打上午卡，正上班(cond1)"
+      (with-redefs [inspur/lt-now (fn [] t10:00)]
+        (let [hcm-info []
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 1.5)))))
+    (testing "工作日忘打上午卡，加班中(cond1)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info []
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 8.8)))))
+    (testing "工作日忘打上午卡，打了一次下班卡(cond2-1)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t17:30)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 7.3)))))
+    (testing "工作日忘打下班卡(cond2-2-1)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t8:20)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 9.0)))))
+    (testing "非工作日忘打下班卡(cond2-2-2)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (LocalDateTime/of 2000 01 01 8 20)}]
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 7.5)))))
+    (testing "工作日忘打上午卡，打了两次下班卡(cond3)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t17:30)}
+                        {:time (t->dt t19:30)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 8.3)))))
+    (testing "工作日/非工作日正常打卡(cond3)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (LocalDateTime/of 2000 01 01 8 20)}
+                        {:time (LocalDateTime/of 2000 01 01 17 30)}]
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 7.5)))))))
+
 (deftest get-hcm-info
   (let [a (atom {})
         set (fn ([p v] (swap! a assoc p v) v)

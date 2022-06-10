@@ -55,7 +55,7 @@
   ;               ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]
 
   :min-lein-version "2.0.0"
-  
+
   :source-paths ["src/clj" "src/cljs" "src/cljc"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
@@ -69,19 +69,19 @@
   {:nrepl {:port 7002}
    :builds
    {:app
-    {:target :browser
+    {:target     :browser
      :output-dir "target/cljsbuild/public/js"
      :asset-path "/js"
-     :modules {:app {:entries [cyberme.app]}}
+     :modules    {:app {:entries [cyberme.app]}}
      :devtools
      {:watch-dir "resources/public" :preloads [re-frisk.preload]}
      :dev
      {:closure-defines {"re_frame.trace.trace_enabled_QMARK_" true}}}
     :test
-    {:target :node-test
+    {:target    :node-test
      :output-to "target/test/test.js"
-     :autorun true}}}
-  
+     :autorun   true}}}
+
   :npm-deps [[xregexp "5.1.0"]
              [echarts "5.3.0"]
              [echarts-liquidfill "3.1.0"]
@@ -93,39 +93,101 @@
   :npm-dev-deps [[xmlhttprequest "1.8.0"]]
 
   :profiles
-  {:uberjar {:omit-source true
-             :prep-tasks ["compile" ["shadow" "release" "app"]]
-             
-             :aot :all
-             :uberjar-name "cyberme.jar"
-             :source-paths ["env/prod/clj"  "env/prod/cljs"]
-             :resource-paths ["env/prod/resources"]}
+  {:uberjar       {:omit-source    true
+                   :prep-tasks     ["compile" ["shadow" "release" "app"]]
+
+                   :aot            :all
+                   :uberjar-name   "cyberme.jar"
+                   :source-paths   ["env/prod/clj" "env/prod/cljs"]
+                   :resource-paths ["env/prod/resources"]}
 
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
-   :project/dev  {:jvm-opts ["-Dconf=dev-config.edn"]
-                  :dependencies [[binaryage/devtools "1.0.2"]
-                                 [cider/piggieback "0.5.2"]
-                                 [pjstadig/humane-test-output "0.10.0"]
-                                 [prone "2020-01-17"]
-                                 [re-frisk "1.3.5"]
-                                 [ring/ring-devel "1.8.2"]
-                                 [ring/ring-mock "0.4.0"]]
-                  :plugins      [[com.jakemccrary/lein-test-refresh "0.24.1"]
-                                 [jonase/eastwood "0.3.5"]] 
-                  
-                  
-                  :source-paths ["env/dev/clj"  "env/dev/cljs" "test/cljs"]
-                  :resource-paths ["env/dev/resources"]
-                  :repl-options {:init-ns user
-                                 :timeout 120000}
-                  :injections [(require 'pjstadig.humane-test-output)
-                               (pjstadig.humane-test-output/activate!)]}
-   :project/test {:jvm-opts ["-Dconf=test-config.edn"]
-                  :resource-paths ["env/test/resources"]}
-                  
-                  
+   :project/dev   {:jvm-opts       ["-Dconf=dev-config.edn"]
+                   :dependencies   [[binaryage/devtools "1.0.2"]
+                                    [cider/piggieback "0.5.2"]
+                                    [pjstadig/humane-test-output "0.10.0"]
+                                    [prone "2020-01-17"]
+                                    [re-frisk "1.3.5"]
+                                    [ring/ring-devel "1.8.2"]
+                                    [ring/ring-mock "0.4.0"]]
+                   :plugins        [[com.jakemccrary/lein-test-refresh "0.24.1"]
+                                    [jonase/eastwood "0.3.5"]]
 
-   :profiles/dev {}
-   :profiles/test {}})
+
+                   :source-paths   ["env/dev/clj" "env/dev/cljs" "test/cljs"]
+                   :resource-paths ["env/dev/resources"]
+                   :repl-options   {:init-ns user
+                                    :timeout 120000}
+                   :injections     [(require 'pjstadig.humane-test-output)
+                                    (pjstadig.humane-test-output/activate!)]}
+   :project/test  {:jvm-opts       ["-Dconf=test-config.edn"]
+                   :resource-paths ["env/test/resources"]}
+
+
+
+   :profiles/dev  {}
+   :profiles/test {}}
+
+  :test-refresh {;; Specifies a command to run on test
+                 ;; failure/success. Short message is passed as the
+                 ;; last argument to the command.
+                 ;; Defaults to no command.
+                 ;:notify-command    ["terminal-notifier" "-title" "Tests" "-message"]
+
+                 ;; set to true to send notifications to growl
+                 ;; Defaults to false.
+                 :growl             false
+
+                 ;; only growl and use the notify command if there are
+                 ;; failures.
+                 ;; Defaults to true.
+                 :notify-on-success false
+
+                 ;; Stop clojure.test from printing
+                 ;; "Testing namespace.being.tested". Very useful on
+                 ;; codebases with many test namespaces.
+                 ;; Defaults to false.
+                 :quiet             true
+
+                 ;; If this is specified then only tests in namespaces
+                 ;; that were just reloaded by tools.namespace
+                 ;; (namespaces where a change was detected in it or a
+                 ;; dependent namespace) are run. This can also be
+                 ;; passed as a command line option: lein test-refresh :changes-only.
+                 :changes-only      true
+
+                 ;; If specified, binds value to clojure.test/*stack-trace-depth*
+                 :stack-trace-depth nil
+
+                 ;; specifiy a custom clojure.test report method
+                 ;; Specify the namespace and multimethod that will handle reporting
+                 ;; from test-refresh.  The namespace must be available to the project dependencies.
+                 ;; Defaults to no custom reporter
+                 ;:report            myreport.namespace/my-report
+
+                 ;; If set to a truthy value, then lein test-refresh
+                 ;; will only run your tests once. Also supported as a
+                 ;; command line option. Reasoning for feature can be
+                 ;; found in PR:
+                 ;; https://github.com/jakemcc/lein-test-refresh/pull/48
+                 ;:run-once          true
+
+                 ;; If given, watch for changes only in the given
+                 ;; folders. By default, watches for changes on entire
+                 ;; classpath.
+                 ;:watch-dirs        ["src" "test"]
+
+                 ;; If given, only refresh code in the given
+                 ;; directories. By default every directory on the
+                 ;; classpath is refreshed. Value is passed through to clojure.tools.namespace.repl/set-refresh-dirs
+                 ;; https://github.com/clojure/tools.namespace/blob/f3f5b29689c2bda53b4977cf97f5588f82c9bd00/src/main/clojure/clojure/tools/namespace/repl.clj#L164
+                 ;:refresh-dirs      ["src" "test"]
+
+
+                 ;; Use this flag to specify your own flag to add to
+                 ;; cause test-refresh to focus. Intended to be used
+                 ;; to let you specify a shorter flag than the default
+                 ;; :test-refresh/focus.
+                 :focus-flag        :test-refresh/focus})
