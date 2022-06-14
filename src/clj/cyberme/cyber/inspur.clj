@@ -215,7 +215,7 @@
   "计算工作时长，精确计算，用于自我统计"
   [hcm-info is-today-and-need-work]
   (let [hcm-info (sort-by :time hcm-info)
-        datetime>12 #(.isAfter (.toLocalTime ^LocalDateTime %) (LocalTime/of 12 0))
+        datetime>17 #(.isAfter (.toLocalTime ^LocalDateTime %) (LocalTime/of 17 0))
         time>12 #(.isAfter ^LocalTime % (LocalTime/of 12 0))
         time<8:30 #(.isBefore ^LocalTime % (LocalTime/of 8 30))
         time-now (lt-now)]
@@ -235,18 +235,20 @@
                                 (if (time>12 dt-time)
                                   [(LocalTime/of 8 30) dt-time] ;没打上班卡但打了一次下班卡
                                   [dt-time (if is-today? time-now (LocalTime/of 17 30))])) ;正常工作没下班 or 非今天忘记打下班卡
-                              (datetime>12 (-> hcm-info first :time)) ;没打上班卡但打了多次下班卡
+                              (datetime>17 (-> hcm-info first :time)) ;没打上班卡但打了多次下班卡
                               [(LocalTime/of 8 30) (.toLocalTime ^LocalDateTime (-> hcm-info last :time))]
-                              :else                         ;正常打了上下班卡
+                              :else                         ;正常打了上下班卡, 上了下午的半天班
                               [(.toLocalTime ^LocalDateTime (-> hcm-info first :time))
                                (.toLocalTime ^LocalDateTime (-> hcm-info last :time))])
             ;如果 end < 11:30 的，则 - 0
             ;如果 end < 13:10 的，则 - 当前时间-11:30 的时间
-            ;如果 end < 17:30 的，则 - 午休时间
-            ;如果 end < 18:30 的，则 - 当前时间-17:30 的时间和午休时间
-            ;如果 end > 18:30 的，则减去晚饭时间和午休时间
+            ;如果 before<11:30, end < 17:30 的，则 - 午休时间
+            ;如果 before<11:30, end < 18:30 的，则 - 当前时间-17:30 的时间和午休时间
+            ;如果 before<11:30, end > 18:30 的，则减去晚饭时间和午休时间
+            ;上述三者如果 before>11:30 表示上午没上班，不减去午休时间
             noon-time (.toMinutes (Duration/between (LocalTime/of 11 30)
                                                     (LocalTime/of 13 10)))
+            noon-time (if (.isAfter start (LocalTime/of 11 30)) 0 noon-time)
             diner-time (.toMinutes (Duration/between (LocalTime/of 17 30)
                                                      (LocalTime/of 18 30)))
             minusMinutes

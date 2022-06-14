@@ -168,12 +168,30 @@
                         {:time (t->dt t19:30)}]
               work-hour (inspur/compute-work-hour hcm-info true)]
           (is (= work-hour 8.3)))))
-    (testing "工作日/非工作日正常打卡(cond3)"
+    (testing "工作日只上了下午半天班(cond4-1,不包含午休)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t13:10)}
+                        {:time (t->dt t19:30)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 5.3)))))
+    (testing "工作日上了大半天班(cond4-1,去除午休)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (t->dt t10:00)}
+                        {:time (t->dt t19:30)}]
+              work-hour (inspur/compute-work-hour hcm-info true)]
+          (is (= work-hour 6.8)))))
+    (testing "工作日/非工作日正常打卡(cond4-2,去除午休)"
       (with-redefs [inspur/lt-now (fn [] t20:00)]
         (let [hcm-info [{:time (LocalDateTime/of 2000 01 01 8 20)}
                         {:time (LocalDateTime/of 2000 01 01 17 30)}]
               work-hour (inspur/compute-work-hour hcm-info false)]
-          (is (= work-hour 7.5)))))))
+          (is (= work-hour 7.5)))))
+    (testing "工作日/非工作日正常打卡(cond4-2,去除午休和晚上吃饭)"
+      (with-redefs [inspur/lt-now (fn [] t20:00)]
+        (let [hcm-info [{:time (LocalDateTime/of 2000 01 01 8 20)}
+                        {:time (LocalDateTime/of 2000 01 01 19 30)}]
+              work-hour (inspur/compute-work-hour hcm-info false)]
+          (is (= work-hour 8.5)))))))
 
 (deftest get-hcm-info
   (let [a (atom {})
