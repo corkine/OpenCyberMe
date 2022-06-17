@@ -39,6 +39,15 @@
 (ajax-flow {:call           :dashboard/plant-week-set-today
             :uri-fn         #(str "/cyber/dashboard/plant-week")
             :is-post        true
-            :data           :dashboard/plant-week-data
-            :clean          :dashboard/plant-week-data-clean
+            :data           :dashboard/plant-week-set-data
+            :clean          :dashboard/plant-week-set-data-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice true})
+
+(ajax-flow {:call           :dashboard/learn-week-set-today
+            :uri-fn         #(str "/cyber/dashboard/learn-week")
+            :is-post        true
+            :data           :dashboard/learn-week-data
+            :clean          :dashboard/learn-week-data-clean
+            :success-callback-event [[:dashboard/plant-week]]
             :failure-notice true})

@@ -190,16 +190,24 @@
     {:message (str "更新成功: " res)
      :status  1}))
 
-(defn handle-plant-week
-  "查找 day 数据库获取本周浇花情况，返回 {:status [0 1 0 1 0 0]}"
+(defn handle-plant-learn-week
+  "查找 day 数据库获取本周浇花和学习情况，返回 {:status [0 1 0 1 0 0], :learn :done/:not-done}"
   []
   (let [this-week (tool/all-week-day)
         week-info (db/day-range {:from (first this-week) :to (last this-week)})
         week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
         full-week-info (map #(get week-info-map % {}) this-week)
-        status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)]
+        status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)
+        ;learn-done (some #(-> % :info :learn nil? not) full-week-info)
+        ;每周可能有多次学习，每次学习开始，标记当天 :learn-request true, 上一个学习
+        ;完成，标记当天 :learn-done true，这里的 true 无意义，只要存在 key 即可
+        ;学习完成意味着每周的 :learn-request count= :learn-done
+        count-learn-req (count (filterv #(-> % :info :learn-request nil? not) full-week-info))
+        count-learn-done (count (filterv #(-> % :info :learn-done nil? not) full-week-info))
+        learn-done (= count-learn-req count-learn-done)]
     {:message "获取成功"
-     :data    {:status status}
+     :data    {:status status
+               :learn  (if learn-done :done :not-done)}
      :status  1}))
 
 (defn handle-plant-week-update-today
@@ -225,4 +233,29 @@
       (log/error e)
       {:message (str "遇到了一些错误: " (.getMessage e))
        :data    {:status [0 0 0 0 0 0]}
+       :status  0})))
+
+(defn handle-set-today-learn
+  "设置今日开始、结束一项学习"
+  [{:keys [start non-start end non-end]}]
+  (try
+    (jdbc/with-transaction
+      [t db/*db*]
+      (let [today-info (:info (db/today t))
+            today-info (if start (assoc today-info :learn-request true) today-info)
+            today-info (if non-start (dissoc today-info :learn-request) today-info)
+            today-info (if end (assoc today-info :learn-done true) today-info)
+            today-info (if non-end (dissoc today-info :learn-done) today-info)
+            ;如果本周当前已经平衡，则不允许设置 end 为 true，换言之没有 request 去 end
+            _ (if (and end
+                       (= :done (-> (handle-plant-learn-week) :data :learn)))
+                (throw (RuntimeException. "没有尚未完成的任务需要标记完成。")))
+            _ (db/set-someday t {:day  (LocalDate/now)
+                                 :info today-info})]
+        {:message (format "更新当日学习成功。 req: %s, done: %s"
+                          (:learn-request today-info)
+                          (:learn-done today-info))
+         :status  1}))
+    (catch Exception e
+      {:message (format "更新当日学习失败。 %s" e)
        :status  0})))

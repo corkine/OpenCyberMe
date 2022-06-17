@@ -347,7 +347,8 @@
         (progress-bar score :goal-active goal-active :goal-cut goal-cut)
         ;;PLANT
         plant-info @(rf/subscribe [:dashboard/plant-week-data])
-        plant-status (:status (:data plant-info))]
+        plant-status (:status (:data plant-info))
+        learn-done (= "done" (:learn (:data plant-info)))]
     [:div.container
      [:div.columns
       [:div.column.pr-0
@@ -529,7 +530,24 @@
                        {:on-click #(do (rf/dispatch [:global/notice {:message "已经完成日报吗？"
                                                                      :callback [:dashboard/day-work-edit "已完成日报"]}])
                                        (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
-                       "没有日报"])]
+                       "没有日报"])
+                    [:span " "]
+                    (if learn-done
+                      [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable.dui-tips
+                       {:on-click #(do (rf/dispatch [:dashboard/learn-week-set-today {:non-end true}]))
+                        :data-tooltip "已完成本周一学"}
+                       "TRAIN-WEEK"]
+                      [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable.dui-tips
+                       {:on-click #(do (rf/dispatch [:global/notice {:message "已经完成每周一学任务了吗？"
+                                                                     :callback [:dashboard/learn-week-set-today {:end true}]}])
+                                       (.open js/window "https://edu.inspur.com" "_blank"))
+                        :data-tooltip "未完成本周一学!"}
+                       "TRAIN-WEEK!!"])
+                    [:span " "]
+                    [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable.dui-tips
+                     {:on-click #(do (rf/dispatch [:dashboard/learn-week-set-today {:start true}]))
+                      :data-tooltip "新建学习请求"}
+                     "+"]]
                    (for [{:keys [title status list] :as todo} data]
                      ^{:key todo}
                      [:p.mt-1
