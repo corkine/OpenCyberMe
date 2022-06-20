@@ -506,7 +506,12 @@
                                                 (str/includes? (:list %) "任务")))
                                          (= (:importance %) "high")) data)
                       finished-count (count (filter #(= (:status %) "completed") data))
-                      all-count (count data)]
+                      all-count (count data)
+                      data (sort (fn [{s1 :status c1 :create_at :as a1} {s2 :status c2 :create_at :as a2}]
+                                   (cond (= s1 s2) (compare c2 c1)
+                                         (= "completed" s1) 100
+                                         (= "completed" s2) -100
+                                         :else (compare a1 a2))) data)]
                   [:<>
                    [:span.has-text-weight-bold.is-family-code "我的一天"
                     [:span.has-text-weight-normal
@@ -566,7 +571,14 @@
                        :else day)]
                 (let [data (get todo day)
                       data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
-                                           (str/includes? (:list %) "任务"))) data)]
+                                           (str/includes? (:list %) "任务"))) data)
+                      #_data #_(sort (fn [{s1 :status c1 :create_at l1 :list} {s2 :status c2 :create_at l2 :list}]
+                                   (cond (= l1 l2)
+                                         (cond (and (= "completed" s1) (= s1 s2)) (compare c2 c1)
+                                               (= "completed" s1) 100
+                                               (= "completed" s2) -100
+                                               :else (compare c2 c1))
+                                         :else (compare l1 l2))) data)]
                   (for [{:keys [time finish_at modified_at create_at
                                 title status list importance] :as todo} data]
                     ^{:key todo}
