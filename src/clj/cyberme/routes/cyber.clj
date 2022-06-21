@@ -24,7 +24,8 @@
     [cyberme.cyber.clean :as clean]
     [cyberme.cyber.fitness :as fitness]
     [cyberme.cyber.diary :as diary]
-    [clojure.tools.logging :as log])
+    [clojure.tools.logging :as log]
+    [cyberme.cyber.psych :as psych])
   (:import (java.time LocalDate)))
 
 (s/def :global/user string?)
@@ -522,7 +523,14 @@
             是否标记一项新学习、取消此新学习，结束此学习、取消结束此学习。每天最多一次学习。"
             :parameters  {:body any?}
             :handler     (fn [{{data :body} :parameters}]
-                           (hr/response (diary/handle-set-today-learn data)))}}]])
+                           (hr/response (diary/handle-set-today-learn data)))}}]
+
+   ["/psych-data-upload"
+    {:post {:summary     "实验数据上传"
+            :description "上传实验数据，数据可能有重复。"
+            :parameters  {:body any?}
+            :handler     (fn [{{data :body} :parameters}]
+                           (hr/response (psych/add-log data)))}}]])
 
 (s/def :diary/id int?)
 

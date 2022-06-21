@@ -12,6 +12,7 @@
     [cyberme.work.whole :as work-all]
     [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
+    [cyberme.psych.exp1.main :as exp1]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -280,3 +281,8 @@
      (str "© 2016-2022 "
           "Marvin Studio."
           " All Right Reserved.")]]])
+
+(defn psy-exp-page []
+  [:<>
+   [top-point]
+   [exp1/root]])

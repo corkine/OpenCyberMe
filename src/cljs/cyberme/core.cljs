@@ -27,7 +27,8 @@
     [cyberme.router :as share]
     [cyberme.modals :as modals]
     [cyberme.login.core :as login]
-    [cyberme.validation :as va])
+    [cyberme.validation :as va]
+    [clojure.string :as str])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -167,9 +168,10 @@
 
 (defn page []
   (if-let [page @(rf/subscribe [:common/page])]
-    [:div
-     [navbar]
-     [page]]))
+    (let [hidden_nav (str/includes? (str page) "psy")]
+      [:div
+       (if-not hidden_nav [navbar])
+       [page]])))
 
 (defn navigate! [match _]
   (rf/dispatch [:common/navigate match]))

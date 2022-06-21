@@ -128,6 +128,12 @@
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local]))}]}))]
 
+   ["/psych-exp"
+    (merge {:name :psych-exp}
+           #?(:cljs {:view        #'core/psy-exp-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
+
    ["/cook"
     (merge {:name :cook}
            #?(:cljs {:view        #'core/cook-page
