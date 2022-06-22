@@ -131,7 +131,10 @@
    ["/psych-exp"
     (merge {:name :psych-exp}
            #?(:cljs {:view        #'core/psy-exp-page
-                     :controllers [{:start (fn [_]
+                     :controllers [{:parameters {:query [:debug]}
+                                    :start (fn [{{debug :debug} :query}]
+                                             (if (= "true" debug)
+                                               (reset! cyberme.psych.exp1.main/is-debug true))
                                              (rf/dispatch [:user/fetch-from-local]))}]}))]
 
    ["/cook"

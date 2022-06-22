@@ -94,6 +94,7 @@
     "/api/api-docs/" true
     "/cyber/swagger.json" true
     "/api/swagger.json" true
+    "/cyber/dashboard/psych-data-upload" true
     false))
 
 (defn wrap-basic-authentication

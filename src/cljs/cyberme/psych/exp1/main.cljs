@@ -7,14 +7,14 @@
 "实验设计：第一屏收集用户信息，之后点击按钮开始，接着呈现前测问卷、题目和后测问卷，最后是结束语。
 对于题目而言，依次作答，如果正确则继续，如果错误则按照实验条件不同进行不同反馈，包括给予纠错提示、正确答案、作答次数 1/2 等。"
 
-(def is-debug true)
+(defonce is-debug (atom false))
 
 (defn questionnaire-1 [len title]
   [:div {:style {:margin-top :10em
                  :background "rgb(249, 249, 249)"}}
-   (if is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
-                 [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
-                 [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
+   (if @is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
+                  [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
+                  [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
    (r/with-let
      [answer (r/atom {})]
      [:<>
@@ -80,48 +80,54 @@
    (hint title sub-title btn-title #(rf/dispatch [:go-step 1])))
   ([title sub-title btn-title btn-action]
    [:div {:style {:margin-top :20% :text-align :center}}
-    (if is-debug
+    (if @is-debug
       [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
       [:p.title title])
-    [:p.subtitle.is-6.mt-1.pl-1 {:style {:margin :auto :width :30em}} sub-title]
+    [:p.subtitle.is-6.mt-1 {:style {:margin :auto :width :30em}} sub-title]
     (if btn-title
       [:button.button.is-info.mt-5
        {:on-click btn-action} btn-title])]))
 
-(defn upload
-  [title sub-title upload-event]
-  (let [data @(rf/subscribe upload-event)
-        _ (println "all result is" data)
-        _ (if data
-            (rf/dispatch [:psy-exp-data-upload (merge data {:upload_at (t/time-now)})]))
-        callback @(rf/subscribe [:psy-exp-data-callback])]
-    [:div {:style {:margin-top :20% :text-align :center}}
-     (if is-debug
-       [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
-       [:p.title title])
-     (if callback
-       [:p.subtitle.is-6.mt-1.pl-1 {:style {:margin :auto :width :30em}} (:message callback)]
-       [:p.subtitle.is-6.mt-1.pl-1 {:style {:margin :auto :width :30em}} sub-title])
-     (if callback
-       [:button.button.is-info.mt-5
-        {:on-click #(js/alert "请联系主试人员！")} "结束实验"]
-       [:button.button.is-info.mt-5
-        {:on-click #(if data
-                      (rf/dispatch [:psy-exp-data-upload (merge data {:upload_at (t/time-now)})]))}
-        "重新上传数据"])]))
+(defn upload []
+  (r/create-class
+    {:component-did-mount
+     (fn [this]
+       (let [data @(rf/subscribe [:get-answer])
+             _ (println "all result is" data)]
+         (if data
+           (rf/dispatch [:psy-exp-data-upload (merge data {:upload_at (t/time-now)})]))))
+     :reagent-render
+     (fn [title sub-title]
+       (let [data @(rf/subscribe [:get-answer])
+             callback @(rf/subscribe [:psy-exp-data-callback])]
+         [:div {:style {:margin-top :20% :text-align :center}}
+          (if @is-debug
+            [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
+            [:p.title title])
+          (if callback
+            [:p.subtitle.is-6.mt-1 {:style {:margin :auto :width :30em}} (:message callback)]
+            [:p.subtitle.is-6.mt-1 {:style {:margin :auto :width :30em}} sub-title])
+          (if callback
+            [:button.button.is-danger.mt-5
+             {:on-click #(js/alert "实验结束，请联系主试人员！")} "实验已结束"]
+            [:button.button.is-info.mt-5
+             {:on-click #(if data
+                           (rf/dispatch [:psy-exp-data-upload (merge data {:upload_at (t/time-now)})]))}
+             "重新上传数据"])]))}))
 
 (defn collect []
   (r/with-let
-    [answer (r/atom {:gender "男" :grade "初中一年级"})
+    ;UUID 为了防止最后因为网络问题提交多次
+    [answer (r/atom {:gender "男" :grade "初中一年级" :uuid (str (random-uuid))})
      name (r/cursor answer [:name])
      gender (r/cursor answer [:gender])
      grade (r/cursor answer [:grade])
      school (r/cursor answer [:school])]
     [:div {:style {:max-width :60%
                    :margin    "20% auto"}}
-     (if is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
-                   [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
-                   [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
+     (if @is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
+                    [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
+                    [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
      [:div.field.is-horizontal
       [:div.field-label.is-normal
        [:label.label "姓名"]]
@@ -149,7 +155,11 @@
                   :on-change #(reset! grade (.. % -target -value))}
          [:option "初中一年级"]
          [:option "初中二年级"]
-         [:option "初中三年级"]]]]]
+         [:option "初中三年级"]
+         [:option "高中一年级"]
+         [:option "高中二年级"]
+         [:option "高中三年级"]
+         [:option "其他"]]]]]
      [:div.field.is-horizontal
       [:div.field-label.is-normal
        [:label.label "学校"]]
@@ -288,7 +298,7 @@
    {:type   :questionnaire
     :widget [questionnaire-1 4 "后测问卷"]}
    {:type   :upload
-    :widget [upload "上传数据" "正在上传数据，请勿关闭此页面！" [:get-answer]]}])
+    :widget [upload "上传数据" "正在上传数据，请勿关闭此页面！"]}])
 
 (defn root []
   [:div {:style {:position :absolute :top :0px :left :0px :right :0px :bottom :0px :background :#f9f9f9}}

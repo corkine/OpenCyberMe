@@ -214,11 +214,14 @@
 (defn compute-work-hour
   "计算工作时长，精确计算，用于自我统计"
   [hcm-info is-today-and-need-work]
-  (let [hcm-info (sort-by :time hcm-info)
+  (let [time-now (lt-now)
+        date-now (ld-now)
+        hcm-info (sort-by :time hcm-info)
         datetime>17 #(.isAfter (.toLocalTime ^LocalDateTime %) (LocalTime/of 17 0))
+        datetime<9-today! #(and (.isBefore (.toLocalTime ^LocalDateTime %) (LocalTime/of 9 0))
+                                (.isEqual (.toLocalDate ^LocalDateTime %) date-now))
         time>12 #(.isAfter ^LocalTime % (LocalTime/of 12 0))
-        time<8:30 #(.isBefore ^LocalTime % (LocalTime/of 8 30))
-        time-now (lt-now)]
+        time<8:30 #(.isBefore ^LocalTime % (LocalTime/of 8 30))]
     ;;工作时长计算：无数据返回 0，有数据则开始计算。
     ;;非工作日和工作日都从起点计算到终点，终点不足 17:30 的，按照当前时间计算（尚未下班）
     (if (and (empty? hcm-info)
@@ -231,12 +234,14 @@
                               (= (count hcm-info) 1)
                               (let [^LocalDateTime dt (-> hcm-info first :time)
                                     dt-time (.toLocalTime dt)
-                                    is-today? (.isEqual (.toLocalDate dt) (ld-now))]
+                                    is-today? (.isEqual (.toLocalDate dt) date-now)]
                                 (if (time>12 dt-time)
                                   [(LocalTime/of 8 30) dt-time] ;没打上班卡但打了一次下班卡
                                   [dt-time (if is-today? time-now (LocalTime/of 17 30))])) ;正常工作没下班 or 非今天忘记打下班卡
                               (datetime>17 (-> hcm-info first :time)) ;没打上班卡但打了多次下班卡
                               [(LocalTime/of 8 30) (.toLocalTime ^LocalDateTime (-> hcm-info last :time))]
+                              (datetime<9-today! (-> hcm-info last :time)) ;今天打了多次上班卡，但没打下班卡
+                              [(.toLocalTime ^LocalDateTime (-> hcm-info first :time)) time-now]
                               :else                         ;正常打了上下班卡, 上了下午的半天班
                               [(.toLocalTime ^LocalDateTime (-> hcm-info first :time))
                                (.toLocalTime ^LocalDateTime (-> hcm-info last :time))])
