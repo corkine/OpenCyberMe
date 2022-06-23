@@ -9,7 +9,7 @@
            (java.util Locale)
            (java.time.format DateTimeFormatter)))
 
-(defn json->data [json-data return-map?]
+(defn- json->data [json-data return-map?]
   (let [data (json/parse-string json-data true)
         need-keys (keys data)
         #_[:activeactivity
@@ -102,7 +102,7 @@
                                         :from-todo   true
                                         :origin-todo to-do-map}))
 
-(defn today-active-by-todo
+(defn- today-active-by-todo
   "返回当日从 TO-DO 中获取的健身记录，格式为 {:active :rest :diet :from-todo :origin-todo}"
   []
   (let [todo-info (get (todo/handle-recent {:day 1}) (tool/today-str))
@@ -127,15 +127,15 @@
             :goal-cut    goal-cut}
            (today-active-by-todo))))
 
-(defn week-active-by-todo
+(defn- recent-active-by-todo
   "从 Microsoft TODO 待办事项的包含 事项 的列表中获取带有 锻炼 的事项，将此事项的 due_at 看做其日期，如果其已经完成，则看做新条目
   并且和本周实际的 Apple Watch 上传的活动记录合并（优先 Apple Watch 数据）。"
-  []
+  [day]
   (let [;格式 {2022-06-06 [{:modified_at LDT, :time LD,
         ;                  :finish_at LDT, :title String,
         ;                  :list String, :status completed/..,
         ;                  :due_at LDT, :create_at LDT, :importance high/..}]}
-        todo-map (todo/handle-recent 8)
+        todo-map (todo/handle-recent {:day day})
         update-to-do-item (fn [to-do-map] {:active      (+ goal-active 500)
                                            :rest        (+ goal-active 10000)
                                            :diet        100
@@ -151,26 +151,33 @@
         fitness-map (into {} fitness-kv-list)]
     fitness-map))
 
-(defn week-active
-  "获取本周的活动记录，格式 {:2022-03-01 {:active, :rest, :diet}}"
-  []
-  (let [recent (recent-active 8)
-        all-day (mapv str (tool/all-week-day))
+(defn- recent-active-todo-and-db
+  "获取最近的活动记录，格式 {:2022-03-01 {:active, :rest, :diet}}
+  need-compute-day 需要传入 LocalDate 数组，表示计算的日期，
+  day-count 需要传入 int，表示距今为止的时长，
+  因为计算本周数据时，need-compute-day 包括未来空数据，day-count 则截止到今天为止"
+  [need-compute-day day-count]
+  (let [recent (recent-active (+ day-count 1))
+        all-day (mapv str need-compute-day)
         day-cate-sum (fn [cate day]
                        (or (:sum (first (filter #(and (= (:date %) day)
                                                       (= (:category %) cate))
                                                 recent)))
                            0.0))
-        week-result-from-watch (reduce #(assoc %1
+        recent-result-from-watch (reduce #(assoc %1
                                           (keyword %2)
                                           {:active    (day-cate-sum "activeactivity" %2)
                                            :rest      (day-cate-sum "restactivity" %2)
                                            :diet      (day-cate-sum "dietaryenergy" %2)
                                            :from-todo false})
                                        {} all-day)]
-    (let [week-result-from-todo (week-active-by-todo)]
-      (merge week-result-from-watch
-             week-result-from-todo))))
+    (merge recent-result-from-watch
+           (recent-active-by-todo day-count))))
+
+(defn week-active [] (recent-active-todo-and-db (tool/all-week-day)
+                                                (.getValue (.getDayOfWeek (LocalDate/now)))))
+
+(defn last-day-active [day] (recent-active-todo-and-db (tool/all-day day) day))
 
 (defn handle-upload [json-data]
   (try

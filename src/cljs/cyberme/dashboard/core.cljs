@@ -317,7 +317,7 @@
         ;;EXPRESS
         express (filterv #(not= (:status %) 0) express)
         ;;BLUE
-        {:keys [MonthBlueCount MaxNoBlueDay]} blue
+        {:keys [MonthBlueCount MaxNoBlueDay Day120BalanceDay]} blue
         blue-marvel-count (or (:MarvelCount blue) MaxNoBlueDay)
         non-blue-percent (- 1 (/ MonthBlueCount month-days))
         ;;MOVIE
@@ -408,9 +408,9 @@
            [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} HabitCountUntilNow] " 天"]
           [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " clean-marvel-count " 天"]]
          [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
-          [:p.mt-2 "静心已坚持 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} MaxNoBlueDay] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " blue-marvel-count " 天"]]]]
+          [:p.mt-2 "平衡已坚持 "
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} Day120BalanceDay] " 天"]
+          [:p.is-size-7.mb-3.has-text-weight-light "Blue 最长坚持 " blue-marvel-count " 天"]]]]
        [:div#week-info.mx-2.box {:style {:margin-bottom :1em
                                          :position      :relative
                                          :border-radius "6px 6px 0 0"

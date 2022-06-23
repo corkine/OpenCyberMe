@@ -1,6 +1,7 @@
 (ns cyberme.cyber.clean
   (:require [cyberme.db.core :as db]
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [cyberme.cyber.fitness :as fitness])
   (:import (java.time LocalDate LocalTime LocalDateTime)))
 
 (defn today-info [{:keys [MorningBrushTeeth NightBrushTeeth
@@ -33,7 +34,10 @@
         keep-in (count (take-while find-fn passed-dates))]
     keep-in))
 
-(defn non-blue-count [this-year]
+(defn- non-blue-count
+  "计算 blue [{:day LDate :info {:NC :NB :MC :MB}}..] 最长的 nonBlue 时间，
+  弃用，使用 balance-blue-count 一次性计算。"
+  [this-year]
   (let [today (LocalDate/now)
         year-first (.minusYears today 1)
         this-year-map (reduce #(assoc % (:day %2) %2) {} this-year)
@@ -44,6 +48,32 @@
         keep-in (count (take-while find-fn passed-dates))
         today? (-> (get this-year-map today) :info :blue boolean)]
     {:max-count keep-in :today today?}))
+
+(defn- balance-blue-count
+  "计算 blue   [{:day LDate :info {:NC :NB :MC :MB}}..]
+       active {:2022-03-11 {:active :rest :diet :from-todo}..}
+  最大的平衡时长，倒序从今天开始计算，遇到不平衡则直接返回"
+  [blue active-map]
+  (let [today (LocalDate/now)
+        today-key (keyword (str today))
+        year-first (.minusYears today 1)
+        this-year-map (reduce #(assoc % (:day %2) %2) {} blue)
+        ;;从今天倒序生成需要统计的日期序列，直到一年前为止
+        passed-dates (take-while #(.isAfter % year-first) (iterate #(.minusDays % 1) (.minusDays today 1)))
+        blue-fn #(-> % :info :blue boolean)
+        ;;没有在 blue 数据中找到当天 blue 数据
+        find-fn #(let [day-info (get this-year-map %)]
+                   (or (nil? day-info) (not (blue-fn day-info))))
+        keep-in (count (take-while find-fn passed-dates))
+        ;;没有在 blue 数据中找到当天 blue 数据，或当前存在 blue 数据但也存在运动数据
+        find-fn-balance #(let [day-info (get this-year-map %)]
+                   (or (nil? day-info) (not (blue-fn day-info))
+                       (if-let [this-day-active (get active-map today-key)]
+                         (and (:active this-day-active)
+                              (>= (:active this-day-active) fitness/goal-active)))))
+        keep-in-balance (count (take-while find-fn-balance passed-dates))
+        today? (-> (get this-year-map today) :info :blue boolean)]
+    {:max-count keep-in :balance-count keep-in-balance :today today?}))
 
 (defn handle-blue-week
   "获取本周的 blue 数据：{:2022-03-01 true :2022-03-02 false..}"
@@ -88,12 +118,15 @@
           this-week (db/day-range {:from week-first :to today})
           blue-month (count (filter #(-> % :info :blue boolean) this-month))
           blue-week (count (filter #(-> % :info :blue boolean) this-week))
-          {:keys [max-count today]} (non-blue-count this-year)]
+          ;{:keys [max-count today]} (non-blue-count this-year)
+          last-120d-active-data (fitness/last-day-active 120)
+          {:keys [max-count balance-count today]} (balance-blue-count this-year last-120d-active-data)]
       {:UpdateTime           (LocalDateTime/now)
        :IsTodayBlue          today
        :WeekBlueCount        blue-week
        :MonthBlueCount       blue-month
        :MaxNoBlueDay         max-count
+       :Day120BalanceDay     balance-count
        :MaxNoBlueDayFirstDay (.minusDays (LocalDate/now) max-count)})
     (catch Exception e
       (do
@@ -103,6 +136,7 @@
          :WeekBlueCount       -1
          :MonthBlueCount      -1
          :MaxNoBlueDay        -1
+         :Day120BalanceDay    0
          :MaxNoBlueDayLastDay (LocalDateTime/now)}))))
 
 (defn handle-clean-week

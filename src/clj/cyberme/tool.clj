@@ -14,6 +14,13 @@
         week-first (.minusDays today (- today-day-of-week 1))]
     (take 7 (iterate #(.plusDays % 1) week-first))))
 
+(defn all-day
+  "获取最近所有的 LocalDate 实例"
+  [day]
+  (let [today (LocalDate/now)
+        start-day (.minusDays today (- day 1))]
+    (take day (iterate #(.plusDays % 1) start-day))))
+
 (defn today-str
   "获取今天的日期，2022-03-01 格式"
   []
