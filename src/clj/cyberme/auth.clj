@@ -97,13 +97,19 @@
     "/cyber/dashboard/psych-data-upload" true
     false))
 
+(defn is-allowed [{uri :uri}]
+  (condp #(s/starts-with? %2 %1) uri
+    "/cyber/dashboard/psych-data-upload" true
+    false))
+
 (defn wrap-basic-authentication
   [app authenticate & [realm denied-response]]
   (fn [{:keys [request-method] :as req}]
     (let [auth-req (basic-authentication-request req authenticate)]
       #_(clojure.pprint/pprint (:uri req))
       (if (or (:basic-authentication auth-req)
-              (auth-in-query (:query-params req)))
+              (auth-in-query (:query-params req))
+              (is-allowed req))
         (app auth-req)
         (if (is-swagger req)
           (authentication-failure-401 realm
