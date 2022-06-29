@@ -29,6 +29,7 @@
             :success-callback-event [[:dashboard/day-work]]
             :failure-notice true})
 
+;实际上是浇花和学习内容获取二合一接口
 (ajax-flow {:call           :dashboard/plant-week
             :uri-fn         #(str "/cyber/dashboard/plant-week")
             :is-post        false
