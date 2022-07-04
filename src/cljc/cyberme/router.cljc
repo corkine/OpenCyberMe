@@ -6,7 +6,15 @@
                [re-frame.core :as rf]
                [cyberme.pages :as core]
                [cyberme.about :as about]
-               [cyberme.util.storage :as storage]])))
+               [cyberme.util.storage :as storage]])
+    [clojure.string :as str]))
+
+(defn parse-params
+  []
+  #?(:cljs
+     (let [param-strs (-> (.-location js/window) (str/split #"\?") last (str/split #"\&"))]
+       (into {} (for [[k v] (map #(str/split % #"=") param-strs)]
+                  [(keyword k) v])))))
 
 (defn share-router []
   ["" #?(:clj {:middleware [middleware/wrap-csrf
@@ -36,18 +44,18 @@
                                                   (rf/dispatch [:recent/fetch]))}]}))]
 
    #_["/clothes"
-    (merge {:name :clothes}
-           #?(:cljs {:view        #'core/clothes-page
-                     :controllers [{:parameters {:query [:status :location :labels]}
-                                    :start      (fn [{query :query}]
-                                                  (if (or (nil? query) (empty? query))
-                                                    (let [data-db (storage/get-item "good_filter")]
-                                                      (rf/dispatch [:set-filter data-db])
-                                                      (reitit.frontend.easy/replace-state :properties nil data-db))
-                                                    (rf/dispatch [:set-filter query]))
-                                                  (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:place/fetch])
-                                                  (rf/dispatch [:recent/fetch]))}]}))]
+      (merge {:name :clothes}
+             #?(:cljs {:view        #'core/clothes-page
+                       :controllers [{:parameters {:query [:status :location :labels]}
+                                      :start      (fn [{query :query}]
+                                                    (if (or (nil? query) (empty? query))
+                                                      (let [data-db (storage/get-item "good_filter")]
+                                                        (rf/dispatch [:set-filter data-db])
+                                                        (reitit.frontend.easy/replace-state :properties nil data-db))
+                                                      (rf/dispatch [:set-filter query]))
+                                                    (rf/dispatch [:user/fetch-from-local])
+                                                    (rf/dispatch [:place/fetch])
+                                                    (rf/dispatch [:recent/fetch]))}]}))]
 
    ["/work"
     (merge {:name :work}
@@ -132,10 +140,14 @@
     (merge {:name :psych-exp}
            #?(:cljs {:view        #'core/psy-exp-page
                      :controllers [{:parameters {:query [:debug]}
-                                    :start (fn [{{debug :debug} :query}]
-                                             (if (= "true" debug)
-                                               (reset! cyberme.psych.exp1.main/is-debug true))
-                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
+                                    :start      (fn [{{debug :debug} :query}]
+                                                  (if (= "true" debug)
+                                                    (reset! cyberme.psych.exp1.main/is-debug true))
+                                                  (rf/dispatch [:clean-all-answer])
+                                                  (when-let [params (parse-params)]
+                                                    (println params)
+                                                    (rf/dispatch [:save-answer ["标记数据" params]]))
+                                                  (rf/dispatch [:user/fetch-from-local]))}]}))]
 
    ["/cook"
     (merge {:name :cook}

@@ -526,6 +526,7 @@
                          (if (= plant 1) [:i.fa.fa-pagelines.has-text-success]
                                          [:i.fa.fa-pagelines {:style {:color "#ddd"}}])])]
                      " "]
+                    [:span " "]
                     (if day-work
                       [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable
                        {:on-click #(do (rf/dispatch [:dashboard/day-work-edit nil])

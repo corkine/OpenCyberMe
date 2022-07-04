@@ -119,7 +119,7 @@
   (r/with-let
     ;UUID 为了防止最后因为网络问题提交多次
     [answer (r/atom {:gender "男" :grade "初中一年级" :uuid (str (random-uuid))})
-     name (r/cursor answer [:name])
+     ;name (r/cursor answer [:name])
      gender (r/cursor answer [:gender])
      grade (r/cursor answer [:grade])
      school (r/cursor answer [:school])]
@@ -128,15 +128,15 @@
      (if @is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
                     [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
                     [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
-     [:div.field.is-horizontal
-      [:div.field-label.is-normal
-       [:label.label "姓名"]]
-      [:div.field-body
-       [:div.field
-        [:p.control
-         [:input.input {:type      "text" :placeholder "请输入你的姓名"
-                        :value     (or @name "")
-                        :on-change #(reset! name (.. % -target -value))}]]]]]
+     #_[:div.field.is-horizontal
+        [:div.field-label.is-normal
+         [:label.label "姓名"]]
+        [:div.field-body
+         [:div.field
+          [:p.control
+           [:input.input {:type      "text" :placeholder "请输入你的姓名"
+                          :value     (or @name "")
+                          :on-change #(reset! name (.. % -target -value))}]]]]]
      [:div.field.is-horizontal
       [:div.field-label.is-normal
        [:label.label "性别"]]
@@ -179,10 +179,10 @@
           {:style    {:margin-top :50px :margin-bottom :30px}
            :on-click (fn []
                        (println @answer)
-                       (let [is-ok (and @name
-                                        @gender
-                                        @grade
-                                        @school)]
+                       (let [is-ok (and #_@name
+                                     @gender
+                                     @grade
+                                     @school)]
                          (if is-ok
                            (do
                              (rf/dispatch [:save-answer ["被试收集" @answer]])
@@ -268,8 +268,7 @@
 (def fake-data
   [{:type   :hint
     :widget [hint "欢迎参加本次实验" "请保证环境安静，无分心物打扰，点击“开始”按钮开始此项实验" "开始实验"
-             #(do (rf/dispatch [:clean-all-answer])
-                  (rf/dispatch [:go-step 1]))]}
+             #(rf/dispatch [:go-step 1])]}
    {:type   :collect
     :widget [collect]}
    {:type   :hint
