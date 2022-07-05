@@ -13,6 +13,7 @@
     [clojure.java.io :as io]
     [cheshire.core :as json]
     [cheshire.generate :refer [add-encoder encode-str]]
+    [cyberme.cyber.task :as task]
     [cyberme.cyber.inspur :as inspur]
     [cyberme.config :refer [edn]]
     [cyberme.cyber.mini4k :as mini4k])
@@ -93,6 +94,10 @@
                     (future
                       (Thread/sleep 2000)
                       (mini4k/backend-mini4k-routine)))
+                  (when (contains? enable-services :task)
+                    (future
+                      (Thread/sleep 2000)
+                      (task/backend-task-routine)))
                   (when (contains? enable-services :auto)
                     (future
                       (Thread/sleep 2000)

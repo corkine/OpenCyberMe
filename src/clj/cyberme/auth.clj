@@ -47,6 +47,14 @@
         pass? (some? (some filter-fn auth-info))]
     pass?))
 
+(defn auth-in-query-task [query-param]
+  (let [name (get query-param "user")
+        pass (get query-param "secret")
+        auth-info (or (:auth-info-task env) [])
+        filter-fn #(and (= name (:user %)) (= pass (:pass %)))
+        pass? (some? (some filter-fn auth-info))]
+    pass?))
+
 (defn byte-transform
   [direction-fn string]
   (try
@@ -102,6 +110,10 @@
     "/cyber/dashboard/psych-data-upload" true
     false))
 
+(defn is-task-authed [req]
+  (and (s/starts-with? (:uri req) "/cyber/task/")
+       (auth-in-query-task (:query-params req))))
+
 (defn wrap-basic-authentication
   [app authenticate & [realm denied-response]]
   (fn [{:keys [request-method] :as req}]
@@ -109,7 +121,8 @@
       #_(clojure.pprint/pprint (:uri req))
       (if (or (:basic-authentication auth-req)
               (auth-in-query (:query-params req))
-              (is-allowed req))
+              (is-allowed req)
+              (is-task-authed req))
         (app auth-req)
         (if (is-swagger req)
           (authentication-failure-401 realm

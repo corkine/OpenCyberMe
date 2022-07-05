@@ -22,6 +22,37 @@ select *
 from auto
 where day = :day;
 
+------------------------ task ----------------------
+-- :name add-job :! :1
+insert into task (task_id, job_info)
+values (:task_id, :job_info);
+-- :name delete-job :! :1
+delete
+from task
+where job_id = :job_id;
+-- :name task-all-jobs :? :*
+select *
+from task
+where task_id = :task_id;
+-- :name update-job :! :1
+update task
+set job_info = job_info || :job_info,
+    job_status = :job_status
+where job_id = :job_id;
+-- :name next-queued-job :? :1
+select *
+from task
+where task_id = :task_id
+and job_status = 'queued'
+order by create_at
+limit 1;
+-- :name all-need-retry :? :*
+select *
+from task
+where (job_status = 'failed' and (job_info->>'job_rest_try')::integer > 0)
+or (job_status = 'dispatched' and (job_info->>'job_rest_try')::integer > 0
+    and to_timestamp((job_info->>'dispatch_will_return')::double precision) < current_timestamp);
+
 ------------------------ signin ----------------------
 -- :name get-today-signin :? :1
 select *

@@ -24,6 +24,7 @@
     [cyberme.cyber.clean :as clean]
     [cyberme.cyber.fitness :as fitness]
     [cyberme.cyber.diary :as diary]
+    [cyberme.cyber.task :as task]
     [clojure.tools.logging :as log]
     [cyberme.cyber.psych :as psych])
   (:import (java.time LocalDate)))
@@ -576,6 +577,21 @@
              :handler     (fn [{{path :path} :parameters}]
                             (hr/response (diary/handle-diary-delete path)))}}]]])
 
+(def task-route
+  [""
+   ["/task/:id/job"
+    {:tags #{"分布式任务"}
+     :get  {:summary     "获取下一个分布式任务"
+            :description "获取下一个分布式任务"
+            :parameters  {:path {:id string?} :query {:bot string?}}
+            :handler     (fn [{{{id :id} :path {bot :bot} :query} :parameters}]
+                           (hr/response (task/fetch-job id bot)))}
+     :post {:summary     "上传一个分布式任务"
+            :description "上传一个已完成的分布式任务"
+            :parameters  {:body any? :path any?}
+            :handler     (fn [{{body :body {id :id} :path} :parameters}]
+                           (hr/response (task/upload-job id body)))}}]])
+
 (defn cyber-routes []
   (conj
     basic-route
@@ -591,4 +607,5 @@
     fitness-route
     blue-route
     dashboard-route
-    diary-route))
+    diary-route
+    task-route))
