@@ -21,3 +21,4 @@ shadow-cljs.edn
 package-lock.json
 nohup.out
 cache.json
+/src/clj/cyberme/ice.clj
