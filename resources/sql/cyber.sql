@@ -51,7 +51,7 @@ select *
 from task
 where (job_status = 'failed' and (job_info->>'job_rest_try')::integer > 0)
 or (job_status = 'dispatched' and (job_info->>'job_rest_try')::integer > 0
-    and to_timestamp((job_info->>'dispatch_will_return')::double precision) < current_timestamp);
+    and to_timestamp((job_info->>'dispatch_will_return')::double precision/1000) < current_timestamp);
 -- :name dispatched-and-no-try :? :*
 select *
 from task
