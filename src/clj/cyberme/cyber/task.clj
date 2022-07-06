@@ -2,7 +2,8 @@
   (:require [cyberme.db.core :as db]
             [clojure.tools.logging :as log]
             [next.jdbc :as jdbc]
-            [cyberme.tool :as tool])
+            [cyberme.tool :as tool]
+            [clojure.string :as str])
   (:import (java.sql Timestamp)
            (java.time LocalDateTime Instant ZoneId)))
 
@@ -34,14 +35,15 @@
                                                                 one-log)
                                     :dispatch_will_return failed-at}}
               _ (db/update-job t job-new)]
-          {:message "下发任务成功。" :data (merge next job-new) :status 1})
+          {:message "下发任务成功。" :data (merge job-new next) :status 1})
         {:message "当前分组没有未分派的任务" :data nil :status 0}))
     (catch Exception e
       (log/error "log req error: " (str e))
       {:message (str "下发任务失败：" e) :data nil :status 0})))
 
 (defn upload-job
-  "上传一个完成的任务，job-info 中提取 job_id，is_success，并更新 job_status，其余全部压入 job_result 中"
+  "上传一个完成的任务，job-info 中提取 job_id，is_success，并更新 job_status，其余全部压入 job_result 中
+  上传任务不更新 job_info -> job_log，分派时的标记 + 成功的状态足以满足需求。"
   [task-id {:keys [job_id is_success] :as job-info}]
   (try
     (log/info "[TASK]" "uploading task" task-id "job" job-info)
@@ -64,7 +66,9 @@
   "后台处理失败或超时 job：
   如果 job 状态为 failed，且 job_rest_try 值大于 0，则减小 job_rest_try 值并将 job 状态更新为 queued。
   如果 job 状态为 dispatched，且 job_rest_try 值大于 0 且 dispatch_will_return 的值已超，则
-  减小 job-rest-try 值并将 job 状态更新为 queued。" []
+  减小 job-rest-try 值并将 job 状态更新为 queued。
+  此外，将 dispatched 但 job_rest_try < 0 的修改为 failed（最后一次尝试也失败）"
+  []
   (while true
     (try
       (let [sleep-sec 300]
@@ -73,7 +77,7 @@
           (doseq [{:keys [job_id job_status job_info] :as job} (db/all-need-retry)]
             (let [try-now (or (:job_rest_try job_info) 0)
                   log-now (or (:job_log job_info) [])]
-              (log/info "[TASK:auto]" "modifying job" job)
+              (log/info "[TASK:auto]" "modifying job to queued:" job)
               (db/update-job {:job_id     job_id
                               :job_status "queued"
                               :job_info
@@ -83,12 +87,23 @@
                                                           (format "%s try by routine, last status %s"
                                                                   (LocalDateTime/now)
                                                                   job_status))})})))
-          (log/debug "[task-service] end sync with server, try to sleep sec: " sleep-sec)
+          (doseq [{:keys [job_id job_status job_info] :as job} (db/dispatched-and-no-try)]
+            (let [log-now (or (:job_log job_info) [])]
+              (log/info "[TASK:auto]" "modifying no chance and last failed job:" job)
+              (db/update-job {:job_id     job_id
+                              :job_status "failed"
+                              :job_info
+                              (merge job_info
+                                     {:job_log (conj log-now
+                                                     (format "%s terminated by routine, last status %s"
+                                                             (LocalDateTime/now)
+                                                             job_status))})})))
+          (log/debug "[task-service] end modifying job status, try to sleep sec: " sleep-sec)
           (catch Exception e
-            (log/info "[task-service] sync with ms-server failed: " (.getMessage e))))
+            (log/info "[task-service] task routine failed: " (.getMessage e))))
         (Thread/sleep (* 1000 sleep-sec)))
       (catch Exception e
-        (log/info "[task-service] movie-service routine failed: " (.getMessage e))))))
+        (log/info "[task-service] task routine failed: " (.getMessage e))))))
 
 (comment
   (db/task-all-jobs {:task_id "2022gk"})
@@ -102,4 +117,13 @@
                   :job_status "success"
                   :job_info   {:job_result {:zf 999}}})
   (db/delete-job {:job_id 1})
-  (db/all-need-retry))
+  (db/all-need-retry)
+  (let [data (slurp "C:\\Users\\mazhangjing\\Desktop\\2022.txt")
+        data (mapv (fn [line]
+                     (let [list (str/split line #"\t")]
+                       {:bmxh (str/trim (first list)) :ksh (str/trim (second list))}))
+                   (filter (comp not str/blank?) (str/split-lines data)))]
+    (doseq [user data]
+      (db/add-job {:task_id "2022gk"
+                   :job_info {:job_data user}})
+      (Thread/sleep 100))))

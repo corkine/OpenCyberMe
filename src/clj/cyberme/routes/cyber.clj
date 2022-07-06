@@ -588,9 +588,9 @@
                            (hr/response (task/fetch-job id bot)))}
      :post {:summary     "上传一个分布式任务"
             :description "上传一个已完成的分布式任务"
-            :parameters  {:body any? :path any?}
-            :handler     (fn [{{body :body {id :id} :path} :parameters}]
-                           (hr/response (task/upload-job id body)))}}]])
+            :parameters  {:body any? :path {:id string?}}
+            :handler     (fn [{{:keys [body path]} :parameters}]
+                           (hr/response (task/upload-job (:id path) body)))}}]])
 
 (defn cyber-routes []
   (conj

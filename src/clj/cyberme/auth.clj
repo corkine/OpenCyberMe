@@ -112,7 +112,9 @@
 
 (defn is-task-authed [req]
   (and (s/starts-with? (:uri req) "/cyber/task/")
-       (auth-in-query-task (:query-params req))))
+       (auth-in-query-task (if (empty? (:query-params req))
+                             (:headers req)
+                             (:query-params req)))))
 
 (defn wrap-basic-authentication
   [app authenticate & [realm denied-response]]
