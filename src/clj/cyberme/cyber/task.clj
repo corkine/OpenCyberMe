@@ -28,9 +28,10 @@
         (let [now (LocalDateTime/now)
               failed-at (ldt->long (.plusMinutes now 2))
               one-log (format "%s dispatch by bot %s" now bot-id)
+              job-rest-try-now (or (-> next :job_info :job_rest_try) 6)
               job-new {:job_id     (:job_id next)
                        :job_status "dispatched"
-                       :job_info   {:job_rest_try         3
+                       :job_info   {:job_rest_try         job-rest-try-now
                                     :job_log              (conj (or (-> next :job_info :job_log) [])
                                                                 one-log)
                                     :dispatch_will_return failed-at}}

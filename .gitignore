@@ -22,3 +22,7 @@ package-lock.json
 nohup.out
 cache.json
 /src/clj/cyberme/ice.clj
+/demos/tasks/firefox/
+/demos/tasks/firefox/*
+/demos/tasks/package/
+/demos/tasks/geckodriver.exe

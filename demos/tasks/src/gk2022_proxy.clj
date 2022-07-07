@@ -1,6 +1,4 @@
-(ns gk2022
-  "此文件配合 src/clj/cyber/task.clj 实现的分布式爬虫服务端实现爬虫服务
-  此文件依赖 Firefox WebDriver 进行网页模拟，更多信息参见文件末尾。"
+(ns gk2022-proxy
   (:require [etaoin.api :as e]
             [cheshire.core :as json]
             [org.httpkit.client :as client])
@@ -11,8 +9,9 @@
   version 1.1 2022-7-6 实现了和服务端的对接，鉴权。")
 
 (def host "http://localhost:3000")
-(def user "user101")
-(def pass "pass101")
+(def user "user")
+(def pass "pass")
+(def proxy-url nil)
 
 (defonce client-id (str "GK22Client" (+ (rand-int 999) 2000)))
 
@@ -28,6 +27,14 @@
        (do (Thread/sleep 1000)
            (ensure! fnn reason (- timeout 1000)))
        (throw (RuntimeException. ^String (str reason "超时，程序中断。")))))))
+
+(defn next-proxy []
+  (when proxy-url
+    (let [req (client/request {:url proxy-url :method :get})
+          {:keys [msg obj]} (json/parse-string (:body @req) true)]
+      (when (= "ok" msg)
+        (let [item (first obj)]
+          (str (:ip item) ":" (:port item)))))))
 
 (defn next-user []
   (try
@@ -45,9 +52,9 @@
 (defn upload-data [job-data]
   (let [url (format "%s/cyber/task/%s/job" host "2022gk")
         _ (println "uploading " job-data)
-        req (client/request {:url   url
+        req (client/request {:url     url
                              :method  :post
-                             :headers {"user" user "secret" pass
+                             :headers {"user"         user "secret" pass
                                        "Content-Type" "application/json"}
                              :body    (json/generate-string job-data)})
         {:keys [message data status]} (json/parse-string (:body @req) true)
@@ -56,22 +63,62 @@
       (println "Failed to upload to taskServer: " message)
       (println "Upload to taskServer done!" message))))
 
-(defn handle-once [driver]
+(defonce global-driver (atom nil))
+
+(defonce global-driver-count (atom 0))
+
+(def max-driver-count 7)
+
+(defn get-driver!
+  "如果当前存在 driver 且尚未用尽次数，则判断其是否展示
+  如果展示，则减少次数并返回，如果不展示，则终止进程并递归获取。
+  如果当前不存在 driver 或 driver 次数用尽，做一些清理工作
+  关闭进程-如果存在，获取新代理并重启浏览器，更新全局 driver 和次数。"
+  []
+  (let [gd @global-driver
+        count @global-driver-count]
+    (if (or (nil? gd) (< count 0))
+      (let [_ (when-not (nil? gd)
+                (try (e/quit gd) (catch Exception ignore))
+                (reset! global-driver nil))
+            proxy (next-proxy)
+            _ (println "fetch proxy is" proxy)
+            args (if proxy
+                   {:path-driver  "geckodriver.exe"
+                    :path-browser "firefox/firefox.exe"
+                    :proxy        {:ssl proxy :http proxy}}
+                   {:path-driver  "geckodriver.exe"
+                    :path-browser "firefox/firefox.exe"})
+            _ (println "init browser with args" args)
+            driver (e/firefox args)]
+        (reset! global-driver driver)
+        (reset! global-driver-count max-driver-count)
+        driver)
+      (if (try (e/get-title gd)
+               true (catch Exception _ false))
+        (do (reset! global-driver-count (- count 1))
+            gd)
+        (do (try (e/quit gd) (catch Exception ignore))
+            (reset! global-driver nil)
+            (get-driver!))))))
+
+(defn handle-once []
   (let [user (next-user)
+        driver (get-driver!)
         _ (if (nil? user) (throw (RuntimeException. "获取任务失败！")))
         ksh (-> user :job_info :job_data :ksh)
         bmxh (-> user :job_info :job_data :bmxh)
         home "http://www.heao.com.cn/main/html/xxcx/index.aspx?ExamId=3&TypeId=1"]
     (e/go driver home)
-    (e/wait driver 0.2)
+    (e/wait driver 0.5)
     (ensure! #(e/exists? driver :contentpage))
     (e/switch-frame driver :contentpage)
-    (e/wait driver 0.1)
+    (e/wait driver 0.5)
     (ensure! #(e/exists? driver :mainFrame))
     (e/switch-frame driver :mainFrame)
-    (e/wait driver 0.1)
+    (ensure! #(e/exists? driver :bmxhradio))
     (e/click driver {:id "bmxhradio"})
-    (e/wait driver 0.1)
+    (e/wait driver 0.5)
     (e/fill-human-multi driver {:Ksh ksh :Bmxh bmxh}
                         {:pause-max 0.1 :mistake-prob 0.1})
     (e/wait driver 0.1)
@@ -103,13 +150,14 @@
                     :is_success true}))))
 
 (defn -main []
-  (let [driver (e/firefox {:path-driver  "geckodriver.exe"
-                           :path-browser "firefox/firefox.exe"})]
+  (let []
     (println "GK2022 Score Check Client")
     (println version)
+    (reset! global-driver nil)
+    (reset! global-driver-count 0)
     (while true
       (try
-        (handle-once driver)
+        (handle-once)
         (Thread/sleep 500)
         (catch Exception e
           (println "执行错误，将在 10s 后重试.." (.getMessage e))
@@ -126,27 +174,7 @@
   (e/scroll-top driver)
   (def driver (e/firefox {:path-driver  "geckodriver.exe"
                           :path-browser "firefox/firefox.exe"}))
-  (handle-once driver))
-
-;write with lein project.clj:
-;(defproject auto_browser "0.1.0-SNAPSHOT"
-;            :description "分布式爬虫客户端"
-;            :url "https://mazhangjing.com"
-;            :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
-;                      :url "https://www.eclipse.org/legal/epl-2.0/"}
-;            :dependencies [[org.clojure/clojure "1.10.1"]
-;                           [etaoin "0.4.6"]
-;                           [cheshire "5.10.0"]
-;                           [luminus-http-kit "0.1.9"]]
-;            :repl-options {:init-ns gk2022}
-;            ;:aot :all
-;            :main gk2022)
-
-;package
-;|-- jre1.8.0_301/
-;|-- firefox/
-;|-- classes/
-;|-- geckodriver.exe
-;|-- gk2022.clj
-;|-- run.bat
-;    .\jre1.8.0_301\bin\java.exe -cp "classes;." clojure.main -m gk2022
+  (def driver (get-driver! nil))
+  (handle-once)
+  (e/close-window driver)
+  (e/close-window @global-driver))
