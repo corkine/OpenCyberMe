@@ -26,3 +26,4 @@ cache.json
 /demos/tasks/firefox/*
 /demos/tasks/package/
 /demos/tasks/geckodriver.exe
+/.lsp
