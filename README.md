@@ -1,8 +1,8 @@
-# 重力管家 - 状态数字化检测管理
+# CyberMe - 个人服务平台
 
-一个模块化管理物品和个人状态的 Web 应用，使用 clojure 和 clojurescript 搭建。
+一个 C/S 架构的 Web 应用，使用 clojure 和 clojurescript 搭建，承载了各种个人业务。
 
-[![ClojureCI](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml/badge.svg)](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml) [![CircleCI](https://circleci.com/gh/corkine/cyberMe/tree/cyber-me.svg?style=svg&circle-token=793142488339016f1a9498b5b432c020629a96d7)](https://circleci.com/gh/corkine/cyberMe/tree/cyber-me) [![codecov](https://codecov.io/gh/corkine/cyberMe/branch/cyber-me/graph/badge.svg?token=W3119RL5SM)](https://codecov.io/gh/corkine/cyberMe)
+[![ClojureCI](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml/badge.svg)](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml) [![CircleCI](https://circleci.com/gh/corkine/cyberMe/tree/cyber-me.svg?style=svg&circle-token=793142488339016f1a9498b5b432c020629a96d7)](https://circleci.com/gh/corkine/cyberMe/tree/cyber-me) [![codecov](https://codecov.io/gh/corkine/cyberMe/branch/cyber-me/graph/badge.svg?token=W3119RL5SM)](https://codecov.io/gh/corkine/cyberMe) ![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcorkine%2FcyberMe.svg?type=small)
 
 ## Prerequisites
 
@@ -29,7 +29,9 @@
 - CMGoods 物品管理和打包管理服务
 - CMDaily 日记服务
 - 植物每天浇水和每周一学提醒服务
-- 以上服务构成了一套可视化视图看板和数据统计与激励系统
+- 可视化视图看板和数据统计与激励系统
+- 心理学在线问卷和实验分发服务
+- 分布式任务分发和回收服务与演示（浏览器操作模拟、代理和简单脚本）
 
 ## Running
     
