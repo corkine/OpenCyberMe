@@ -1,19 +1,25 @@
 (ns gk2022-proxy
   (:require [etaoin.api :as e]
+            [etaoin.keys :as k]
             [cheshire.core :as json]
-            [org.httpkit.client :as client])
-  (:gen-class))
+            [org.httpkit.client :as client]
+            [clojure.java.io :as io])
+  (:gen-class)
+  (:import (java.io ByteArrayOutputStream)))
 
 (def version
   "version 1.0 2022-7-5 实现了基本浏览器操作和 taskServer 交互接口
-  version 1.1 2022-7-6 实现了和服务端的对接，鉴权。")
+  version 1.1 2022-7-6 实现了和服务端的对接，鉴权。
+  version 2.0 2022-7-9 实现了 Socket 代理、验证码自动识别、无头模式")
 
-(def host "http://localhost:3000")
-(def user "user")
-(def pass "pass")
-(def proxy-url nil)
+(def host "https://cyber.mazhangjing.com")
+(def user "temp_user")
+(def pass "temp_pass")
+(def proxy-url "https://mobile.huashengdaili.com/servers.php?session=U65064fd80709112722--5a43000a15066e46d0c9e9dda7b1b658&time=1&count=1&type=json&only=1&province=410000&pw=no&protocol=s5&province_name=河南省")
 
 (defonce client-id (str "GK22Client" (+ (rand-int 999) 2000)))
+(defonce temp-png (str client-id "_temp.png"))
+(defonce headless true)
 
 (defn ensure!
   ([fnn]
@@ -31,10 +37,11 @@
 (defn next-proxy []
   (when proxy-url
     (let [req (client/request {:url proxy-url :method :get})
-          {:keys [msg obj]} (json/parse-string (:body @req) true)]
-      (when (= "ok" msg)
-        (let [item (first obj)]
-          (str (:ip item) ":" (:port item)))))))
+          {:keys [status list] :as resp} (json/parse-string (:body @req) true)
+          _ (println resp)]
+      (when (= "0" status)
+        (let [item (first list)]
+          (str (:sever item) ":" (:port item)))))))
 
 (defn next-user []
   (try
@@ -67,7 +74,7 @@
 
 (defonce global-driver-count (atom 0))
 
-(def max-driver-count 7)
+(def max-driver-count 3)
 
 (defn get-driver!
   "如果当前存在 driver 且尚未用尽次数，则判断其是否展示
@@ -86,11 +93,14 @@
             args (if proxy
                    {:path-driver  "geckodriver.exe"
                     :path-browser "firefox/firefox.exe"
-                    :proxy        {:ssl proxy :http proxy}}
+                    :proxy        {;:ssl proxy :http proxy
+                                   :socks {:host proxy :version 5}}}
                    {:path-driver  "geckodriver.exe"
                     :path-browser "firefox/firefox.exe"})
             _ (println "init browser with args" args)
-            driver (e/firefox args)]
+            driver (if headless
+                     (e/firefox-headless args)
+                     (e/firefox args))]
         (reset! global-driver driver)
         (reset! global-driver-count max-driver-count)
         driver)
@@ -101,6 +111,32 @@
         (do (try (e/quit gd) (catch Exception ignore))
             (reset! global-driver nil)
             (get-driver!))))))
+
+(defn file->bytes [path]
+  (with-open [in (io/input-stream path)
+              out (ByteArrayOutputStream.)]
+    (io/copy in out)
+    (.toByteArray out)))
+
+(defn handle-temp-png [file]
+  (println "requesting for image result...")
+  (let [api-url "http://api.ttshitu.com/predict"
+        req (client/request {:url     api-url
+                             :method  :post
+                             :headers {"Content-Type" "application/json;charset=UTF-8"}
+                             :body    (json/generate-string
+                                        {:username "corkine"
+                                         :password "mi960032"
+                                         :typeid "33"
+                                         :image (String. (clojure.data.codec.base64/encode
+                                                           (file->bytes file)))})})
+        resp @req
+        {:keys [success data] :as all} (json/parse-string (:body resp) true)]
+    (if (= true success)
+      (:result data)
+      (do
+        (println "image" temp-png " failed because: " all)
+        nil))))
 
 (defn handle-once []
   (let [user (next-user)
@@ -118,20 +154,38 @@
     (e/switch-frame driver :mainFrame)
     (ensure! #(e/exists? driver :bmxhradio))
     (e/click driver {:id "bmxhradio"})
-    (e/wait driver 0.5)
-    (e/fill-human-multi driver {:Ksh ksh :Bmxh bmxh}
+    (e/wait driver 1)
+    #_(e/fill-human-multi driver {:ksh ksh :sfzh bmxh}
                         {:pause-max 0.1 :mistake-prob 0.1})
+    (e/fill-multi driver {:ksh ksh :sfzh bmxh})
     (e/wait driver 0.1)
     (e/click driver :TencentCaptcha)
     (ensure! #(e/exists? driver :tcaptcha_iframe))
     (e/switch-frame driver :tcaptcha_iframe)
     (ensure! #(e/exists? driver :tcaptcha_drag_button))
     (println "等待滑动滑块...")
-    (ensure! #(not (e/exists? driver :tcaptcha_drag_button)))
+    (e/wait driver 0.4)
+    (e/screenshot-element driver {:class "tc-imgarea drag"} temp-png)
+    (e/wait driver 0.1)
+    (if-let [x (Integer/parseInt (handle-temp-png temp-png))]
+      (do
+        (println "x is " x)
+        (e/perform-actions driver
+                           (-> (e/make-mouse-input)
+                               (e/add-pointer-click-el (e/query driver :tcaptcha_drag_thumb))
+                               (e/add-pointer-move {:x (+ x 38) :y 0})
+                               (e/add-pointer-click))))
+      (do
+        ;自动检查失败，尝试手动执行，如果没有手动，则直接标记失败
+        ))
+    (ensure! #(not (e/exists? driver :tcaptcha_drag_button))
+             "验证码没有拼合！"
+             5000)
+    (e/wait driver 0.1)
     (e/switch-frame-parent driver)
-    (ensure! #(e/has-text? driver "验证成功"))
+    (ensure! #(e/has-text? driver "验证成功") 5000)
     (e/click driver {:id "QueryBtn"})
-    (ensure! #(e/has-text? driver "总分"))
+    (ensure! #(e/has-text? driver "总分") 5000)
     (let [ksh (e/get-element-text driver {:css "#tabInfo > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)"})
           name (e/get-element-text driver {:css "#tabInfo > tbody:nth-child(1) > tr:nth-child(2) > td:nth-child(2)"})
           id (e/get-element-text driver {:css "#tabInfo > tbody:nth-child(1) > tr:nth-child(3) > td:nth-child(2)"})
@@ -161,7 +215,7 @@
         (Thread/sleep 500)
         (catch Exception e
           (println "执行错误，将在 10s 后重试.." (.getMessage e))
-          (Thread/sleep 10000))))))
+          (Thread/sleep 5000))))))
 
 (comment
   (e/go driver home)
@@ -177,4 +231,11 @@
   (def driver (get-driver! nil))
   (handle-once)
   (e/close-window driver)
-  (e/close-window @global-driver))
+  (e/close-window @global-driver)
+
+  (e/screenshot-element driver {:class "tc-imgarea drag"} "temp.png")
+  (e/perform-actions driver
+                     (-> (e/make-mouse-input)
+                         (e/add-pointer-click-el (e/query driver :tcaptcha_drag_thumb))
+                         (e/add-pointer-move {:x (+ 217 40) :y 0})
+                         (e/add-pointer-click))))

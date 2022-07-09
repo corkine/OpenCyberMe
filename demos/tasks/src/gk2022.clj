@@ -2,6 +2,7 @@
   "此文件配合 src/clj/cyber/task.clj 实现的分布式爬虫服务端实现爬虫服务
   此文件依赖 Firefox WebDriver 进行网页模拟，更多信息参见文件末尾。"
   (:require [etaoin.api :as e]
+            [etaoin.keys :as k]
             [cheshire.core :as json]
             [org.httpkit.client :as client])
   (:gen-class))
@@ -10,9 +11,9 @@
   "version 1.0 2022-7-5 实现了基本浏览器操作和 taskServer 交互接口
   version 1.1 2022-7-6 实现了和服务端的对接，鉴权。")
 
-(def host "http://localhost:3000")
-(def user "user101")
-(def pass "pass101")
+(def host "https://cyber.mazhangjing.com")
+(def user "temp_user")
+(def pass "temp_pass")
 
 (defonce client-id (str "GK22Client" (+ (rand-int 999) 2000)))
 
@@ -45,9 +46,9 @@
 (defn upload-data [job-data]
   (let [url (format "%s/cyber/task/%s/job" host "2022gk")
         _ (println "uploading " job-data)
-        req (client/request {:url   url
+        req (client/request {:url     url
                              :method  :post
-                             :headers {"user" user "secret" pass
+                             :headers {"user"         user "secret" pass
                                        "Content-Type" "application/json"}
                              :body    (json/generate-string job-data)})
         {:keys [message data status]} (json/parse-string (:body @req) true)
@@ -71,8 +72,8 @@
     (e/switch-frame driver :mainFrame)
     (e/wait driver 0.1)
     (e/click driver {:id "bmxhradio"})
-    (e/wait driver 0.1)
-    (e/fill-human-multi driver {:Ksh ksh :Bmxh bmxh}
+    (e/wait driver 0.1)                                     ;输入文本前等待秒数
+    (e/fill-human-multi driver {:ksh ksh :sfzh bmxh}
                         {:pause-max 0.1 :mistake-prob 0.1})
     (e/wait driver 0.1)
     (e/click driver :TencentCaptcha)
@@ -83,6 +84,7 @@
     (ensure! #(not (e/exists? driver :tcaptcha_drag_button)))
     (e/switch-frame-parent driver)
     (ensure! #(e/has-text? driver "验证成功"))
+    (e/wait driver 0.3)                                     ;验证后等待点击秒数
     (e/click driver {:id "QueryBtn"})
     (ensure! #(e/has-text? driver "总分"))
     (let [ksh (e/get-element-text driver {:css "#tabInfo > tbody:nth-child(1) > tr:nth-child(1) > td:nth-child(2)"})
@@ -110,7 +112,7 @@
     (while true
       (try
         (handle-once driver)
-        (Thread/sleep 500)
+        (Thread/sleep 15000)                                ;查询下一个前等待毫秒数
         (catch Exception e
           (println "执行错误，将在 10s 后重试.." (.getMessage e))
           (Thread/sleep 10000))))))
@@ -126,4 +128,34 @@
   (e/scroll-top driver)
   (def driver (e/firefox {:path-driver  "geckodriver.exe"
                           :path-browser "firefox/firefox.exe"}))
+  (e/go driver "http://www.heao.com.cn/main/html/xxcx/index.aspx?ExamId=3&TypeId=1")
+  (e/wait driver 0.2)
+  (ensure! #(e/exists? driver :contentpage))
+  (e/switch-frame driver :contentpage)
+  (e/wait driver 0.1)
+  (ensure! #(e/exists? driver :mainFrame))
+  (e/switch-frame driver :mainFrame)
+  (e/wait driver 0.1)
+  (e/click driver {:id "bmxhradio"})
+  (e/wait driver 0.1)                                       ;输入文本前等待秒数
+  (e/fill-human-multi driver {:ksh "100" :sfzh "200"}
+                      {:pause-max 0.1 :mistake-prob 0.1})
+  (e/wait driver 0.1)
+  (e/click driver :TencentCaptcha)
+  (ensure! #(e/exists? driver :tcaptcha_iframe))
+  (e/switch-frame driver :tcaptcha_iframe)
+  (ensure! #(e/exists? driver :tcaptcha_drag_button))
+  (println "等待滑动滑块...")
+  (e/screenshot-element driver {:class "tc-imgarea drag"} "temp.png")
+  (e/perform-actions driver
+                     (-> (e/make-mouse-input)
+                         (e/add-pointer-click-el (e/query driver :tcaptcha_drag_thumb))
+                         (e/add-pointer-move {:x (+ 217 40) :y 0})
+                         (e/add-pointer-click)))
+  (ensure! #(not (e/exists? driver :tcaptcha_drag_button)))
+  (e/switch-frame-parent driver)
+  (ensure! #(e/has-text? driver "验证成功"))
+  (e/wait driver 0.3)                                       ;验证后等待点击秒数
+  (e/click driver {:id "QueryBtn"})
   (handle-once driver))
+
