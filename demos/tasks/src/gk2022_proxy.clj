@@ -9,17 +9,20 @@
 
 (def version
   "version 1.0 2022-7-5 实现了基本浏览器操作和 taskServer 交互接口
-  version 1.1 2022-7-6 实现了和服务端的对接，鉴权。
-  version 2.0 2022-7-9 实现了 Socket 代理、验证码自动识别、无头模式")
+   version 1.1 2022-7-6 实现了和服务端的对接，鉴权。
+   version 2.0 2022-7-9 实现了 Socket 代理、验证码自动识别、无头模式
+   version 2.1 2022-7-9 优化效率，更换代理不关闭并重启 WebDriver 实例")
 
+(def headless true)
+(def project "2022gk")
 (def host "https://cyber.mazhangjing.com")
 (def user "temp_user")
 (def pass "temp_pass")
+(def driver-path "/Users/corkine/Desktop/cyberMe/geckodriver")
+(def browser-path "/Applications/Firefox.app/Contents/MacOS/firefox")
+(def client-id (str "GK22Client" (+ (rand-int 999) 2000)))
+(def temp-png (str client-id "_temp.png"))
 (def proxy-url "https://mobile.huashengdaili.com/servers.php?session=U65064fd80709112722--5a43000a15066e46d0c9e9dda7b1b658&time=1&count=1&type=json&only=1&province=410000&pw=no&protocol=s5&province_name=河南省")
-
-(defonce client-id (str "GK22Client" (+ (rand-int 999) 2000)))
-(defonce temp-png (str client-id "_temp.png"))
-(defonce headless true)
 
 (defn ensure!
   ([fnn]
@@ -46,7 +49,7 @@
 (defn next-user []
   (try
     (let [url (format "%s/cyber/task/%s/job?bot=%s&user=%s&secret=%s"
-                      host "2022gk" client-id user pass)
+                      host project client-id user pass)
           req (client/request {:url url :method :get})
           resp @req
           {:keys [message data status]} (json/parse-string (:body resp) true)
@@ -57,7 +60,7 @@
       (println "Failed to connect to taskServer: " (.getMessage e)))))
 
 (defn upload-data [job-data]
-  (let [url (format "%s/cyber/task/%s/job" host "2022gk")
+  (let [url (format "%s/cyber/task/%s/job" host project)
         _ (println "uploading " job-data)
         req (client/request {:url     url
                              :method  :post
@@ -74,7 +77,7 @@
 
 (defonce global-driver-count (atom 0))
 
-(def max-driver-count 3)
+(def max-driver-count 5)
 
 (defn get-driver!
   "如果当前存在 driver 且尚未用尽次数，则判断其是否展示
@@ -82,35 +85,35 @@
   如果当前不存在 driver 或 driver 次数用尽，做一些清理工作
   关闭进程-如果存在，获取新代理并重启浏览器，更新全局 driver 和次数。"
   []
-  (let [gd @global-driver
-        count @global-driver-count]
-    (if (or (nil? gd) (< count 0))
-      (let [_ (when-not (nil? gd)
-                (try (e/quit gd) (catch Exception ignore))
-                (reset! global-driver nil))
-            proxy (next-proxy)
-            _ (println "fetch proxy is" proxy)
-            args (if proxy
-                   {:path-driver  "geckodriver.exe"
-                    :path-browser "firefox/firefox.exe"
-                    :proxy        {;:ssl proxy :http proxy
-                                   :socks {:host proxy :version 5}}}
-                   {:path-driver  "geckodriver.exe"
-                    :path-browser "firefox/firefox.exe"})
-            _ (println "init browser with args" args)
-            driver (if headless
-                     (e/firefox-headless args)
-                     (e/firefox args))]
-        (reset! global-driver driver)
-        (reset! global-driver-count max-driver-count)
-        driver)
-      (if (try (e/get-title gd)
-               true (catch Exception _ false))
-        (do (reset! global-driver-count (- count 1))
-            gd)
-        (do (try (e/quit gd) (catch Exception ignore))
-            (reset! global-driver nil)
-            (get-driver!))))))
+  (if (< @global-driver-count 1)                            ;需要更新 session
+    (let [_ (try (reset! global-driver (e/disconnect-driver @global-driver))
+                 (catch Exception ignore))
+          proxy (next-proxy)
+          old-host-port (if (nil? @global-driver)
+                          {}
+                          {:host (:host @global-driver)
+                           :port (:port @global-driver)})
+          bin-place (merge old-host-port
+                           {:path-driver  driver-path
+                            :path-browser browser-path
+                            :headless     headless})
+          full-args (merge bin-place
+                           (if proxy {:proxy {:socks {:host proxy :version 5}}} {}))
+          _ (if (empty? old-host-port) (println "init browser instance with proxy: " proxy)
+                                       (println "reset browser session with proxy: " proxy))
+          driver (e/boot-driver :firefox full-args)
+          _ (println "now driver is " driver)]
+      (reset! global-driver driver)
+      (reset! global-driver-count (- max-driver-count 1))
+      driver)
+    (if (try (e/get-title @global-driver)                   ;正常状态
+             true (catch Exception _ false))
+      (do (reset! global-driver-count (- @global-driver-count 1))
+          @global-driver)
+      (do (try (e/quit @global-driver) (catch Exception ignore)) ;无故关闭
+          (reset! global-driver nil)
+          (reset! global-driver-count 0)
+          (get-driver!)))))
 
 (defn file->bytes [path]
   (with-open [in (io/input-stream path)
@@ -127,9 +130,9 @@
                              :body    (json/generate-string
                                         {:username "corkine"
                                          :password "mi960032"
-                                         :typeid "33"
-                                         :image (String. (clojure.data.codec.base64/encode
-                                                           (file->bytes file)))})})
+                                         :typeid   "33"
+                                         :image    (String. (clojure.data.codec.base64/encode
+                                                              (file->bytes file)))})})
         resp @req
         {:keys [success data] :as all} (json/parse-string (:body resp) true)]
     (if (= true success)
@@ -156,31 +159,27 @@
     (e/click driver {:id "bmxhradio"})
     (e/wait driver 1)
     #_(e/fill-human-multi driver {:ksh ksh :sfzh bmxh}
-                        {:pause-max 0.1 :mistake-prob 0.1})
+                          {:pause-max 0.1 :mistake-prob 0.1})
     (e/fill-multi driver {:ksh ksh :sfzh bmxh})
     (e/wait driver 0.1)
     (e/click driver :TencentCaptcha)
     (ensure! #(e/exists? driver :tcaptcha_iframe))
     (e/switch-frame driver :tcaptcha_iframe)
     (ensure! #(e/exists? driver :tcaptcha_drag_button))
-    (println "等待滑动滑块...")
+    (println "等待滑动滑块或自动触发滑块...")
     (e/wait driver 0.4)
     (e/screenshot-element driver {:class "tc-imgarea drag"} temp-png)
     (e/wait driver 0.1)
     (if-let [x (Integer/parseInt (handle-temp-png temp-png))]
       (do
-        (println "x is " x)
+        (println "x is" x)
         (e/perform-actions driver
                            (-> (e/make-mouse-input)
                                (e/add-pointer-click-el (e/query driver :tcaptcha_drag_thumb))
                                (e/add-pointer-move {:x (+ x 38) :y 0})
-                               (e/add-pointer-click))))
-      (do
-        ;自动检查失败，尝试手动执行，如果没有手动，则直接标记失败
-        ))
+                               (e/add-pointer-click)))))
     (ensure! #(not (e/exists? driver :tcaptcha_drag_button))
-             "验证码没有拼合！"
-             5000)
+             "验证码没有拼合！可能是 IP 限制" 5000)
     (e/wait driver 0.1)
     (e/switch-frame-parent driver)
     (ensure! #(e/has-text? driver "验证成功") 5000)
@@ -207,14 +206,14 @@
   (let []
     (println "GK2022 Score Check Client")
     (println version)
-    (reset! global-driver nil)
     (reset! global-driver-count 0)
     (while true
       (try
         (handle-once)
         (Thread/sleep 500)
         (catch Exception e
-          (println "执行错误，将在 10s 后重试.." (.getMessage e))
+          (println "执行错误，将更换代理后继续重试.." (.getMessage e))
+          (reset! global-driver-count 0)
           (Thread/sleep 5000))))))
 
 (comment
