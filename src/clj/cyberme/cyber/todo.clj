@@ -193,7 +193,7 @@
 
 (defn handle-focus-sync []
   (todo-sync-routine)
-  {:message "Sync Done."})
+  {:message "Sync Done." :status 1})
 
 (defn handle-today
   "返回今日任务，Go API 兼容：{:startCount :tasks []}

@@ -238,12 +238,6 @@
            :call-when-exit    [[:movie/movie-data-clean]]
            :call-when-success [[:movie/movie-data-clean]]}))
 
-(ajax-flow {:call    :movie/movie-add
-            :uri-fn  #(str "/cyber/movie/?name=" (:name %) "&url=" (:url %))
-            :is-post true
-            :data    :movie/movie-data
-            :clean   :movie/movie-data-clean})
-
 (defn express-add-dialog
   []
   (dialog :add-express!
@@ -258,19 +252,6 @@
            :call-when-exit    [[:express/express-data-clean]]
            :call-when-success [[:express/express-data-clean]
                                [:dashboard/recent]]}))
-
-(ajax-flow {:call   :express/express-add
-            :uri-fn #(str "/cyber/express/track?no=" (:no %) "&note=" (:note %))
-            :data   :express/express-data
-            :clean  :express/express-data-clean})
-
-(ajax-flow {:call           :note/last
-            :uri-fn         #(str "/cyber/note/last")
-            :data           :note/last-data
-            :clean          :note/last-data-clean
-            :success-notice true
-            :failure-notice true
-            :notice-with-pre true})
 
 (defn dashboard-page []
   (let [now (t/time-now)
@@ -451,7 +432,7 @@
         [:p.is-size-5.mb-3.has-text-weight-light [:span.mr-1 "快递更新"]
          [:span.is-size-7.is-clickable.dui-tips
           {:on-click     #(rf/dispatch [:app/show-modal :add-express!])
-           :data-tooltip "新建快递追踪"} " +"]]
+           :data-tooltip "新建快递追踪 "} " +"]]
         (if (empty? express)
           [:p.is-size-6.has-text-grey "暂无正在追踪的快递。"]
           [:<>

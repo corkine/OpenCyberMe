@@ -151,7 +151,13 @@
                      "新建笔记"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:note/last])}
-                     "最近笔记"]]]
+                     "最近笔记"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:dashboard/make-clean])}
+                     "标记清洁"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:dashboard/todo-sync])}
+                     "同步待办"]]]
                   (let [{login-hint :user} @(rf/subscribe [:api-auth])
                         login-hint (or login-hint "登录")]
                     [:div.navbar-item.mx-0

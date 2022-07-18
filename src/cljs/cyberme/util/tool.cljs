@@ -17,6 +17,9 @@
   (format/unparse-local (format/formatter "yyyy-MM-dd")
                         (t/time-now)))
 
+(defn is-after-x [x]
+  (>= x (t/hour (t/time-now))))
+
 (defn datetime->time
   "将 2022-03-29T08:11:46.23122 转换为 08:11"
   [local-date-str]

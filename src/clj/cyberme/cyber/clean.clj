@@ -212,7 +212,8 @@
             (db/set-today {:info (clojure.core/merge (or info {}) full-data)}))]
     {:message (if yesterday "昨日数据已更新。" "今日数据已更新。")
      :code    500
-     :update  changed?}))
+     :update  changed?
+     :status 1}))
 
 (defn handle-blue-set [{:keys [blue day]}]
   (try
