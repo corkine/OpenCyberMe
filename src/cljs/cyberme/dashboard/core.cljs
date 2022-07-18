@@ -264,13 +264,6 @@
             :data   :express/express-data
             :clean  :express/express-data-clean})
 
-(ajax-flow {:call           :hcm/sync
-            :uri-fn         #(str "/cyber/check/now?useCache=false&plainText=false")
-            :data           :hcm/sync-data
-            :clean          :hcm/sync-data-clean
-            :success-notice true
-            :failure-notice true})
-
 (ajax-flow {:call           :note/last
             :uri-fn         #(str "/cyber/note/last")
             :data           :note/last-data

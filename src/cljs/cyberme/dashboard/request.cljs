@@ -7,13 +7,23 @@
     [cyberme.util.request :refer [ajax-flow] :as req]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; Dashboard ;;;;;;;;;;;;;;;;;;;;;;
-;最近事项
+;Dashboard 核心数据
 (ajax-flow {:call           :dashboard/recent
             :uri-fn         #(str "/cyber/dashboard/summary?day=5")
             :data           :dashboard/recent-data
             :clean          :dashboard/recent-data-clean
             :failure-notice true})
 
+;强制刷新 HCM 打卡数据，成功后刷新统计数据
+(ajax-flow {:call           :hcm/sync
+            :uri-fn         #(str "/cyber/check/now?useCache=false&plainText=false")
+            :data           :hcm/sync-data
+            :clean          :hcm/sync-data-clean
+            :success-callback-event [[:dashboard/recent]]
+            :success-notice true
+            :failure-notice true})
+
+;每日日报数据
 (ajax-flow {:call           :dashboard/day-work
             :uri-fn         #(str "/cyber/dashboard/day-work")
             :is-post        false
@@ -29,7 +39,7 @@
             :success-callback-event [[:dashboard/day-work]]
             :failure-notice true})
 
-;实际上是浇花和学习内容获取二合一接口
+;浇花和学习内容获取二合一接口
 (ajax-flow {:call           :dashboard/plant-week
             :uri-fn         #(str "/cyber/dashboard/plant-week")
             :is-post        false

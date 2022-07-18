@@ -27,3 +27,6 @@ cache.json
 /demos/tasks/package/
 /demos/tasks/geckodriver.exe
 /.lsp
+/demos/tasks/GK22*.png
+/demos/tasks/temp.png
+/demos/tasks/package2/
