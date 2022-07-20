@@ -55,7 +55,6 @@
   最大的平衡时长，倒序从今天开始计算，遇到不平衡则直接返回"
   [blue active-map]
   (let [today (LocalDate/now)
-        today-key (keyword (str today))
         year-first (.minusYears today 1)
         this-year-map (reduce #(assoc % (:day %2) %2) {} blue)
         ;;从今天倒序生成需要统计的日期序列，直到一年前为止
@@ -68,7 +67,7 @@
         ;;没有在 blue 数据中找到当天 blue 数据，或当前存在 blue 数据但也存在运动数据
         find-fn-balance #(let [day-info (get this-year-map %)]
                    (or (nil? day-info) (not (blue-fn day-info))
-                       (if-let [this-day-active (get active-map today-key)]
+                       (if-let [this-day-active (get active-map (keyword (str (:day day-info))))]
                          (and (:active this-day-active)
                               (>= (:active this-day-active) fitness/goal-active)))))
         keep-in-balance (count (take-while find-fn-balance passed-dates))
