@@ -5,7 +5,8 @@
     [clojure.string :as string]
     [clojure.set :as set]
     [cljs-time.core :as t]
-    [cyberme.util.request :refer [ajax-flow] :as req]))
+    [cyberme.util.request :refer [ajax-flow] :as req]
+    [cljs-time.format :as format]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; Dashboard ;;;;;;;;;;;;;;;;;;;;;;
 ;Dashboard 核心数据
@@ -74,17 +75,17 @@
             :notice-with-pre true})
 
 ;标记当前清洁状况，成功后刷新当前页面
-(ajax-flow {:call            :dashboard/make-clean
-            :uri-fn          (fn []
-                               (if (>= (t/hour (t/time-now)) 18)
-                                 (str "/cyber/clean/update?merge=true&nt=true&nf=true")
-                                 (str "/cyber/clean/update?merge=true&mt=true&mf=true")))
-            :is-post         false
-            :data            :dashboard/make-clean-data
-            :clean           :note/make-clean-data-clean
-            :success-notice  true
+(ajax-flow {:call                   :dashboard/make-clean
+            :uri-fn                 (fn []
+                                      (if (>= (t/hour (t/time-now)) 18)
+                                        (str "/cyber/clean/update?merge=true&nt=true&nf=true")
+                                        (str "/cyber/clean/update?merge=true&mt=true&mf=true")))
+            :is-post                false
+            :data                   :dashboard/make-clean-data
+            :clean                  :note/make-clean-data-clean
+            :success-notice         true
             :success-callback-event [[:dashboard/recent]]
-            :failure-notice  true})
+            :failure-notice         true})
 
 ;添加电视追踪
 (ajax-flow {:call    :movie/movie-add

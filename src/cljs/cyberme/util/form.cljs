@@ -18,9 +18,9 @@
   ;[:note "概述" "简短的描述物品特征，比如保质期、存放条件等"
   ; {:type :textarea :attr {:rows 2}}]"
   [id title bodies footer-text validate-submit
-   {:keys [subscribe-ajax call-when-exit call-when-success]}]
+   {:keys [subscribe-ajax call-when-exit call-when-success origin-data]}]
   (r/with-let
-    [fields (r/atom {})
+    [fields (r/atom (or origin-data {}))
      errors (r/atom {})]
     (letfn [(common-fields [id label hint {:keys [type attr selects]}]
               (r/with-let [v (r/cursor fields [id])
@@ -31,14 +31,14 @@
                              (str hint)]]
                            [(cond (= type :textarea) :textarea.textarea
                                   (= type :select) :div.select
-                                  :else :input.input)
+                                  :else :input.input) ;type
                             (merge (if (= type :select)
                                      {:id id}
                                      {:id        id
                                       :type      (if type type :text)
-                                      :value     @v
+                                      :value     (str @v)
                                       :on-change #(reset! v (.. % -target -value))})
-                                   (if attr attr {}))
+                                   (if attr attr {})) ;attr
                             (when-not (nil? selects)
                               [:select
                                {:id        id
@@ -68,7 +68,7 @@
             [:button.button.is-primary.is-fullwidth
              {:on-click (if is-success-call
                           (fn [_]
-                            (reset! fields {})
+                            (reset! fields (or origin-data {}))
                             (reset! errors {})
                             (rf/dispatch [:app/hide-modal id])
                             (doseq [event call-when-success]
@@ -79,4 +79,6 @@
              (if is-success-call "关闭" footer-text)])
           fields
           errors
-          #(doseq [event call-when-exit] (rf/dispatch event)))))))
+          #(doseq [event call-when-exit]
+             (reset! fields (or origin-data {}))
+             (rf/dispatch event)))))))

@@ -28,7 +28,9 @@
     [cyberme.modals :as modals]
     [cyberme.login.core :as login]
     [cyberme.validation :as va]
-    [clojure.string :as str])
+    [clojure.string :as str]
+    [cljs-time.format :as format]
+    [cljs-time.core :as t])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -81,6 +83,32 @@
                 :data   :note/add-data
                 :clean  :note/add-data-clean})
 
+(defn blue-add-dialog
+  []
+  (dialog :set-blue-dialog
+          "添加 Blue 信息"
+          [[:day "日期" "今天填写 0，昨天填写 -1，以此类推"]
+           [:blue "确认?" "默认为 true，可填写 false" {:type :select :selects ["是的" "取消"]}]]
+          "确定"
+          #(if-let [err (va/validate! @%1 [[:day va/required] [:blue va/required]])]
+             (reset! %2 err)
+             (rf/dispatch [:dashboard/set-blue @%1]))
+          {:subscribe-ajax    [:dashboard/set-blue-data]
+           :call-when-exit    [[:dashboard/set-blue-data-clean]]
+           :call-when-success [[:dashboard/set-blue-data-clean]
+                               [:dashboard/recent]]
+           :origin-data {:day (if (> (t/hour (t/time-now)) 12) 0 -1) :blue "是的"}}))
+
+;添加 Blue 信息
+(req/ajax-flow {:call   :dashboard/set-blue
+                :uri-fn #(let [day-delta (js/parseInt (:day %))
+                               date (format/unparse-local (format/formatter "yyyy-MM-dd")
+                                                          (t/plus (t/time-now) (t/period :days day-delta)))
+                               is-blue? (str/includes? (or (:blue %) "是") "是")]
+                           (str "/cyber/blue/update?day=" date "&blue=" is-blue?))
+                :data   :dashboard/set-blue-data
+                :clean  :dashboard/set-blue-data-clean})
+
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
               [:nav.navbar.is-info {:style {:z-index :5}}
@@ -91,6 +119,7 @@
                 [place-edit/place-edit-holder]
                 [good-edit/edit-good-holder]
                 [note-add-dialog]
+                [blue-add-dialog]
                 [:div {:style {:width :0px :height :0px :overflow :hidden}}
                  [place-new/new-place-btn]
                  [package-new/new-package-btn]
@@ -155,6 +184,9 @@
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:dashboard/make-clean])}
                      "标记清洁"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:app/show-modal :set-blue-dialog])}
+                     "标记 Blue"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:dashboard/todo-sync])}
                      "同步待办"]]]

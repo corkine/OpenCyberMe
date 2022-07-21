@@ -204,11 +204,11 @@
         changed? (not= {:MorningBrushTeeth MorningBrushTeeth
                         :NightBrushTeeth   NightBrushTeeth
                         :MorningCleanFace  MorningCleanFace
-                        :NightCleanFace    NightCleanFace} full-data)
-        _ (if yesterday
-            (db/set-someday {:day  (.minusDays (LocalDate/now) 1)
-                             :info (clojure.core/merge (or info {}) full-data)})
-            (db/set-today {:info (clojure.core/merge (or info {}) full-data)}))]
+                        :NightCleanFace    NightCleanFace} full-data)]
+    (if yesterday
+      (db/set-someday {:day  (.minusDays (LocalDate/now) 1)
+                       :info (clojure.core/merge (or info {}) full-data)})
+      (db/set-today {:info (clojure.core/merge (or info {}) full-data)}))
     {:message (if yesterday "昨日数据已更新。" "今日数据已更新。")
      :code    500
      :update  changed?
@@ -222,9 +222,9 @@
                   (LocalDate/parse day)
                   (catch Exception _ (LocalDate/now))))
           {:keys [info]} (db/someday {:day day})
-          old-blue (:blue info)
-          _ (db/set-someday {:day  day
-                             :info (assoc (or info {}) :blue blue)})]
+          old-blue (:blue info)]
+      (db/set-someday {:day  day
+                       :info (assoc (or info {}) :blue blue)})
       {:message (str "设置 Blue：" blue " 成功。")
        :status  1
        :update  (if (= old-blue blue) false true)})
