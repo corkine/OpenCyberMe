@@ -8,8 +8,9 @@
             [clojure.set :as set]
             [cyberme.cyber.slack :as slack]
             [cyberme.config :refer [edn-in]]
-            [cheshire.core :as json])
-  (:import (java.time LocalTime LocalDateTime)))
+            [cheshire.core :as json]
+            [clojure.string :as str])
+  (:import (java.time LocalTime LocalDateTime Period Duration)))
 
 (defn url [token locale]
   (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=1&hourlysteps=24"
@@ -49,18 +50,50 @@
     (catch Exception e
       (log/error "[weather-service] failed to request: " (.getMessage e)))))
 
+(defn remap-weather-info [in]
+  (cond (str/includes? in "最近的降雨带")
+        (let [[_ target] (re-find #"最近的降雨带在(.*?)外呢" (str (or in "")))]
+          (str "降雨带：" target "外"))
+        :else in))
+
 (defonce weather-cache (atom {}))
 
 (defn set-weather-cache! [place weather]
   (swap! weather-cache dissoc place)
-  (swap! weather-cache assoc place {:weather weather
+  (swap! weather-cache assoc place {:weather (remap-weather-info weather)
+                                    :origin weather
                                     :update  (LocalDateTime/now)}))
 
 (defn unset-weather-cache! [place]
   (swap! weather-cache dissoc place))
 
 (defn get-weather-cache [place]
-  (get @weather-cache place nil))
+  (let [{:keys [weather ^LocalDateTime update] :as origin}
+        (get @weather-cache place nil)]
+    (when (and weather update)
+      (assoc origin :weather (str weather " +"
+                                  (.toMinutes (Duration/between
+                                                update (LocalDateTime/now)))
+                                  "m")))))
+
+(defn weather-routine-test []
+  (let [now (LocalTime/now)
+        hour (.getHour now)]
+    (let [token (edn-in [:weather :token])
+          check-list (edn-in [:weather :check])]
+      (doseq [check check-list]
+        (let [locale-map (edn-in [:weather :map check])
+              locale (:locale locale-map)
+              name (:name locale-map)]
+          (cond (= hour 7)
+                (if-let [weather (check-weather token locale true)]
+                  (slack/notify (str name ": " weather) "SERVER"))
+                (and (> hour 7) (<= hour 20))
+                (if-let [weather (check-weather token locale false)]
+                  (do (set-weather-cache! check weather)
+                      (slack/notify (str name ": " weather) "SERVER")))
+                :else
+                (unset-weather-cache! check)))))))
 
 ;初步设计：每天早 7:00 预告当日天气，每天 8:00 - 20:00 预告本小时降雨情况
 ;程序每 5 分钟运行一次，如果在时间范围内，则通知，否则不通知
