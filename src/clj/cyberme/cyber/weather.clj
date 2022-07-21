@@ -68,7 +68,7 @@
 (defn weather-routine-once []
   (let [now (LocalTime/now)
         hour (.getHour now)]
-    (if (-> now (.getMinute) (<= 5))
+    (if (-> now (.getMinute) (< 5))
       (let [token (edn-in [:weather :token])
             check-list (edn-in [:weather :check])]
         (doseq [check check-list]
@@ -80,10 +80,10 @@
                     (slack/notify (str name ": " weather) "SERVER"))
                   (and (> hour 7) (<= hour 20))
                   (if-let [weather (check-weather token locale false)]
-                    (do (set-weather-cache! name weather)
+                    (do (set-weather-cache! check weather)
                         (slack/notify (str name ": " weather) "SERVER")))
                   :else
-                  (unset-weather-cache! name))))))))
+                  (unset-weather-cache! check))))))))
 
 (defn backend-weather-routine []
   (while true
