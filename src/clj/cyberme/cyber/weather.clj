@@ -25,11 +25,12 @@
 ;                 :precipitation 每小时降雨 :apparent_temperature 每小时实际温度 :humidity 怡人度
 ;                 :wind 风速和风向 :cloudrate 云量 :air_quality 空气质量 :pressure 气压 :dswrf ??
 ;                 :description 一句话总结，此总结为当天总结, 比如 未来24小时多云
-(json/parse-string
-  (:body @(client/request {:url (url (edn-in [:weather :token]) (edn-in [:weather :map :na-tie :locale]))
-                           :method :get
-                           :headers {"Content-Type" "application/json"}}))
-  true)
+(comment
+  (json/parse-string
+    (:body @(client/request {:url (url (edn-in [:weather :token]) (edn-in [:weather :map :na-tie :locale]))
+                             :method :get
+                             :headers {"Content-Type" "application/json"}}))
+    true))
 
 (defn check-weather
   "检查天气信息，token 为彩云 API，place 为目标经纬度，for-day? 是否获取当日天气/每小时天气一句话信息"
