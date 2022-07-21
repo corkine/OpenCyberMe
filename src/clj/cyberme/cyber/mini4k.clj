@@ -8,7 +8,7 @@
             [clojure.set :as set]
             [cyberme.cyber.slack :as slack]
             [cyberme.config :refer [edn-in]]
-            [cuerdas.core :as str]))
+            [clojure.string :as str]))
 
 (defn parse-data
   "根据 URL 解析获得现在更新的集数"

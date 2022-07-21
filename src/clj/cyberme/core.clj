@@ -16,7 +16,8 @@
     [cyberme.cyber.task :as task]
     [cyberme.cyber.inspur :as inspur]
     [cyberme.config :refer [edn]]
-    [cyberme.cyber.mini4k :as mini4k])
+    [cyberme.cyber.mini4k :as mini4k]
+    [cyberme.cyber.weather :as weather])
   (:gen-class)
   (:import (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)))
@@ -101,7 +102,11 @@
                   (when (contains? enable-services :auto)
                     (future
                       (Thread/sleep 2000)
-                      (inspur/backend-hcm-auto-check-service))))
+                      (inspur/backend-hcm-auto-check-service)))
+                  (when (contains? enable-services :weather)
+                    (future
+                      (Thread/sleep 2000)
+                      (weather/backend-weather-routine))))
                 :stop
                 (do
                   (backup-token)
