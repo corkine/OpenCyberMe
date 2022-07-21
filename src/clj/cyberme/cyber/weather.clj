@@ -80,10 +80,10 @@
                     (slack/notify (str name ": " weather) "SERVER"))
                   (and (> hour 7) (<= hour 20))
                   (if-let [weather (check-weather token locale false)]
-                    (do (set-weather-cache! locale weather)
+                    (do (set-weather-cache! name weather)
                         (slack/notify (str name ": " weather) "SERVER")))
                   :else
-                  (unset-weather-cache! locale))))))))
+                  (unset-weather-cache! name))))))))
 
 (defn backend-weather-routine []
   (while true
