@@ -9,7 +9,7 @@
             [cyberme.cyber.slack :as slack]
             [cyberme.config :refer [edn-in]]
             [cheshire.core :as json])
-  (:import (java.time LocalTime)))
+  (:import (java.time LocalTime LocalDateTime)))
 
 (defn url [token locale]
   (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=1&hourlysteps=24"
@@ -27,8 +27,8 @@
 ;                 :description 一句话总结，此总结为当天总结, 比如 未来24小时多云
 (comment
   (json/parse-string
-    (:body @(client/request {:url (url (edn-in [:weather :token]) (edn-in [:weather :map :na-tie :locale]))
-                             :method :get
+    (:body @(client/request {:url     (url (edn-in [:weather :token]) (edn-in [:weather :map :na-tie :locale]))
+                             :method  :get
                              :headers {"Content-Type" "application/json"}}))
     true))
 
@@ -37,8 +37,8 @@
   [token place for-day?]
   (try
     (let [response (json/parse-string
-                     (:body @(client/request {:url (url token place)
-                                              :method :get
+                     (:body @(client/request {:url     (url token place)
+                                              :method  :get
                                               :headers {"Content-Type" "application/json"}}))
                      true)]
       (if (= "ok" (-> response :status))
@@ -48,6 +48,19 @@
         (log/error "[weather-service] api failed with: " (dissoc response :result))))
     (catch Exception e
       (log/error "[weather-service] failed to request: " (.getMessage e)))))
+
+(defonce weather-cache (atom {}))
+
+(defn set-weather-cache! [place weather]
+  (swap! weather-cache dissoc place)
+  (swap! weather-cache assoc place {:weather weather
+                                    :update  (LocalDateTime/now)}))
+
+(defn unset-weather-cache! [place]
+  (swap! weather-cache dissoc place))
+
+(defn get-weather-cache [place]
+  (get @weather-cache place nil))
 
 ;初步设计：每天早 7:00 预告当日天气，每天 8:00 - 20:00 预告本小时降雨情况
 ;程序每 5 分钟运行一次，如果在时间范围内，则通知，否则不通知
@@ -67,7 +80,10 @@
                     (slack/notify (str name ": " weather) "SERVER"))
                   (and (> hour 7) (<= hour 20))
                   (if-let [weather (check-weather token locale false)]
-                    (slack/notify (str name ": " weather) "SERVER")))))))))
+                    (set-weather-cache! locale weather)
+                    (slack/notify (str name ": " weather) "SERVER"))
+                  :else
+                  (unset-weather-cache! locale))))))))
 
 (defn backend-weather-routine []
   (while true

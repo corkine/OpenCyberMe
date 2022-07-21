@@ -61,6 +61,7 @@
 (s/def :location/ho double?)
 (s/def :todo/code string?)
 (s/def :todo/focus boolean?)
+(s/def :weather/id string?)
 (s/def :todo/showCompleted boolean?)
 (s/def :todo/listName string?)
 (s/def :todo/day int?)
@@ -189,10 +190,10 @@
                           (hr/response (inspur/handle-serve-hint query)))}}]
    ["/hint_summary_todo"
     {:get {:summary     "当日生活提醒服务：HCM、健身、饮食和刷牙"
-           :description "返回当日生活信息，比如 HCM 打卡，健身，饮食和刷牙情况
-            此外包括 Summary API 信息和 TODO 信息"
+           :description "返回当日生活信息，比如 HCM 打卡，健身，饮食和刷牙情况，以及天气信息（来自缓存）
+            此外包括 Summary API 信息和 TODO 信息，weather/id 为天气 ID"
            :parameters  {:query (s/keys :req-un []
-                                        :opt-un [:hcm/token :hcm/kpi :todo/focus])}
+                                        :opt-un [:hcm/token :hcm/kpi :todo/focus :weather/id])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (inspur/handle-serve-hint-summary query)))}}]
    ["/now"

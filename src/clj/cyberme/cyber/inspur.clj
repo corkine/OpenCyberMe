@@ -12,7 +12,8 @@
             [cyberme.cyber.fitness :as fitness]
             [cyberme.cyber.express :as express]
             [cyberme.cyber.mini4k :as mini4k]
-            [cyberme.tool :as tool])
+            [cyberme.tool :as tool]
+            [cyberme.cyber.weather :as weather])
   (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
            (java.time.format DateTimeFormatter)
            (java.util UUID)))
@@ -829,12 +830,14 @@
     (assoc hint :Summary summary
                 :Todo todo)))
 
-(defn handle-serve-hint-summary [{:keys [kpi token focus]}]
+(defn handle-serve-hint-summary [{:keys [kpi token focus id]}]
   (let [hint (handle-serve-hint {:token token})
         summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
-        todo (todo/handle-today {:focus focus :showCompleted false})]
+        todo (todo/handle-today {:focus focus :showCompleted false})
+        weather (weather/get-weather-cache (or (keyword id) :na-tie))]
     (assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
-                :Todo todo)))
+                :Todo todo
+                :Weather weather)))
 
 (defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话"
