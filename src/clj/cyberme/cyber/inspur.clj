@@ -834,10 +834,10 @@
   (let [hint (handle-serve-hint {:token token})
         summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
         todo (todo/handle-today {:focus focus :showCompleted false})
-        weather (weather/get-weather-cache (or (keyword id) :na-tie))]
+        w (weather/get-weather-cache (or (keyword id) :na-tie))]
     (assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
                 :Todo todo
-                :Weather weather)))
+                :Weather w)))
 
 (defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话"
