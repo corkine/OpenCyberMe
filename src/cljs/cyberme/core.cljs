@@ -109,6 +109,43 @@
                 :data   :dashboard/set-blue-data
                 :clean  :dashboard/set-blue-data-clean})
 
+(defn clean-add-dialog
+  []
+  (dialog :set-clean-dialog
+          "添加 Clean 信息"
+          [[:day "日期" "今天填写 0，昨天填写 -1，以此类推"]
+           [:time "时间段" "上午或者下午" {:type :select :selects ["上午" "下午"]}]
+           [:confirm "确认?" "选择撤销将撤销今日所有数据，不论时间段" {:type :select :selects ["确定" "撤销"]}]]
+          "确定"
+          #(if-let [err (va/validate! @%1 [[:day va/required] [:time va/required] [:confirm va/required]])]
+             (reset! %2 err)
+             (rf/dispatch [:dashboard/set-clean @%1]))
+          {:subscribe-ajax    [:dashboard/set-clean-data]
+           :call-when-exit    [[:dashboard/set-clean-data-clean]]
+           :call-when-success [[:dashboard/set-clean-data-clean]
+                               [:dashboard/recent]]
+           :origin-data (let [now (t/time-now) hour (t/hour now)]
+                          {:day (if (< hour 10) -1 0)
+                           :time (if (> hour 12) "上午" "下午")
+                           :confirm "确定"})}))
+
+
+;添加 Clean 信息
+(req/ajax-flow {:call   :dashboard/set-clean
+                :uri-fn #(let [day-delta (js/parseInt (:day %))
+                               date (format/unparse-local (format/formatter "yyyy-MM-dd")
+                                                          (t/plus (t/time-now)
+                                                                  (t/period :days day-delta)))
+                               is-morning? (str/includes? (or (:time %) "上午") "上午")
+                               is-confirm? (str/includes? (or (:confirm %) "确定") "确定")]
+                           (if is-confirm?
+                             (if is-morning?
+                               (str "/cyber/clean/update?merge=true&nt=true&nf=true&day=" date)
+                               (str "/cyber/clean/update?merge=true&mt=true&mf=true&day=" date))
+                             (str "/cyber/clean/update?merge=false&nt=false&nf=false&mt=false&mf=false&day=" date)))
+                :data   :dashboard/set-clean-data
+                :clean  :dashboard/set-clean-data-clean})
+
 (defn navbar []
   (r/with-let [expanded? (r/atom false)]
               [:nav.navbar.is-info {:style {:z-index :5}}
@@ -120,6 +157,7 @@
                 [good-edit/edit-good-holder]
                 [note-add-dialog]
                 [blue-add-dialog]
+                [clean-add-dialog]
                 [:div {:style {:width :0px :height :0px :overflow :hidden}}
                  [place-new/new-place-btn]
                  [package-new/new-package-btn]
@@ -181,9 +219,12 @@
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:note/last])}
                      "最近笔记"]
-                    [:a.navbar-item
+                    #_[:a.navbar-item
                      {:on-click #(rf/dispatch [:dashboard/make-clean])}
                      "标记清洁"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:app/show-modal :set-clean-dialog])}
+                     "标记清洁.."]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :set-blue-dialog])}
                      "标记 Blue"]

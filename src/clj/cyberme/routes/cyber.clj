@@ -429,7 +429,8 @@
     {:get {:summary     "更新清洁情况"
            :description "merge 用于和数据库数据整合，mt 早刷牙，nt 晚刷牙，mf 早用药，nf 晚用药，
             如果使用 merge，参数只有为 true 的才改写为 true，否者保持数据库记录。如果不适用 merge，
-            未传递的参数看做 false 强行写入。"
+            未传递的参数看做 false 强行写入。
+            可传递 yesterday true/false 指定昨天，传递 day yyyy-mm-dd 指定日期，解析出错使用今天"
            :parameters  {:query (s/keys :opt-un [:global/user :global/secret
                                                  :clean/merge :clean/mt :clean/nt
                                                  :clean/mf :clean/nf

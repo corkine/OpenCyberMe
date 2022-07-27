@@ -66,10 +66,10 @@
         keep-in (count (take-while find-fn passed-dates))
         ;;没有在 blue 数据中找到当天 blue 数据，或当前存在 blue 数据但也存在运动数据
         find-fn-balance #(let [day-info (get this-year-map %)]
-                   (or (nil? day-info) (not (blue-fn day-info))
-                       (if-let [this-day-active (get active-map (keyword (str (:day day-info))))]
-                         (and (:active this-day-active)
-                              (>= (:active this-day-active) fitness/goal-active)))))
+                           (or (nil? day-info) (not (blue-fn day-info))
+                               (if-let [this-day-active (get active-map (keyword (str (:day day-info))))]
+                                 (and (:active this-day-active)
+                                      (>= (:active this-day-active) fitness/goal-active)))))
         keep-in-balance (count (take-while find-fn-balance passed-dates))
         today? (-> (get this-year-map today) :info :blue boolean)]
     {:max-count keep-in :balance-count keep-in-balance :today today?}))
@@ -187,10 +187,14 @@
        :HabitHint          "?+1!"                           ;🎀13-1?? 🎀13-1? 🎀13+1? 🎀13+1!
        })))
 
-(defn handle-clean-update [{:keys [merge mt nt mf nf yesterday]
+(defn handle-clean-update [{:keys [merge mt nt mf nf yesterday day]
                             :or   {merge true mt false nt false mf false nf false yesterday false}}]
-  (let [{:keys [info]} (if yesterday (db/someday {:day (.minusDays (LocalDate/now) 1)})
-                                     (db/today))
+  (let [someday (if (nil? day)
+                  (LocalDate/now)
+                  (try (LocalDate/parse day)
+                       (catch Exception _ (LocalDate/now))))
+        target-day (if yesterday (.minusDays (LocalDate/now) 1) someday)
+        {:keys [info]} (db/someday {:day target-day})
         {:keys [MorningBrushTeeth NightCleanFace MorningCleanFace NightBrushTeeth]} info
         full-data (if merge
                     {:MorningBrushTeeth (or MorningBrushTeeth (boolean mt))
@@ -205,14 +209,12 @@
                         :NightBrushTeeth   NightBrushTeeth
                         :MorningCleanFace  MorningCleanFace
                         :NightCleanFace    NightCleanFace} full-data)]
-    (if yesterday
-      (db/set-someday {:day  (.minusDays (LocalDate/now) 1)
-                       :info (clojure.core/merge (or info {}) full-data)})
-      (db/set-today {:info (clojure.core/merge (or info {}) full-data)}))
+    (db/set-someday {:day  target-day
+                     :info (clojure.core/merge (or info {}) full-data)})
     {:message (if yesterday "昨日数据已更新。" "今日数据已更新。")
      :code    500
      :update  changed?
-     :status 1}))
+     :status  1}))
 
 (defn handle-blue-set [{:keys [blue day]}]
   (try

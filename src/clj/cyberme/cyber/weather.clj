@@ -54,6 +54,8 @@
   (cond (str/includes? in "最近的降雨带")
         (let [[_ target] (re-find #"最近的降雨带在(.*?)外呢" (str (or in "")))]
           (str "降雨带：" target "外"))
+        (str/includes? in "，放心出门吧")
+        (str/replace in "，放心出门吧" "")
         :else in))
 
 (defonce weather-cache (atom {}))
@@ -114,7 +116,7 @@
                   (and (> hour 7) (<= hour 20))
                   (if-let [weather (check-weather token locale false)]
                     (do (set-weather-cache! check weather)
-                        (slack/notify (str name ": " weather) "SERVER")))
+                        (slack/notify (str name ": " weather) "PIXEL")))
                   :else
                   (unset-weather-cache! check))))))))
 
