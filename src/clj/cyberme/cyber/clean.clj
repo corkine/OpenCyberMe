@@ -211,7 +211,7 @@
                         :NightCleanFace    NightCleanFace} full-data)]
     (db/set-someday {:day  target-day
                      :info (clojure.core/merge (or info {}) full-data)})
-    {:message (if yesterday "昨日数据已更新。" "今日数据已更新。")
+    {:message (if yesterday "昨日数据已更新。" (str target-day "数据已更新。"))
      :code    500
      :update  changed?
      :status  1}))

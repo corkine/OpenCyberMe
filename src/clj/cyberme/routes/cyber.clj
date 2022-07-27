@@ -79,6 +79,7 @@
 (s/def :clean/mf boolean?)
 (s/def :clean/nf boolean?)
 (s/def :clean/yesterday boolean?)
+(s/def :clean/day string?)
 (s/def :blue/blue boolean?)
 (s/def :blue/day string?)
 (s/def :fitness/data any?)
@@ -434,7 +435,8 @@
            :parameters  {:query (s/keys :opt-un [:global/user :global/secret
                                                  :clean/merge :clean/mt :clean/nt
                                                  :clean/mf :clean/nf
-                                                 :clean/yesterday])}
+                                                 :clean/yesterday
+                                                 :clean/day])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (clean/handle-clean-update query)))}}]])
 

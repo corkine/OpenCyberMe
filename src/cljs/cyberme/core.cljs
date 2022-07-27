@@ -115,7 +115,7 @@
           "添加 Clean 信息"
           [[:day "日期" "今天填写 0，昨天填写 -1，以此类推"]
            [:time "时间段" "上午或者下午" {:type :select :selects ["上午" "下午"]}]
-           [:confirm "确认?" "选择撤销将撤销今日所有数据，不论时间段" {:type :select :selects ["确定" "撤销"]}]]
+           [:confirm "确认?" "选择撤销将撤销当日所有数据，不论时间段" {:type :select :selects ["确定" "撤销"]}]]
           "确定"
           #(if-let [err (va/validate! @%1 [[:day va/required] [:time va/required] [:confirm va/required]])]
              (reset! %2 err)
@@ -140,8 +140,8 @@
                                is-confirm? (str/includes? (or (:confirm %) "确定") "确定")]
                            (if is-confirm?
                              (if is-morning?
-                               (str "/cyber/clean/update?merge=true&nt=true&nf=true&day=" date)
-                               (str "/cyber/clean/update?merge=true&mt=true&mf=true&day=" date))
+                               (str "/cyber/clean/update?merge=true&mt=true&mf=true&day=" date)
+                               (str "/cyber/clean/update?merge=true&nt=true&nf=true&day=" date))
                              (str "/cyber/clean/update?merge=false&nt=false&nf=false&mt=false&mf=false&day=" date)))
                 :data   :dashboard/set-clean-data
                 :clean  :dashboard/set-clean-data-clean})
