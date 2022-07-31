@@ -321,7 +321,7 @@
         (progress-bar score :goal-active goal-active :goal-cut goal-cut)
         ;;PLANT
         plant-info @(rf/subscribe [:dashboard/plant-week-data])
-        ;;plant-status (:status (:data plant-info))
+        plant-status (:status (:data plant-info))
         learn-done (= "done" (:learn (:data plant-info)))]
     [:div.container
      [:div.columns
@@ -490,7 +490,7 @@
                    [:span.has-text-weight-bold.is-family-code "我的一天"
                     [:span.has-text-weight-normal
                      (gstring/format " (%s/%s)" finished-count all-count)]
-                    #_[:span.has-text-weight-normal.is-size-6.is-clickable
+                    [:span.has-text-weight-normal.is-size-6.is-clickable
                      {:on-click #(rf/dispatch [:dashboard/plant-week-set-today])}
                      " "
                      [:<>
@@ -500,7 +500,7 @@
                          (if (= plant 1) [:i.fa.fa-pagelines.has-text-success]
                                          [:i.fa.fa-pagelines {:style {:color "#ddd"}}])])]
                      " "]
-                    [:span " "]
+                    #_[:span " "]
                     (if day-work
                       [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable
                        {:on-click #(do (rf/dispatch [:dashboard/day-work-edit nil])
