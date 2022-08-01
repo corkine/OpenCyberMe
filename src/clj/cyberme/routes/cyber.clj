@@ -26,6 +26,7 @@
     [cyberme.cyber.diary :as diary]
     [cyberme.cyber.task :as task]
     [clojure.tools.logging :as log]
+    [cyberme.cyber.week-plan :as week]
     [cyberme.cyber.psych :as psych])
   (:import (java.time LocalDate)))
 
@@ -242,7 +243,7 @@
                           (hr/response
                             (inspur/handle-serve-sometime-summary
                               (merge query
-                                     {:date-list (inspur/day-from (LocalDate/of 2021 06 01))
+                                     {:date-list               (inspur/day-from (LocalDate/of 2021 06 01))
                                       :with-last-month-all-day true}))))}}]
 
    ["/summary"
@@ -513,8 +514,9 @@
                            (hr/response (diary/handle-day-work-update data)))}}]
 
    ["/plant-week"
-    {:get  {:summary     "获取本周浇花和每周情况"
-            :description "获取本周浇花和每周学习情况: {:status [0 1 0 1 0 1 0] :learn :done/:not-done}"
+    {:get  {:summary     "获取本周浇花和每周学习情况"
+            :description "获取本周浇花和每周学习情况: {:status [0 1 0 1 0 1 0] :learn :done/:not-done
+            :week-plan [本周计划信息]}"
             :handler     (fn [_] (hr/response (diary/handle-plant-learn-week)))}
      :post {:summary     "更新本周浇花情况"
             :description "不管参数如何，如果今天已经浇花，则设置为未浇花，反之设置为已浇花，返回本周浇花情况"
@@ -596,6 +598,47 @@
             :handler     (fn [{{:keys [body path]} :parameters}]
                            (hr/response (task/upload-job (:id path) body)))}}]])
 
+(s/def :week-plan/week-id string?)
+
+(def week-plan-route
+  "其中获取本周计划使用 API /dashboard/plant-week，其余 API 参见此处"
+  ["/week-plan"
+   {:tags #{"每周计划"}}
+   ["/add-item"
+    {:post {:summary     "添加本周计划项目"
+            :description "添加本周计划项目，需要传入至少 name, category,
+            可选 description, progress, id，其中 category 为 learn/work/fitness/diet"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :body {:name string? :category string?}}
+            :handler     (fn [{{body :body} :parameters}]
+                           (hr/response (week/handle-add-week-plan-item body)))}}]
+   ["/delete-item/:item-id"
+    {:post {:summary     "删除本周计划项目"
+            :description "删除此项目和项目的每个记录，最后一条会同时删除记录行/本周计划"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :path {:item-id string?}}
+            :handler     (fn [{{{:keys [item-id]} :path} :parameters}]
+                           (hr/response (week/handle-delete-week-plan-item item-id)))}}]
+   ["/update-item/:item-id/add-log"
+    {:post {:summary     "更新本周计划项目：添加记录"
+           :description "更新本周计划项目：添加记录。
+           其中 body 必须传入 progress-delta 项，可以有 name，description，id，update"
+           :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                         :path {:item-id string?}
+                         :body {:progress-delta double?}}
+           :handler     (fn [{{{:keys [item-id]} :path
+                               body :body} :parameters}]
+                          (hr/response (week/handle-add-week-plan-item-log
+                                         item-id body)))}}]
+   ["/update-item/:item-id/remove-log/:log-id"
+    {:post {:summary     "更新本周计划项目：删除记录"
+            :description "更新本周计划项目：删除记录"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :path  {:item-id string? :log-id string?}}
+            :handler     (fn [{{:keys [item-id log-id]} :parameters}]
+                           (hr/response (week/handle-remove-week-plan-item-log
+                                          item-id log-id)))}}]])
+
 (defn cyber-routes []
   (conj
     basic-route
@@ -612,4 +655,5 @@
     blue-route
     dashboard-route
     diary-route
-    task-route))
+    task-route
+    week-plan-route))

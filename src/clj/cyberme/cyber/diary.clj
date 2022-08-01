@@ -3,7 +3,8 @@
             [clojure.tools.logging :as log]
             [next.jdbc :as jdbc]
             [cyberme.cyber.inspur :as inspur]
-            [cyberme.tool :as tool])
+            [cyberme.tool :as tool]
+            [cyberme.cyber.week-plan :as week])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time LocalDate LocalDateTime)))
@@ -207,7 +208,8 @@
         learn-done (= count-learn-req count-learn-done)]
     {:message "获取成功"
      :data    {:status status
-               :learn  (if learn-done :done :not-done)}
+               :learn  (if learn-done :done :not-done)
+               :week-plan (week/handle-get-week-plan)}
      :status  1}))
 
 (defn handle-plant-week-update-today
@@ -215,11 +217,11 @@
   [data]
   (try
     (let [today-info (:info (db/today))
-          non-plant? (nil? (:plant today-info))
-          _ (db/set-someday {:day  (LocalDate/now)
-                             :info (if non-plant?
-                                     (assoc today-info :plant 1)
-                                     (dissoc today-info :plant))})]
+          non-plant? (nil? (:plant today-info))]
+      (db/set-someday {:day  (LocalDate/now)
+                       :info (if non-plant?
+                               (assoc today-info :plant 1)
+                               (dissoc today-info :plant))})
       (let [this-week (tool/all-week-day)
             week-info (db/day-range {:from (first this-week) :to (last this-week)})
             week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
@@ -227,7 +229,7 @@
             status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)]
         {:message (format "之前%s, 现已更新为%s。" (if non-plant? "没浇花" "浇花了")
                           (if-not non-plant? "没浇花" "浇花了"))
-         :data    {:status status}
+         :data    {:status    status}
          :status  1}))
     (catch Exception e
       (log/error e)
@@ -245,13 +247,12 @@
             today-info (if start (assoc today-info :learn-request true) today-info)
             today-info (if non-start (dissoc today-info :learn-request) today-info)
             today-info (if end (assoc today-info :learn-done true) today-info)
-            today-info (if non-end (dissoc today-info :learn-done) today-info)
-            ;如果本周当前已经平衡，则不允许设置 end 为 true，换言之没有 request 去 end
-            _ (if (and end
-                       (= :done (-> (handle-plant-learn-week) :data :learn)))
-                (throw (RuntimeException. "没有尚未完成的任务需要标记完成。")))
-            _ (db/set-someday t {:day  (LocalDate/now)
-                                 :info today-info})]
+            today-info (if non-end (dissoc today-info :learn-done) today-info)]
+        ;如果本周当前已经平衡，则不允许设置 end 为 true，换言之没有 request 去 end
+        (if (and end
+                 (= :done (-> (handle-plant-learn-week) :data :learn)))
+          (throw (RuntimeException. "没有尚未完成的任务需要标记完成。")))
+        (db/set-someday t {:day  (LocalDate/now) :info today-info})
         {:message (format "更新当日学习成功。 req: %s, done: %s"
                           (:learn-request today-info)
                           (:learn-done today-info))
