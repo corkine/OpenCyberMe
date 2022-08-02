@@ -6,8 +6,10 @@
             [cljs-time.core :as t]
             [cyberme.util.tool :as tool]
             [cyberme.validation :as va]
+            [reagent.core :as r]
             [cyberme.util.form :refer [dialog]]
             [cyberme.util.echarts :refer [ECharts EChartsR EChartsM]]
+            [cyberme.dashboard.week-plan :as week]
             [cyberme.util.request :refer [ajax-flow] :as req]
             [cljs.pprint :refer [pprint]]))
 
@@ -322,7 +324,9 @@
         ;;PLANT
         plant-info @(rf/subscribe [:dashboard/plant-week-data])
         plant-status (:status (:data plant-info))
-        learn-done (= "done" (:learn (:data plant-info)))]
+        learn-done (= "done" (:learn (:data plant-info)))
+        ;;WEEK-PLAN
+        week-plans @(rf/subscribe [:dashboard/week-plan])]
     [:div.container
      [:div.columns
       [:div.column.pr-0
@@ -336,8 +340,7 @@
          [:span.is-clickable {:style    {:vertical-align :10%
                                          :font-size      :13px
                                          :color          :lightgray}
-                              :on-click #(do (rf/dispatch [:dashboard/recent])
-                                             (rf/dispatch [:dashboard/day-work]))}
+                              :on-click #(rf/dispatch [:dashboard/sync-all])}
           [:i.fa.fa-refresh]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap
          [:div {:style {:margin "-10px -30px -40px -30px"}}
@@ -468,97 +471,107 @@
          [:div#todo-info.mx-2.mt-3.is-unselectable.box
           [:p "没有 Microsoft TODO 数据"]]
          [:div#todo-info.mx-2.mt-3.is-unselectable.box
-          (for [day days]
-            ^{:key day}
-            [:<>
-             (if (= day (keyword today))
-               [:div.mb-5 {:style {:background-color "#f5f5f5"
-                                   :outline          "13px solid #f5f5f5"
-                                   :border-radius    :0px}}
-                (let [data (get todo day)
-                      data (filter #(and (not (or #_(str/includes? (:list %) "INSPUR")
-                                                (str/includes? (:list %) "任务")))
-                                         (= (:importance %) "high")) data)
-                      finished-count (count (filter #(= (:status %) "completed") data))
-                      all-count (count data)
-                      data (sort (fn [{s1 :status c1 :create_at :as a1} {s2 :status c2 :create_at :as a2}]
-                                   (cond (= s1 s2) (compare c2 c1)
-                                         (= "completed" s1) 100
-                                         (= "completed" s2) -100
-                                         :else (compare a1 a2))) data)]
-                  [:<>
-                   [:span.has-text-weight-bold.is-family-code "我的一天"
-                    [:span.has-text-weight-normal
-                     (gstring/format " (%s/%s)" finished-count all-count)]
-                    [:span.has-text-weight-normal.is-size-6.is-clickable
-                     {:on-click #(rf/dispatch [:dashboard/plant-week-set-today])}
-                     " "
-                     [:<>
-                      (for [plant plant-status]
-                        ^{:key (random-uuid)}
+          [:<>
+           [week/week-plan-add-dialog]
+           [week/week-plan-log-add-dialog]
+           [:div.mb-5
+            [:p
+             [:span.has-text-weight-bold.is-family-code "本周计划"]
+             [:span.has-text-weight-normal.is-size-7.is-clickable.dui-tips.ml-2.mb-2
+              {:on-click     #(rf/dispatch [:app/show-modal :add-week-plan!])
+               :data-tooltip "新建本周计划项"} "+"]]
+            [week/plan-widget week-plans]]
+           (for [day days]
+             ^{:key day}
+             [:<>
+              (if (= day (keyword today))
+                [:div.mb-5 {:style {:background-color "#f5f5f5"
+                                    :outline          "13px solid #f5f5f5"
+                                    :border-radius    :0px}}
+                 (let [data (get todo day)
+                       data (filter #(and (not (or #_(str/includes? (:list %) "INSPUR")
+                                                 (str/includes? (:list %) "任务")))
+                                          (= (:importance %) "high")) data)
+                       finished-count (count (filter #(= (:status %) "completed") data))
+                       all-count (count data)
+                       data (sort (fn [{s1 :status c1 :create_at :as a1} {s2 :status c2 :create_at :as a2}]
+                                    (cond (= s1 s2) (compare c2 c1)
+                                          (= "completed" s1) 100
+                                          (= "completed" s2) -100
+                                          :else (compare a1 a2))) data)]
+                   [:<>
+                    [:span.has-text-weight-bold.is-family-code "我的一天"
+                     #_[:span.has-text-weight-normal
+                        (gstring/format " (%s/%s)" finished-count all-count)]
+                     #_[:span.has-text-weight-normal.is-size-6.is-clickable
+                        {:on-click #(rf/dispatch [:dashboard/plant-week-set-today])}
+                        " "
                         [:<>
-                         (if (= plant 1) [:i.fa.fa-pagelines.has-text-success]
-                                         [:i.fa.fa-pagelines {:style {:color "#ddd"}}])])]
-                     " "]
-                    #_[:span " "]
-                    (if day-work
-                      [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable
-                       {:on-click #(do (rf/dispatch [:dashboard/day-work-edit nil])
-                                       (rf/dispatch [:dashboard/day-work]))}
-                       day-work]
-                      [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable
-                       {:on-click #(do (rf/dispatch [:global/notice {:message "已经完成日报吗？"
-                                                                     :callback [:dashboard/day-work-edit "已完成日报"]}])
-                                       (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
-                       "没有日报"])
-                    [:span " "]
-                    (if learn-done
-                      [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable.dui-tips
-                       {:on-click #(do (rf/dispatch [:dashboard/learn-week-set-today {:non-end true}]))
-                        :data-tooltip "已完成本周一学"}
-                       "TRAIN-WEEK"]
-                      [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable.dui-tips
-                       {:on-click #(do (rf/dispatch [:global/notice {:message "已经完成每周一学任务了吗？"
-                                                                     :callback [:dashboard/learn-week-set-today {:end true}]}])
-                                       (.open js/window "https://edu.inspur.com" "_blank"))
-                        :data-tooltip "未完成本周一学!"}
-                       "TRAIN-WEEK!!"])
-                    [:span " "]
-                    [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable.dui-tips
-                     {:on-click #(do (rf/dispatch [:dashboard/learn-week-set-today {:start true}]))
-                      :data-tooltip "新建学习请求"}
-                     "+"]]
-                   (for [{:keys [title status list] :as todo} data]
+                         (for [plant plant-status]
+                           ^{:key (random-uuid)}
+                           [:<>
+                            (if (= plant 1) [:i.fa.fa-pagelines.has-text-success]
+                                            [:i.fa.fa-pagelines {:style {:color "#ddd"}}])])]
+                        " "]
+                     [:span " "]
+                     (if day-work
+                       [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable
+                        {:on-click #(do (rf/dispatch [:dashboard/day-work-edit nil])
+                                        (rf/dispatch [:dashboard/day-work]))}
+                        day-work]
+                       [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable
+                        {:on-click #(do (rf/dispatch [:global/notice {:message  "已经完成日报吗？"
+                                                                      :callback [:dashboard/day-work-edit "已完成日报"]}])
+                                        (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
+                        "没有日报"])
+                     [:span " "]
+                     (if learn-done
+                       [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable.dui-tips
+                        {:on-click     #(do (rf/dispatch [:dashboard/learn-week-set-today {:non-end true}]))
+                         :data-tooltip "本周没有未完成每周一学的记录"}
+                        "每周一学"]
+                       [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable.dui-tips
+                        {:on-click     #(do (rf/dispatch [:global/notice {:message  "已经完成每周一学任务了吗？"
+                                                                          :callback [:dashboard/learn-week-set-today {:end true}]}])
+                                            (.open js/window "https://edu.inspur.com" "_blank"))
+                         :data-tooltip "未完成本周一学!"}
+                        "每周一学!!"])
+                     [:span " "]
+                     [:span.has-text-weight-normal.is-size-7.has-text-info.is-clickable.dui-tips
+                      {:on-click     #(do (rf/dispatch [:dashboard/learn-week-set-today {:start true}]))
+                       :data-tooltip "新建每周一学请求"}
+                      "+"]]
+                    (for [{:keys [title status list] :as todo} data]
+                      ^{:key todo}
+                      [:p.mt-1
+                       [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
+                       [:span.is-size-7 (when (= status "completed")
+                                          {:style {:text-decoration :line-through}})
+                        title]
+                       #_[:span.is-size-7.has-text-weight-light.has-text-danger
+                          (if (not= status "completed") " ×")]])])]
+                [:div.mb-4 {:style {:opacity 0.5}}
+                 [:span.has-text-weight-bold.is-family-code
+                  (cond (= day (keyword today)) "今天"
+                        (= day (keyword yesterday)) "昨天"
+                        (= day (keyword tomorrow)) "明天"
+                        (= day (keyword tomorrow+1)) "后天"
+                        :else day)]
+                 (let [data (get todo day)
+                       data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
+                                            (str/includes? (:list %) "任务"))) data)
+                       #_data #_(sort (fn [{s1 :status c1 :create_at l1 :list} {s2 :status c2 :create_at l2 :list}]
+                                        (cond (= l1 l2)
+                                              (cond (and (= "completed" s1) (= s1 s2)) (compare c2 c1)
+                                                    (= "completed" s1) 100
+                                                    (= "completed" s2) -100
+                                                    :else (compare c2 c1))
+                                              :else (compare l1 l2))) data)]
+                   (for [{:keys [time finish_at modified_at create_at
+                                 title status list importance] :as todo} data]
                      ^{:key todo}
                      [:p.mt-1
-                      [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
-                      [:span.is-size-7 (when (= status "completed")
-                                         {:style {:text-decoration :line-through}})
-                       title]
-                      #_[:span.is-size-7.has-text-weight-light.has-text-danger
-                         (if (not= status "completed") " ×")]])])]
-               [:div.mb-4 {:style {:opacity 0.5}}
-                [:span.has-text-weight-bold.is-family-code
-                 (cond (= day (keyword today)) "今天"
-                       (= day (keyword yesterday)) "昨天"
-                       (= day (keyword tomorrow)) "明天"
-                       (= day (keyword tomorrow+1)) "后天"
-                       :else day)]
-                (let [data (get todo day)
-                      data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
-                                           (str/includes? (:list %) "任务"))) data)
-                      #_data #_(sort (fn [{s1 :status c1 :create_at l1 :list} {s2 :status c2 :create_at l2 :list}]
-                                   (cond (= l1 l2)
-                                         (cond (and (= "completed" s1) (= s1 s2)) (compare c2 c1)
-                                               (= "completed" s1) 100
-                                               (= "completed" s2) -100
-                                               :else (compare c2 c1))
-                                         :else (compare l1 l2))) data)]
-                  (for [{:keys [time finish_at modified_at create_at
-                                title status list importance] :as todo} data]
-                    ^{:key todo}
-                    [:p.mt-1
-                     [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
-                     [:span.is-size-7 title]
-                     [:span.is-size-7.has-text-weight-light.has-text-danger
-                      (if (not= status "completed") " ×")]]))])])])]]]))
+                      [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
+                      [:span.is-size-7 title]
+                      [:span.is-size-7.has-text-weight-light.has-text-danger
+                       (if (not= status "completed") " ×")]]))])])]])]]]))

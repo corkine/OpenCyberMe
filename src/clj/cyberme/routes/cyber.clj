@@ -604,12 +604,18 @@
   "其中获取本周计划使用 API /dashboard/plant-week，其余 API 参见此处"
   ["/week-plan"
    {:tags #{"每周计划"}}
+   ["/list-item"
+    {:get {:summary     "列出本周计划项目"
+            :description "列出本周计划项目"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
+            :handler     (fn [_]
+                           (hr/response (week/handle-get-week-plan)))}}]
    ["/add-item"
     {:post {:summary     "添加本周计划项目"
             :description "添加本周计划项目，需要传入至少 name, category,
             可选 description, progress, id，其中 category 为 learn/work/fitness/diet"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                          :body {:name string? :category string?}}
+                          :body any?}
             :handler     (fn [{{body :body} :parameters}]
                            (hr/response (week/handle-add-week-plan-item body)))}}]
    ["/delete-item/:item-id"
@@ -625,7 +631,7 @@
            其中 body 必须传入 progress-delta 项，可以有 name，description，id，update"
            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                          :path {:item-id string?}
-                         :body {:progress-delta double?}}
+                         :body any?}
            :handler     (fn [{{{:keys [item-id]} :path
                                body :body} :parameters}]
                           (hr/response (week/handle-add-week-plan-item-log
@@ -635,7 +641,7 @@
             :description "更新本周计划项目：删除记录"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                           :path  {:item-id string? :log-id string?}}
-            :handler     (fn [{{:keys [item-id log-id]} :parameters}]
+            :handler     (fn [{{{:keys [item-id log-id]} :path} :parameters}]
                            (hr/response (week/handle-remove-week-plan-item-log
                                           item-id log-id)))}}]])
 

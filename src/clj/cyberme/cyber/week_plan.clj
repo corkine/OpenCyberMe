@@ -163,15 +163,16 @@
   [item-id {:keys [id name progress-delta]
             :or   {id             (.toString (UUID/randomUUID))
                    name           "无标题项目"
-                   progress-delta 0.0}
+                   progress-delta "0.0"}
             :as   log-input}]
   (try
     (jdbc/with-transaction
       [t db/*db*]
-      (let [log-input (merge {:id             id
+      (let [progress-delta (Double/parseDouble (str progress-delta))
+            log-input (merge log-input
+                             {:id             id
                               :name           name
-                              :progress-delta progress-delta}
-                             log-input)
+                              :progress-delta progress-delta})
             now (LocalDate/now)
             now-time (LocalDateTime/now)
             items (-> (get-some-week t now) :info :plan)
@@ -184,7 +185,8 @@
             (if (some #(= (:id %) id) logs)
               {:message (str "添加本周计划新项目失败，数据库已记录此记录。")
                :status  -1}
-              (let [progress-now (+ progress progress-delta)
+              (let [progress (if (string? progress) (Double/parseDouble progress) progress)
+                    progress-now (+ progress progress-delta)
                     item-log (merge log-input
                                     {:progress-from progress
                                      :progress-to   progress-now
@@ -197,7 +199,9 @@
                                       (if (= item-id (:id item))
                                         current-item item))
                                     items)]
-                (set-some-week t now {:plan all-items})))))))
+                (set-some-week t now {:plan all-items})
+                {:message (str "更新本周计划的项目：添加新记录成功。")
+                 :status  1}))))))
     (catch Exception e
       (log/error "[week-plan] error: " (.getMessage e))
       {:message (str "更新本周计划的项目：添加新记录失败：" (.getMessage e))

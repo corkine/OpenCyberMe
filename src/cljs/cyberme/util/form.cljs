@@ -79,6 +79,7 @@
              (if is-success-call "关闭" footer-text)])
           fields
           errors
-          #(doseq [event call-when-exit]
-             (reset! fields (or origin-data {}))
-             (rf/dispatch event)))))))
+          (fn []
+            (reset! fields (or origin-data {}))
+            (doseq [event call-when-exit]
+              (rf/dispatch event))))))))

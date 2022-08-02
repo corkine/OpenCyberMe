@@ -9,6 +9,13 @@
     [cljs-time.format :as format]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; Dashboard ;;;;;;;;;;;;;;;;;;;;;;
+(rf/reg-event-db
+  :dashboard/sync-all
+  (fn [_ _]
+    (rf/dispatch [:dashboard/recent])
+    (rf/dispatch [:dashboard/day-work])
+    (rf/dispatch [:dashboard/plant-week])))
+
 ;Dashboard 核心数据
 (ajax-flow {:call           :dashboard/recent
             :uri-fn         #(str "/cyber/dashboard/summary?day=5")
@@ -41,7 +48,7 @@
             :success-callback-event [[:dashboard/day-work]]
             :failure-notice         true})
 
-;浇花和学习内容获取二合一接口
+;浇花、每周学习、每周计划多合一接口
 (ajax-flow {:call           :dashboard/plant-week
             :uri-fn         #(str "/cyber/dashboard/plant-week")
             :is-post        false
@@ -62,6 +69,50 @@
             :is-post                true
             :data                   :dashboard/learn-week-data
             :clean                  :dashboard/learn-week-data-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
+(rf/reg-sub
+  :dashboard/week-plan
+  (fn [db] (-> db :dashboard/plant-week-data :data :week-plan :data)))
+
+;周计划接口：删除、新建项目成功后触发更新主页，其余：列出项目，添加删除记录仅请求 HTTP
+(ajax-flow {:call                   :dashboard/week-plan-delete-item
+            :uri-fn                 #(str "/cyber/week-plan/delete-item/" %)
+            :is-post                true
+            :data                   :dashboard/week-plan-delete-item-data
+            :clean                  :dashboard/week-plan-delete-item-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :dashboard/week-plan-add-item
+            :uri-fn                 #(str "/cyber/week-plan/add-item")
+            :is-post                true
+            :data                   :dashboard/week-plan-add-item-data
+            :clean                  :dashboard/week-plan-add-item-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :dashboard/week-plan-list-item
+            :uri-fn                 #(str "/cyber/week-plan/list-item")
+            :is-post                false
+            :data                   :dashboard/week-plan-list-item-data
+            :clean                  :dashboard/week-plan-list-item-clean
+            :failure-notice         true})
+
+(ajax-flow {:call                   :dashboard/week-plan-item-add-log
+            :uri-fn                 #(str "/cyber/week-plan/update-item/"(:item-id %)"/add-log")
+            :is-post                true
+            :data                   :dashboard/week-plan-item-add-log-data
+            :clean                  :dashboard/week-plan-item-add-log-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :dashboard/week-plan-item-delete-log
+            :uri-fn                 #(str "/cyber/week-plan/update-item/"(first %)"/remove-log/"(second %))
+            :is-post                true
+            :data                   :dashboard/week-plan-item-delete-log-data
+            :clean                  :dashboard/week-plan-item-delete-log-clean
             :success-callback-event [[:dashboard/plant-week]]
             :failure-notice         true})
 

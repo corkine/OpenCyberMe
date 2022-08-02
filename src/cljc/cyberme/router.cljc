@@ -85,7 +85,9 @@
                                                     (rf/dispatch [:diary/set-filter query]))
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:diary/current-data-clean])
-                                                  (rf/dispatch [:diary/list]))}]}))]
+                                                  (rf/dispatch [:diary/list])
+                                                  ;FOR WEEK-PLAN
+                                                  (rf/dispatch [:dashboard/plant-week]))}]}))]
 
    ["/diary-new"
     (merge {:name :diary-new}

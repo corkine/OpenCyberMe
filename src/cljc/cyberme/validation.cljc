@@ -1,5 +1,6 @@
 (ns cyberme.validation
-  (:require [struct.core :as st]))
+  (:require [struct.core :as st]
+            [cuerdas.core :as str]))
 
 (def required
   {:message  "此字段不能为空"
@@ -7,6 +8,12 @@
    :validate #(if (string? %)
                 (not (empty? %))
                 (not (nil? %)))})
+
+(def number-str
+  {:message "must be a number"
+   :optional true
+   :validate #(or (number? %) (and (string? %) (str/numeric? %)))
+   :coerce #(if (number? %) % (str/parse-number %))})
 
 ;{:name xx :message yy} -> {:name validate-hint :message validate-hint}
 (def message-schema
