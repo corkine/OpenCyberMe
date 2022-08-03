@@ -6,7 +6,8 @@
     [clojure.set :as set]
     [cljs-time.core :as t]
     [cyberme.util.request :refer [ajax-flow] :as req]
-    [cljs-time.format :as format]))
+    [cljs-time.format :as format]
+    [reagent.core :as r]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; Dashboard ;;;;;;;;;;;;;;;;;;;;;;
 (rf/reg-event-db
@@ -21,7 +22,22 @@
             :uri-fn         #(str "/cyber/dashboard/summary?day=5")
             :data           :dashboard/recent-data
             :clean          :dashboard/recent-data-clean
+            ;:success-callback-event [[:dashboard/clean-changed!]]
             :failure-notice true})
+
+(rf/reg-sub
+  :clean/add-dialog-data
+  (fn [db _]
+    (let [now (t/time-now) hour (t/hour now)
+          {:keys [HabitCountUntilNow MorningBrushTeeth]
+           :or   {HabitCountUntilNow 0 MorningBrushTeeth false}}
+          (-> db :dashboard/recent-data :data :clean)
+          may-last-noon? (<= HabitCountUntilNow 0)
+          may-morning? (not MorningBrushTeeth)]
+      {:day     (if may-last-noon? -1 0)
+       :time    (if may-last-noon? "下午" (if (or may-morning? (<= hour 12)) "上午" "下午"))
+       :confirm (if (and (not may-last-noon?) (not may-morning?) (<= hour 12))
+                  "撤销" "确定")})))
 
 ;强制刷新 HCM 打卡数据，成功后刷新统计数据
 (ajax-flow {:call                   :hcm/sync
@@ -72,11 +88,11 @@
             :success-callback-event [[:dashboard/plant-week]]
             :failure-notice         true})
 
+;周计划接口：删除、新建项目成功后触发更新主页，其余：列出项目，添加删除记录仅请求 HTTP
 (rf/reg-sub
   :dashboard/week-plan
   (fn [db] (-> db :dashboard/plant-week-data :data :week-plan :data)))
 
-;周计划接口：删除、新建项目成功后触发更新主页，其余：列出项目，添加删除记录仅请求 HTTP
 (ajax-flow {:call                   :dashboard/week-plan-delete-item
             :uri-fn                 #(str "/cyber/week-plan/delete-item/" %)
             :is-post                true
@@ -93,15 +109,15 @@
             :success-callback-event [[:dashboard/plant-week]]
             :failure-notice         true})
 
-(ajax-flow {:call                   :dashboard/week-plan-list-item
-            :uri-fn                 #(str "/cyber/week-plan/list-item")
-            :is-post                false
-            :data                   :dashboard/week-plan-list-item-data
-            :clean                  :dashboard/week-plan-list-item-clean
-            :failure-notice         true})
+(ajax-flow {:call           :dashboard/week-plan-list-item
+            :uri-fn         #(str "/cyber/week-plan/list-item")
+            :is-post        false
+            :data           :dashboard/week-plan-list-item-data
+            :clean          :dashboard/week-plan-list-item-clean
+            :failure-notice true})
 
 (ajax-flow {:call                   :dashboard/week-plan-item-add-log
-            :uri-fn                 #(str "/cyber/week-plan/update-item/"(:item-id %)"/add-log")
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (:item-id %) "/add-log")
             :is-post                true
             :data                   :dashboard/week-plan-item-add-log-data
             :clean                  :dashboard/week-plan-item-add-log-clean
@@ -109,7 +125,7 @@
             :failure-notice         true})
 
 (ajax-flow {:call                   :dashboard/week-plan-item-delete-log
-            :uri-fn                 #(str "/cyber/week-plan/update-item/"(first %)"/remove-log/"(second %))
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (first %) "/remove-log/" (second %))
             :is-post                true
             :data                   :dashboard/week-plan-item-delete-log-data
             :clean                  :dashboard/week-plan-item-delete-log-clean

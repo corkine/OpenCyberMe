@@ -11,7 +11,7 @@
     [cyberme.util.upload :as up]
     [cyberme.util.events :as events]
     [cyberme.util.request :as req]
-    [cyberme.util.form :refer [dialog]]
+    [cyberme.util.form :refer [dialog] :as form]
     [cyberme.place.request :as req-place]
     [cyberme.good.request :as req-good]
     [cyberme.work.request :as req-work]
@@ -77,11 +77,11 @@
            :call-when-exit    [[:note/add-data-clean]]
            :call-when-success [[:note/add-data-clean]]}))
 
-(req/ajax-flow {:call   :note/add
-                :uri-fn #(str "/cyber/note")
+(req/ajax-flow {:call    :note/add
+                :uri-fn  #(str "/cyber/note")
                 :is-post true
-                :data   :note/add-data
-                :clean  :note/add-data-clean})
+                :data    :note/add-data
+                :clean   :note/add-data-clean})
 
 (defn blue-add-dialog
   []
@@ -97,7 +97,7 @@
            :call-when-exit    [[:dashboard/set-blue-data-clean]]
            :call-when-success [[:dashboard/set-blue-data-clean]
                                [:dashboard/recent]]
-           :origin-data {:day (if (> (t/hour (t/time-now)) 12) 0 -1) :blue "是的"}}))
+           :origin-data       {:day (if (> (t/hour (t/time-now)) 12) 0 -1) :blue "是的"}}))
 
 ;添加 Blue 信息
 (req/ajax-flow {:call   :dashboard/set-blue
@@ -110,25 +110,32 @@
                 :clean  :dashboard/set-blue-data-clean})
 
 (defn clean-add-dialog
-  []
-  (dialog :set-clean-dialog
-          "添加 Clean 信息"
-          [[:day "日期" "今天填写 0，昨天填写 -1，以此类推"]
-           [:time "时间段" "上午或者下午" {:type :select :selects ["上午" "下午"]}]
-           [:confirm "确认?" "选择撤销将撤销当日所有数据，不论时间段" {:type :select :selects ["确定" "撤销"]}]]
-          "确定"
-          #(if-let [err (va/validate! @%1 [[:day va/required] [:time va/required] [:confirm va/required]])]
-             (reset! %2 err)
-             (rf/dispatch [:dashboard/set-clean @%1]))
-          {:subscribe-ajax    [:dashboard/set-clean-data]
-           :call-when-exit    [[:dashboard/set-clean-data-clean]]
-           :call-when-success [[:dashboard/set-clean-data-clean]
-                               [:dashboard/recent]]
-           :origin-data (let [now (t/time-now) hour (t/hour now)]
-                          {:day (if (< hour 10) -1 0)
-                           :time (if (> hour 12) "上午" "下午")
-                           :confirm "确定"})}))
+  "Clean 对话框
+  这里的事件是一个循环：set-clean-dialog 显示对话框，显示后 origin-data-events 会采集当前 clean 信息
+  并初始化当前最可能的时刻：比如昨天没打卡，初始化未昨天，今天上午未结束，不允许打下午的卡，然后填写数据后触发
+  dashboard/set-clean 事件，AJAX 请求返回 set-clean-data 事件，显示结果回调。当关闭对话框时，调用
+  set-clean-data-clean 清空此 AJAX 返回数据，并调用 recent 更新统计信息，其会触发 add-dialog-data
+  订阅以更新现在的对话框默认值，在下次打开对话框时会使用新的状态和默认值。
 
+  注意这里不能在 dialog 外部订阅 add-dialog-data，否则订阅的数据更新无法传入（此 dialog 一开始就加载了，
+  每次显示仅仅改变了 display 属性）"
+  []
+  (let [origin-data @(rf/subscribe [:clean/add-dialog-data])]
+    (dialog :set-clean-dialog
+            "添加 Clean 信息"
+            [[:day "日期" "今天填写 0，昨天填写 -1，以此类推"]
+             [:time "时间段" "上午或者下午" {:type :select :selects ["上午" "下午"]}]
+             [:confirm "确认?" "选择撤销将撤销当日所有数据，不论时间段" {:type :select :selects ["确定" "撤销"]}]]
+            "确定"
+            #(if-let [err (va/validate! @%1 [[:day va/required] [:time va/required] [:confirm va/required]])]
+               (reset! %2 err)
+               (rf/dispatch [:dashboard/set-clean @%1]))
+            {:subscribe-ajax    [:dashboard/set-clean-data]
+             :call-when-exit    [[:dashboard/set-clean-data-clean]]
+             :call-when-success [[:dashboard/set-clean-data-clean]
+                                 [:dashboard/recent]]
+             :origin-data       origin-data
+             :origin-data-is-subscribed true})))
 
 ;添加 Clean 信息
 (req/ajax-flow {:call   :dashboard/set-clean
@@ -220,8 +227,8 @@
                      {:on-click #(rf/dispatch [:note/last])}
                      "最近笔记"]
                     #_[:a.navbar-item
-                     {:on-click #(rf/dispatch [:dashboard/make-clean])}
-                     "标记清洁"]
+                       {:on-click #(rf/dispatch [:dashboard/make-clean])}
+                       "标记清洁"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :set-clean-dialog])}
                      "标记清洁.."]

@@ -16,9 +16,12 @@
   ;[:uid "编号" "个人物品编码 ID，以 CM 开头，比如 CMPRO"]
   ;[:labels "标签" "可输入零个或多个，使用逗号分开"]
   ;[:note "概述" "简短的描述物品特征，比如保质期、存放条件等"
-  ; {:type :textarea :attr {:rows 2}}]"
+  ; {:type :textarea :attr {:rows 2}}]
+  ;
+  ; origin-data 不支持外部变更后传入
+  ; origin-data-is-subscribed 原始数据是否可变，如果可变则损失重绘 dialog 的中间数据保证此数据能在变化时更新"
   [id title bodies footer-text validate-submit
-   {:keys [subscribe-ajax call-when-exit call-when-success origin-data]}]
+   {:keys [subscribe-ajax call-when-exit call-when-success origin-data origin-data-is-subscribed]}]
   (r/with-let
     [fields (r/atom (or origin-data {}))
      errors (r/atom {})]
@@ -52,7 +55,8 @@
                                     [:option {:value k} k])])])]
                            (when-let [message @e]
                              [:p.help.is-danger message])]))]
-      (let [server-back (if subscribe-ajax @(rf/subscribe subscribe-ajax) nil)]
+      (let [server-back (if subscribe-ajax @(rf/subscribe subscribe-ajax) nil)
+            _ (if (and origin-data origin-data-is-subscribed) (reset! fields origin-data))]
         (modals/modal-card
           id title
           (conj

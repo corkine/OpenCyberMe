@@ -66,7 +66,7 @@
         (let [show-cate (case category "learn" "学习" "work" "工作" "fitness" "健身" "diet" "饮食" "其他")
               item-id id]
           [:div.mt-0
-           [:p.mb-2
+           [:p.mb-1
             [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-primary.is-light.is-clickable.show-delete
              {:on-click #(rf/dispatch [:global/notice
                                        {:message  (str "是否要删除项目" name "?")
