@@ -33,11 +33,12 @@
            :or   {HabitCountUntilNow 0 MorningBrushTeeth false}}
           (-> db :dashboard/recent-data :data :clean)
           may-last-noon? (<= HabitCountUntilNow 0)
-          may-morning? (not MorningBrushTeeth)]
-      {:day     (if may-last-noon? -1 0)
-       :time    (if may-last-noon? "下午" (if (or may-morning? (<= hour 12)) "上午" "下午"))
-       :confirm (if (and (not may-last-noon?) (not may-morning?) (<= hour 12))
-                  "撤销" "确定")})))
+          may-morning? (not MorningBrushTeeth)
+          res {:day     (if may-last-noon? -1 0)
+               :time    (if may-last-noon? "下午" (if (or may-morning? (<= hour 12)) "上午" "下午"))
+               :confirm (if (and (not may-last-noon?) (not may-morning?) (<= hour 12))
+                          "撤销" "确定")}]
+      res)))
 
 ;强制刷新 HCM 打卡数据，成功后刷新统计数据
 (ajax-flow {:call                   :hcm/sync
