@@ -84,4 +84,8 @@ lein repl
 lein shadow watch app
 ```
 
+由 [Jetbrains OpenSource Support](https://jb.gg/OpenSourceSupport) 提供开发支持
+
+<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/IntelliJ_IDEA.png" width="300px">
+
 Copyright © 2022 Marvin Studio, Wuhan, China.

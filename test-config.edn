@@ -20,4 +20,5 @@
  :enable-service1 [:express :todo :movie]
  :test-user "test_user"
  :test-pass "test_secret"
+ :is-test true
  :auth-info [{:user "test_user" :pass "test_secret" :role :superuser}]}
