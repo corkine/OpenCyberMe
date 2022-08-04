@@ -186,19 +186,17 @@ Image 宽高：
   "Diary 修改页面"
   []
   [:div.container>div.content.mt-5
-   (let [{data :data} @(rf/subscribe [:diary/current-data])]
-     (if data
-       [edit/edit-page data]
-       [:p.ml-6.mt-6 "正在加载..."]))])
+   (if-let [data @(rf/subscribe [:diary/current-data])]
+     [edit/edit-page data]
+     [:p.ml-6.mt-6 "正在加载..."])])
 
 (defn diary-view-page
   "Diary 展示页面"
   []
   [:div.container>div.content.mt-5
-   (let [{data :data} @(rf/subscribe [:diary/current-data])]
-     (if data
-       [edit/edit-page data true]
-       [:p.ml-6.mt-6 "正在加载..."]))])
+   (if-let [data @(rf/subscribe [:diary/current-data])]
+     [edit/edit-page data true]
+     [:p.ml-6.mt-6 "正在加载..."])])
 
 (defn diary-new-page
   "Diary 新建页面"

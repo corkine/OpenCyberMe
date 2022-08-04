@@ -302,7 +302,7 @@
               {:on-click     #(do (rf/dispatch [:dashboard/learn-week-set-today {:start true}]))
                :data-tooltip "新建每周一学请求"}
               "+"]]
-            [week/plan-widget week-plans]]
+            [week/plan-widget week-plans {:go-diary-add-log true}]]
            (for [day days]
              ^{:key day}
              [:<>

@@ -96,21 +96,35 @@
                                     :start      (fn [_]
                                                   (rf/dispatch [:user/fetch-from-local]))}]}))]
 
-   ["/diary/:id/edit"
+   ["/diary/by-id/:id/edit"
     (merge {:name :diary-edit}
            #?(:cljs {:view        #'core/diary-edit-page
                      :controllers [{:parameters {:path [:id]}
                                     :start      (fn [{path :path}]
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:diary/current (:id path)]))}]}))]
+                                                  (rf/dispatch [:diary/current-by-id (:id path)]))
+                                    :stop (fn [_]
+                                            (rf/dispatch [:diary/current-data-clean]))}]}))]
 
-   ["/diary/:id"
+   ["/diary/by-id/:id"
     (merge {:name :diary-view}
            #?(:cljs {:view        #'core/diary-view-page
                      :controllers [{:parameters {:path [:id]}
                                     :start      (fn [{path :path}]
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:diary/current (:id path)]))}]}))]
+                                                  (rf/dispatch [:diary/current-by-id  (:id path)]))
+                                    :stop (fn [_]
+                                            (rf/dispatch [:diary/current-data-clean]))}]}))]
+
+   ["/diary/by-date/:date/edit"
+    (merge {:name :diary-edit-by-date}
+           #?(:cljs {:view        #'core/diary-edit-page
+                     :controllers [{:parameters {:path [:date]}
+                                    :start      (fn [{path :path}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (rf/dispatch [:diary/current-by-date (:date path)]))
+                                    :stop (fn [_]
+                                            (rf/dispatch [:diary/current-data-clean]))}]}))]
 
    ["/goods"
     (merge {:name :goods}

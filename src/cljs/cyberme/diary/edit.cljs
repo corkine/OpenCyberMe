@@ -125,7 +125,7 @@
            [week/week-plan-add-dialog]
            [week/week-plan-log-add-dialog]
            [:div {:style {:margin "-10px 0px 20px 12px"}}
-            [week/plan-widget week-items]]
+            [week/plan-widget week-items {:go-diary-add-log false}]]
            [:div.is-size-6.markdown-body {:style {:margin :12px}}
             (if preview?
               [md/mark-down (string/replace content-str #"(https://static2.mazhangjing.com/.*?\.\w+)\)" (str "$1" oss-process ")"))]

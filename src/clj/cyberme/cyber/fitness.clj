@@ -79,9 +79,9 @@
       (filter #(not= 0.0 (:value %)) full-data)
       (filter #(not= 0.0 (second %)) full-data))))
 
-(def goal-active 400)
+(def goal-active 500)
 
-(def goal-cut 400)
+(def goal-cut 500)
 
 (defn recent-active
   "获取最近的活动记录"

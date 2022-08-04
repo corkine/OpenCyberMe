@@ -540,6 +540,7 @@
                            (hr/response (psych/add-log data)))}}]])
 
 (s/def :diary/id int?)
+(s/def :diary/date string?)
 
 (def diary-route
   [""
@@ -560,7 +561,14 @@
                            (hr/response (diary/handle-insert-diary body)))}}]
    ["/diary"
     {:tags #{"我的日记"}}
-    ["/:id"
+    ["/by-date/:date"
+     {:get  {:summary     "获取某一日记"
+             :description "日记包括 title content info create_at update_at id 信息"
+             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                           :path  (s/keys :req-un [:diary/date])}
+             :handler     (fn [{{path :path} :parameters}]
+                            (hr/response (diary/handle-diary-by-day path)))}}]
+    ["/by-id/:id"
      {:get  {:summary     "获取某一日记"
              :description "日记包括 title content info create_at update_at id 信息"
              :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
@@ -575,7 +583,7 @@
              :handler     (fn [{{body :body path :path} :parameters}]
                             (hr/response (diary/handle-update-diary
                                            (merge path body))))}}]
-    ["/:id/delete"
+    ["/by-id/:id/delete"
      {:post {:summary     "删除某一日记"
              :description "传入 id 删除"
              :parameters  {:query (s/keys :opt-un [:global/user :global/secret])

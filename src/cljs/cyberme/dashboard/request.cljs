@@ -25,6 +25,7 @@
             ;:success-callback-event [[:dashboard/clean-changed!]]
             :failure-notice true})
 
+;核心数据查询：是否有当日 clean 记录决定记录对话框参数
 (rf/reg-sub
   :clean/add-dialog-data
   (fn [db _]
@@ -39,6 +40,12 @@
                :confirm (if (and (not may-last-noon?) (not may-morning?) (<= hour 12))
                           "撤销" "确定")}]
       res)))
+
+;核心数据查询：是否有当日日记决定新建周计划项目日志时跳转到的位置
+(rf/reg-sub
+  :week-plan/today-diary-exist?
+  (fn [db _]
+    (> (or (-> db :dashboard/recent-data :data :today) 0) 50)))
 
 ;强制刷新 HCM 打卡数据，成功后刷新统计数据
 (ajax-flow {:call                   :hcm/sync

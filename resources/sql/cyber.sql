@@ -320,6 +320,10 @@ order by date(start at time zone 'Asia/Shanghai') desc;
 select * from diary
 order by (info->>'day')::date desc, create_at desc
 limit 100;
+-- :name diaries-range :? :*
+select * from diary
+where ((info->>'day')::date >= :start) and ((info->>'day')::date <= :end)
+order by (info->>'day')::date;
 -- :name diary-by-id :? :1
 select * from diary
 where id = :id;

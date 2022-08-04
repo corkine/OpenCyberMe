@@ -91,9 +91,22 @@
             {} all-week-day)))
 
 (defn handle-score-week
-  "获取本周的 score 数据：{:2022-03-01 33 :2022-03-02 79..}"
+  "获取本周的 score 数据：{:2022-03-01 33 :2022-03-02 79..}
+  现在版本更改为，如果有日记，则 score 为 100，反之为 0"
   []
   (let [today (LocalDate/now)
+        today-day-of-week (.getValue (.getDayOfWeek today))
+        week-first (.minusDays today (- today-day-of-week 1))
+        all-week-day (take 7 (iterate #(.plusDays % 1) week-first)) ;2022-03-01..
+        ;[{:id :title :content :info {:day day-str :score :labels :create_at :update_at}]
+        data-in-db (db/diaries-range {:start week-first :end today})
+        ;{2022-03-01 {:id :title ..}}
+        db-data-map (reduce #(assoc % (-> %2 :info :day) %2) {} data-in-db)]
+    (reduce #(assoc %
+               (-> %2 str keyword) ;:2022-03-01
+               (if (get db-data-map (str %2)) 100 0))
+            {} all-week-day))
+  #_(let [today (LocalDate/now)
         today-day-of-week (.getValue (.getDayOfWeek today))
         week-first (.minusDays today (- today-day-of-week 1))
         all-week-day (take 7 (iterate #(.plusDays % 1) week-first))

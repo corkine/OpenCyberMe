@@ -57,6 +57,16 @@
     (catch Exception e
       {:message (str "获取最近的日记失败" (.getMessage e)) :status 0})))
 
+(defn handle-diaries-range
+  "获取最近范围的日志"
+  [^LocalDate start ^LocalDate end]
+  (try
+    {:message "获取成功"
+     :data (db/diaries-range {:start start :end end})
+     :status 1}
+    (catch Exception e
+      {:message (str "获取最近范围的日记失败" (.getMessage e)) :status 0})))
+
 (defn handle-diary-by-id
   "获取某一日记"
   [{:keys [id]}]
@@ -73,15 +83,15 @@
 
 (defn handle-diary-by-day
   "获取某一天的日记，天数使用 2022-03-01 格式传入"
-  [{:keys [day-str]}]
+  [{:keys [date]}]
   (try
     (let [day-inst (LocalDate/parse
-                     day-str
+                     date
                      (DateTimeFormatter/ISO_LOCAL_DATE))
           data (db/diaries-by-day {:day day-inst})]
       {:message "获取成功" :data data :status 1})
     (catch Exception e
-      {:message (str "获取日记 @" day-str " 失败" (.getMessage e))
+      {:message (str "获取日记 @" date " 失败" (.getMessage e))
        :status  0})))
 
 (defn handle-diary-by-label
