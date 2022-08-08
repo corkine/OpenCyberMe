@@ -86,8 +86,8 @@
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:diary/current-data-clean])
                                                   (rf/dispatch [:diary/list])
-                                                  ;FOR WEEK-PLAN
-                                                  (rf/dispatch [:dashboard/plant-week]))}]}))]
+                                                  ;FOR WEEK-PLAN 直接访问日记时，不显示周计划
+                                                  #_(rf/dispatch [:dashboard/plant-week]))}]}))]
 
    ["/diary-new"
     (merge {:name :diary-new}

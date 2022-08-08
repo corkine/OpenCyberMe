@@ -2,9 +2,12 @@
   (:require [cyberme.oss :as oss]
             [mount.core :as mount]
             [clojure.tools.logging :as log]
-            [cyberme.config :as config])
+            [cyberme.config :as config]
+            [clojure.string :as str])
   (:import (java.time LocalDate)
-           (java.time.format DateTimeFormatter)))
+           (java.time.format DateTimeFormatter)
+           (java.util Base64)
+           (java.security MessageDigest)))
 
 (defn all-week-day
   "获取本周所有的 LocalDate 实例"
@@ -20,6 +23,43 @@
   (let [today (LocalDate/now)
         start-day (.minusDays today (- day 1))]
     (take day (iterate #(.plusDays % 1) start-day))))
+
+(defn encode-sha-b64
+  "将明文进行 SHA1 和 Base64 加密"
+  [^String plain]
+  (let [sha (MessageDigest/getInstance "SHA1")]
+    (.update sha (.getBytes plain))
+    (.encodeToString (Base64/getEncoder)
+                     (.digest sha))))
+
+(defn pass-encode
+  "将明文密码加密，格式为 BASE64(BASE64(SHA1(PASS::TIMESTAMP))::TIMESTAMP)"
+  [plain expired-seconds]
+  (let [expired (+ (System/currentTimeMillis) (* expired-seconds 1000))]
+    (.encodeToString (Base64/getEncoder)
+                     (.getBytes
+                       (str (encode-sha-b64 (format "%s::%d" plain expired))
+                            "::" expired)))))
+
+(defn pass-right?
+  "将客户端传输的密码和数据库保存的 SHA1 加密的密码进行对比，正确且在时间范围，返回 true
+  客户端密码格式：BASE64(BASE64(SHA1(PASS::TIMESTAMP))::TIMESTAMP)"
+  [^String basic-secret ^String pass-db]
+  (cond (str/blank? pass-db) true
+        (str/blank? basic-secret) false
+        :else
+        (try
+          (let [plain-secret (String. (.decode (Base64/getDecoder) basic-secret))
+                [_ sha-pass-exp expired-at] (re-find #"(.*?)::(\d+)" plain-secret)]
+            (if (and sha-pass-exp expired-at
+                     (>= (Long/parseLong expired-at) (System/currentTimeMillis)))
+              (let [sha-db-pass-exp
+                    (encode-sha-b64 (str pass-db """::" expired-at))]
+                (= sha-pass-exp sha-db-pass-exp))
+              false))
+          (catch Exception e
+            (log/error "[pass-check] failed." (.getMessage e))
+            false))))
 
 (defn today-str
   "获取今天的日期，2022-03-01 格式"

@@ -2,6 +2,7 @@
   (:require [reitit.ring :as ring]
             [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
+            [cyberme.tool :as tool]
             [cyberme.config :refer [env]]
             [clojure.string :as s])
   (:import java.util.Base64))
@@ -31,15 +32,20 @@
       (and (not (nil? n)) (not (nil? p))
            (= name n) (= pass p))))
 
-(defn authenticated? [name pass role]
+(defn authenticated?
+  "Basic 验证，密文
+  密文检查使得本函数消耗从 0.01ms -> 0.07ms"
+  [name pass role]
   (let [auth-info (or (:auth-info env) [])
         filter-fn #(if (nil? role)
-                     (and (= name (:user %)) (= pass (:pass %)))
-                     (and (= name (:user %)) (= pass (:pass %)) (= role (:role %))))
+                     (and (= name (:user %)) (tool/pass-right? pass (:pass %)))
+                     (and (= name (:user %)) (tool/pass-right? pass (:pass %)) (= role (:role %))))
         pass? (some? (some filter-fn auth-info))]
     pass?))
 
-(defn auth-in-query [query-param]
+(defn auth-in-query
+  "Query 验证，明文"
+  [query-param]
   (let [name (get query-param "user")
         pass (get query-param "secret")
         auth-info (or (:auth-info env) [])
@@ -47,7 +53,9 @@
         pass? (some? (some filter-fn auth-info))]
     pass?))
 
-(defn auth-in-query-task [query-param]
+(defn auth-in-query-task
+  "TASK 任务 Query 验证，明文"
+  [query-param]
   (let [name (get query-param "user")
         pass (get query-param "secret")
         auth-info (or (:auth-info-task env) [])

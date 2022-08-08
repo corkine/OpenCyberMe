@@ -5,6 +5,7 @@
     [clojure.string :as string]
     [goog.crypt.base64 :as b64]
     [clojure.set :as set]
+    [cyberme.util.tool :as tool]
     [cyberme.util.storage :as storage]
     [clojure.string :as str]))
 
@@ -13,7 +14,7 @@
         api-auth (rf/subscribe [:api-auth])
         {username :user password :pass} @api-auth]
     (if (or (nil? username) (nil? password))
-      {"Authorization" (str "Basic " (b64/encodeString (str "unknown" ":" "unknown")))}
+      {"Authorization" (str "Basic " (b64/encodeString (str "unknown" ":" (b64/encodeString "unknown"))))}
       {"Authorization" (str "Basic " (b64/encodeString (str username ":" password)))})))
 
 ;;;;;;;;;;;;;; login ;;;;;;;;;;;;

@@ -2,7 +2,22 @@
   (:require [clojure.string :as string]
             [cljs-time.core :as t]
             [cljs-time.format :as format]
-            [cuerdas.core :as str]))
+            [goog.crypt :as crypt]
+            [goog.crypt.base64 :as b64]
+            [goog.string :as gstring]
+            [cuerdas.core :as str])
+  (:import goog.crypt.Sha1))
+
+(defn encode-sha-b64 [plain]
+  (let [sha (Sha1.)]
+    (.update sha plain)
+    (b64/encodeByteArray (.digest sha))))
+
+(defn pass-encode [plain expired-seconds]
+  (let [expired (+ (.getTime (js/Date.)) (* expired-seconds 1000))]
+    (b64/encodeString
+      (str (encode-sha-b64 (gstring/format "%s::%d" plain expired))
+           "::" expired))))
 
 (defn l->s [vect]
   (string/join ", " (if (nil? vect) [] vect)))
