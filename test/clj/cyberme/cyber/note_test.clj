@@ -11,6 +11,7 @@
     [org.httpkit.client :as client]
     [cyberme.cyber.track :as track]
     [cyberme.db.core :as db]
+    [cyberme.tool :as tool]
     [cheshire.core :as json]
     [clojure.string :as str]
     [cyberme.auth :as auth]
@@ -118,7 +119,7 @@
   (testing "note add by post"
     (with-redefs [db/insert-note (fn [& _] {:update-count 1})]
       (let [test-user (edn :test-user)
-            test-pass (edn :test-pass)
+            test-pass (tool/pass-encode (edn :test-pass) 1000)
             response ((app) (-> (request :post "/cyber/note")
                                 (header "authorization"
                                         (str "Basic " (auth/encode-base64
