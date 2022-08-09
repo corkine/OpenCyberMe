@@ -7,7 +7,9 @@
     [cljs-time.core :as t]
     [cyberme.util.request :refer [ajax-flow] :as req]
     [cljs-time.format :as format]
-    [reagent.core :as r]))
+    [reagent.core :as r]
+    [cyberme.util.tool :as tool]
+    [clojure.string :as str]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; Dashboard ;;;;;;;;;;;;;;;;;;;;;;
 (rf/reg-event-db
@@ -40,12 +42,6 @@
                :confirm (if (and (not may-last-noon?) (not may-morning?) (<= hour 12))
                           "撤销" "确定")}]
       res)))
-
-;核心数据查询：是否有当日日记决定新建周计划项目日志时跳转到的位置
-(rf/reg-sub
-  :week-plan/today-diary-exist?
-  (fn [db _]
-    (> (or (-> db :dashboard/recent-data :data :today) 0) 50)))
 
 ;强制刷新 HCM 打卡数据，成功后刷新统计数据
 (ajax-flow {:call                   :hcm/sync
@@ -140,46 +136,82 @@
             :success-callback-event [[:dashboard/plant-week]]
             :failure-notice         true})
 
-;获取最近笔记
-(ajax-flow {:call            :note/last
-            :uri-fn          #(str "/cyber/note/last")
-            :data            :note/last-data
-            :clean           :note/last-data-clean
-            :success-notice  true
-            :failure-notice  true
-            :notice-with-pre true})
+;周计划当前展开和选择数据库
+(rf/reg-event-db
+  :week-plan-db-set
+  (fn [db [_ key value]]
+    (assoc-in db [:week-plan key] value)))
 
-;标记当前清洁状况，成功后刷新当前页面
-(ajax-flow {:call                   :dashboard/make-clean
-            :uri-fn                 (fn []
-                                      (if (>= (t/hour (t/time-now)) 18)
-                                        (str "/cyber/clean/update?merge=true&nt=true&nf=true")
-                                        (str "/cyber/clean/update?merge=true&mt=true&mf=true")))
-            :is-post                false
-            :data                   :dashboard/make-clean-data
-            :clean                  :note/make-clean-data-clean
-            :success-notice         true
-            :success-callback-event [[:dashboard/recent]]
-            :failure-notice         true})
+;周计划当前展开和选择数据查询
+(rf/reg-sub
+  :week-plan-db-query
+  (fn [db [_ key]]
+    (get (:week-plan db) key)))
 
-;添加电视追踪
-(ajax-flow {:call    :movie/movie-add
-            :uri-fn  #(str "/cyber/movie/?name=" (:name %) "&url=" (:url %))
-            :is-post true
-            :data    :movie/movie-data
-            :clean   :movie/movie-data-clean})
+;核心数据查询：是否有当日日记决定新建周计划项目日志时跳转到的位置
+(rf/reg-sub
+  :week-plan/today-diary-exist?
+  (fn [db _]
+    (> (or (-> db :dashboard/recent-data :data :today) 0) 50)))
 
-;添加快递追踪
-(ajax-flow {:call   :express/express-add
-            :uri-fn #(str "/cyber/express/track?no=" (:no %) "&note=" (:note %))
-            :data   :express/express-data
-            :clean  :express/express-data-clean})
+;核心数据查询：可能的下一个计划项目日志名（出现在 today To-do 中的项目，前四个字和计划项目名匹配，
+;且未添加到过本项目的计划中）
+(rf/reg-sub
+  :week-plan/may-next-finish-item-log
+  (fn [db _]
+    (if-let [today-todo-list
+             (get (-> db :dashboard/recent-data :data :todo) (keyword (tool/today-str)))]
+      (let [current-plan (-> db :week-plan :current-item)
+            plan-name (or (:name current-plan) "")
+            plan-first-4-words (.substr plan-name 0 4)
+            logs (or (:logs current-plan) [])]
+        (let [find-new!
+              (filterv #(let [title (get % :title "")]
+                          (and (str/starts-with? title plan-first-4-words)
+                               (not (some (fn [log] (str/includes? (get log :title "") title)) logs))))
+                       today-todo-list)]
+          (first find-new!))))))
 
-;强制刷新 Microsoft TO-DO 数据，成功后刷新统计数据
-(ajax-flow {:call                   :dashboard/todo-sync
-            :uri-fn                 #(str "/cyber/todo/sync")
-            :data                   :dashboard/todo-sync-data
-            :clean                  :dashboard/todo-sync-data-clean
-            :success-callback-event [[:dashboard/recent]]
-            :success-notice         true
-            :failure-notice         true})
+  ;获取最近笔记
+  (ajax-flow {:call            :note/last
+              :uri-fn          #(str "/cyber/note/last")
+              :data            :note/last-data
+              :clean           :note/last-data-clean
+              :success-notice  true
+              :failure-notice  true
+              :notice-with-pre true})
+
+  ;标记当前清洁状况，成功后刷新当前页面
+  (ajax-flow {:call                   :dashboard/make-clean
+              :uri-fn                 (fn []
+                                        (if (>= (t/hour (t/time-now)) 18)
+                                          (str "/cyber/clean/update?merge=true&nt=true&nf=true")
+                                          (str "/cyber/clean/update?merge=true&mt=true&mf=true")))
+              :is-post                false
+              :data                   :dashboard/make-clean-data
+              :clean                  :note/make-clean-data-clean
+              :success-notice         true
+              :success-callback-event [[:dashboard/recent]]
+              :failure-notice         true})
+
+  ;添加电视追踪
+  (ajax-flow {:call    :movie/movie-add
+              :uri-fn  #(str "/cyber/movie/?name=" (:name %) "&url=" (:url %))
+              :is-post true
+              :data    :movie/movie-data
+              :clean   :movie/movie-data-clean})
+
+  ;添加快递追踪
+  (ajax-flow {:call   :express/express-add
+              :uri-fn #(str "/cyber/express/track?no=" (:no %) "&note=" (:note %))
+              :data   :express/express-data
+              :clean  :express/express-data-clean})
+
+  ;强制刷新 Microsoft TO-DO 数据，成功后刷新统计数据
+  (ajax-flow {:call                   :dashboard/todo-sync
+              :uri-fn                 #(str "/cyber/todo/sync")
+              :data                   :dashboard/todo-sync-data
+              :clean                  :dashboard/todo-sync-data-clean
+              :success-callback-event [[:dashboard/recent]]
+              :success-notice         true
+              :failure-notice         true})

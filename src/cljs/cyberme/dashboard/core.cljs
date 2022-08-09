@@ -323,7 +323,9 @@
                                           (= "completed" s2) -100
                                           :else (compare a1 a2))) data)]
                    [:<>
-                    [:span.has-text-weight-bold.is-family-code "我的一天"]
+                    [:span.has-text-weight-bold.is-family-code.is-clickable
+                     {:on-click #(.open js/window "https://to-do.live.com/tasks/myday" "_blank")}
+                     "我的一天"]
                     ;每天计划完成百分比
                     #_[:span.has-text-weight-normal
                        (gstring/format " (%s/%s)" finished-count all-count)]

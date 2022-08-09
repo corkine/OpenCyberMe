@@ -29,39 +29,38 @@
   "添加本周计划项目日志，需要传入至少 name, category,
   可选 description, progress, id，其中 category 为 learn/work/fitness/diet"
   []
-  (dialog :add-week-plan-log!
-          "添加项目日志"
-          [[:name "名称*" "日志名称"]
-           [:progress-delta "进度*" "当前计划项目的进度"]
-           [:description "详述" "日志详述" {:type :textarea :attr {:rows 3}}]
-           [:update "更新日期" "日志日期"]
-           #_[:id "编号" "当前的日志编号"]]
-          "确定"
-          #(if-let [err (va/validate! @%1 [[:name va/required] [:progress-delta va/number-str]])]
-             (reset! %2 err)
-             (rf/dispatch [:dashboard/week-plan-item-add-log
-                           (merge {:item-id @(rf/subscribe [:week-plan-db-query :item-id])} @%1)]))
-          {:subscribe-ajax    [:dashboard/week-plan-item-add-log-data]
-           :call-when-exit    [[:dashboard/week-plan-item-add-log-clean]]
-           :call-when-success [[:dashboard/week-plan-item-add-log-clean]]
-           :origin-data       {:progress-delta "10.0"}}))
-
-(rf/reg-event-db
-  :week-plan-db-set
-  (fn [db [_ key value]]
-    (assoc-in db [:week-plan key] value)))
-
-(rf/reg-sub
-  :week-plan-db-query
-  (fn [db [_ key]]
-    (get (:week-plan db) key)))
+  (let [may-next-log-todo-item @(rf/subscribe [:week-plan/may-next-finish-item-log])
+        may-next-log-todo-item-title (:title may-next-log-todo-item)
+        may-next-log-todo-item-date (:time may-next-log-todo-item)]
+    (dialog :add-week-plan-log!
+            "添加项目日志"
+            [[:name "名称*" "日志名称"]
+             [:progress-delta "进度*" "当前计划项目的进度"]
+             [:description "详述" "日志详述" {:type :textarea :attr {:rows 3}}]
+             [:update "更新日期" "日志日期"]
+             #_[:id "编号" "当前的日志编号"]]
+            "确定"
+            #(if-let [err (va/validate! @%1 [[:name va/required] [:progress-delta va/number-str]])]
+               (reset! %2 err)
+               (rf/dispatch [:dashboard/week-plan-item-add-log
+                             (merge {:item-id (-> @(rf/subscribe [:week-plan-db-query :current-item])
+                                                  :id)} @%1)]))
+            {:subscribe-ajax    [:dashboard/week-plan-item-add-log-data]
+             :call-when-exit    [[:dashboard/week-plan-item-add-log-clean]]
+             :call-when-success [[:dashboard/week-plan-item-add-log-clean]]
+             :origin-data       (if may-next-log-todo-item
+                                  {:progress-delta "10.0"
+                                   :name may-next-log-todo-item-title
+                                   :description (str "TODO 项目完成于 " may-next-log-todo-item-date)}
+                                  {:progress-delta "10.0"})
+             :origin-data-is-subscribed true})))
 
 (defn plan-widget
   [week-plans {:keys [go-diary-add-log]
-               :or {go-diary-add-log false}}]
+               :or   {go-diary-add-log false}}]
   [:<>
    (doall
-     (for [{:keys [id name logs category progress description]} week-plans]
+     (for [{:keys [id name logs category progress description] :as item} week-plans]
        ^{:key id}
        [:<>
         (let [show-cate (case category "learn" "学习" "work" "工作" "fitness" "健身" "diet" "饮食" "其他")
@@ -75,17 +74,21 @@
              show-cate]
             [:span.is-clickable
              {:title    (or description id) :style {:vertical-align "-10%"}
+              ;点击标题后，创建 :week-plan :item-id true 项目，表示当前列表已打开
+              ;再次点击后，修改为 :week-plan :item-id false，表示当前列表已关闭
               :on-click #(rf/dispatch [:week-plan-db-set item-id
                                        (not @(rf/subscribe [:week-plan-db-query item-id]))])} name]
             [:span.ml-2.is-family-code.is-clickable
              {:style    {:vertical-align "-10%"}
               :title    (gstring/format "点击新建日志\n完成百分比 %d%%\n包含 %s 日志" progress (count logs))
               :on-click #(do
-                           (when go-diary-add-log ;如果今天有日记，则在日记编辑页面弹窗，反之新建日记弹窗
+                           (when go-diary-add-log           ;如果今天有日记，则在日记编辑页面弹窗，反之新建日记弹窗
                              (if @(rf/subscribe [:week-plan/today-diary-exist?])
                                (rf/dispatch [:common/navigate! :diary-edit-by-date {:date (tool/today-str)}])
                                (rf/dispatch [:common/navigate! :diary-new])))
-                           (rf/dispatch [:week-plan-db-set :item-id item-id]) ;显示当前展开的 WEEK PLAN ITEM
+                           ;:week-plan :item-id 表示当前选中的项目 id
+                           (rf/dispatch [:week-plan-db-set :current-item item])
+                           ;(rf/dispatch [:week-plan-db-set :item-id item-id]) ;显示当前展开的 WEEK PLAN ITEM
                            (rf/dispatch [:app/show-modal :add-week-plan-log!]) ;显示对话框
                            )}
              (gstring/format "%d%%" progress)]]
@@ -97,7 +100,7 @@
                 [:<>
                  (let []
                    [:p.is-size-7.ml-1.my-1.is-clickable
-                    {:title    (str (if description (str description "\n") "") update)}
+                    {:title (str (if description (str description "\n") "") update)}
                     [:span.tag.is-small.is-size-7.mr-2.is-light.show-delete-2
                      {:on-click #(rf/dispatch
                                    [:global/notice
