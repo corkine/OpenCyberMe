@@ -31,7 +31,6 @@
   (if-not (= "metadata.db" filename)
     (callback {:message "上传的文件格式不合法，请上传 metadata.db 文件" :status 0 :data nil})
     (let [form (doto (js/FormData.) (.append "file" file))]
-      (callback {:message "上传完毕，数据库已更新。" :status 1 :data nil})
       (ajax/POST "/cyber/books/updating-with-calibre-db"
                  {:body            form
                   :response-format :json
