@@ -47,6 +47,7 @@
                  [bk/ring-gzip "0.3.0"]
                  [selmer "1.12.31"]
                  [hickory "0.7.1"]
+                 [org.xerial/sqlite-jdbc "3.16.1"]
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [thheller/shadow-cljs "2.11.5" :scope "provided"]
                  [com.aliyun.oss/aliyun-sdk-oss "2.8.3"]]

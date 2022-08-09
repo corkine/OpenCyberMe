@@ -12,6 +12,7 @@
     [cyberme.work.whole :as work-all]
     [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
+    [cyberme.book :as book]
     [cyberme.psych.exp1.main :as exp1]
     [clojure.string :as string]))
 
@@ -175,6 +176,16 @@
    [top-point]
    [:div.container>div.content.mt-6
     [:p "正在施工..."]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 "
+          "Marvin Studio."
+          " All Right Reserved.")]]])
+
+(defn book-page []
+  [:<>
+   [top-point]
+   [book/book-main]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "

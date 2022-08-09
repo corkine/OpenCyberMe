@@ -24,3 +24,22 @@
                                        (let [rsp (js->clj (:response ctx) :keywordize-keys true)]
                                          (println rsp)
                                          (callback {:message "上传失败" :status 0 :data nil})))})))))
+
+(defn upload-db-file
+  "上传 metadata.db 文件，只允许上传此文件名和类型的文件"
+  [filename file callback]
+  (if-not (= "metadata.db" filename)
+    (callback {:message "上传的文件格式不合法，请上传 metadata.db 文件" :status 0 :data nil})
+    (let [form (doto (js/FormData.) (.append "file" file))]
+      (callback {:message "上传完毕，数据库已更新。" :status 1 :data nil})
+      (ajax/POST "/cyber/books/updating-with-calibre-db"
+                 {:body            form
+                  :response-format :json
+                  :keywords?       true
+                  :headers         (req/auth-header)
+                  :handler         (fn [resp] (let [data (js->clj resp :keywordize-keys true)]
+                                                (callback data)))
+                  :error-handler   (fn [ctx]
+                                     (let [rsp (js->clj (:response ctx) :keywordize-keys true)]
+                                       (println rsp)
+                                       (callback {:message "上传失败" :status 0 :data nil})))}))))

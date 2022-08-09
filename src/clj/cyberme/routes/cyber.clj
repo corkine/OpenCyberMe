@@ -27,7 +27,8 @@
     [cyberme.cyber.task :as task]
     [clojure.tools.logging :as log]
     [cyberme.cyber.week-plan :as week]
-    [cyberme.cyber.psych :as psych])
+    [cyberme.cyber.psych :as psych]
+    [cyberme.cyber.book :as book])
   (:import (java.time LocalDate)))
 
 (s/def :global/user string?)
@@ -609,7 +610,7 @@
 (s/def :week-plan/week-id string?)
 
 (def week-plan-route
-  "其中获取本周计划使用 API /dashboard/plant-week，其余 API 参见此处"
+  ;"其中获取本周计划使用 API /dashboard/plant-week，其余 API 参见此处"
   ["/week-plan"
    {:tags #{"每周计划"}}
    ["/list-item"
@@ -653,6 +654,44 @@
                            (hr/response (week/handle-remove-week-plan-item-log
                                           item-id log-id)))}}]])
 
+(def books-route
+  ["/books"
+   {:swagger {:tags ["藏书服务"]}}
+   ["/updating-with-calibre-db"
+    {:post {:summary    "上传 Calibre 数据库"
+            :parameters {:multipart {:file multipart/temp-file-part}}
+            :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
+                          (let [{:keys [filename tempfile]} file]
+                            (hr/response (book/handle-upload-file filename tempfile))))}}]
+   ["/search-author/:search"
+    {:get  {:summary     "搜索作者"
+            :description "根据作者进行书籍搜索"
+            :parameters  {:path {:search string?}}
+            :handler     (fn [{{{search :search} :path} :parameters}]
+                           (hr/response (book/handle-search :author search)))}}]
+   ["/search-title/:search"
+    {:get  {:summary     "搜索书籍"
+            :description "根据书籍名称进行书籍搜索"
+            :parameters  {:path {:search string?}}
+            :handler     (fn [{{{search :search} :path} :parameters}]
+                           (hr/response (book/handle-search :title search)))}}]
+   ["/search"
+    {:get  {:summary     "搜索书籍(综合)"
+            :description "根据书籍名称或作者进行书籍搜索"
+            :parameters  {:query {:q string?}}
+            :handler     (fn [{{{search :q} :query} :parameters}]
+                           (hr/response (book/handle-search :unify search)))}}]
+
+   #_["/download"
+      {:get {:summary "从 OSS 上下载文件"
+             :swagger {:produces ["image/png"]}
+             :handler (fn [_]
+                        {:status  200
+                         :headers {"Content-Type" "image/png"}
+                         :body    (-> "public/img/warning_clojure.png"
+                                      (io/resource)
+                                      (io/input-stream))})}}]])
+
 (defn cyber-routes []
   (conj
     basic-route
@@ -670,4 +709,5 @@
     dashboard-route
     diary-route
     task-route
-    week-plan-route))
+    week-plan-route
+    books-route))

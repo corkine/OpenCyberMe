@@ -106,7 +106,7 @@
             (when success-callback-event
               (doseq [sce success-callback-events]
                 (rf/dispatch (vec sce))))))
-        (when (and failure-notice (= (:status resp) 0))
+        (when (and failure-notice (< (:status resp) 1))
           (rf/dispatch [:global/notice
                         {:message (or (:message resp)
                                       "服务器返回了一个错误。")}]))

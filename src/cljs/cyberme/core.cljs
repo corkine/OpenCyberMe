@@ -182,14 +182,15 @@
                 [:div#nav-menu.navbar-menu
                  {:class (when @expanded? :is-active)}
                  [:div.navbar-start
-                  [nav-link "/" "总览" :dashboard]
-                  [nav-link "/work" "工作" :work]
-                  [nav-link "/diary" "日记" :diary]
+                  [nav-link "/" "Dashboard" :dashboard]
+                  [nav-link "/work" "Work" :work]
+                  [nav-link "/diary" "Diary" :diary]
+                  [nav-link "/book" "Books" :book]
                   #_[nav-link "/cook" "厨记" :cook]
-                  [nav-link "/properties" "物品" :properties]
+                  [nav-link "/properties" "Goods" :properties]
                   #_[nav-link "/clothes" "衣物" :clothes]
                   #_[nav-link "/foods" "耗材" :foods]
-                  [nav-link "/about" "关于" :about]]
+                  [nav-link "/about" "About" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
                   [:div.navbar-item.is-hoverable.mx-0
                    (let [switch @(rf/subscribe [:paste-switch])
@@ -209,7 +210,7 @@
                           [:i.fa.fa-exchange]
                           [:i.fa.fa-info-circle]))])]
                   [:div.navbar-item.has-dropdown.is-hoverable.mx-0
-                   [:a.navbar-link "操作"]
+                   [:a.navbar-link "Actions"]
                    [:div.navbar-dropdown.is-boxed
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :create-new-place])}

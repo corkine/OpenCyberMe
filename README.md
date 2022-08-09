@@ -63,16 +63,19 @@
 - 植物每天浇水和每周一学提醒服务
     - 后端提供植物每天浇水、每周一学数据库存储和相关 API，前端提供数据展示，增删改表单。
     - 后端服务 `src/clj/cyberme/cyber/diary.clj`
-    - 前端组件 `src/cljs/cyberme/dashboard/core.clj` 提供日记的列表、单向展示，Markdown 编辑，图片拖拽上传等功能。
+    - 前端组件 `src/cljs/cyberme/dashboard/core.clj` 提供的植物浇水、每周一学增删改查界面。
 - 每日生活提醒和习惯保持：健身、饮食和运动，Apple Watch 健康数据分析服务
     - 后台提供 API 从 Apple Watch 和 iOS 健康应用通过自动化快捷指令上传饮食、站立、健身、心率和运动数据，进行按周计分，最长坚持计算并提供 Scriptable 小组件、Flutter APP 以及前端 Web 界面展示。
     - 后端服务 `src/clj/cyberme/cyber/fitness.clj`
     - 前端组件 `src/cljs/cyberme/dashboard/core.cljs` 提供可视化 Web 展示。
 - 每周计划 KPI 与激励服务
-    - 后台提供每周计划与完成进度跟踪的增删改查 API，前端提供增删改查界面，以跟踪锻炼、学习、工作和饮食 KPI
+    - 后台提供每周计划与完成进度跟踪的增删改查 API，前端提供增删改查界面，以跟踪锻炼、学习、工作和饮食 KPI。每周计划联动 Microsoft TODO 和当日日记，完成 TODO 事项后，自行更新计划并跳转到日记界面。
     - 后端服务 `src/clj/cyberme/cyber/week_plan.clj`
     - 前端界面 `src/cljs/cyberme/dashboard/week_plan.cljs` `src/cljs/cyberme/diary/edit.cljs`
-
+- Calibre 书籍搜索和同步服务
+    - 后台维护 Calibre 书库元数据，书籍实际存放在 OneDrive 中，可通过前端界面搜索、更新元数据，跳转到豆瓣读书、OneDrive 资源页。
+    - 后端服务 `src/clj/cyberme/cyber/book.clj`
+    - 前端界面 `src/cljs/cyberme/book.cljs`
 
 ## Running
     

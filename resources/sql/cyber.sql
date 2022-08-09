@@ -345,3 +345,26 @@ where id = :id;
 -- :name delete-diary :! :1
 delete from diary
 where id = :id;
+
+--------------------- books ---------------------
+-- :name insert-books-batch :! :*
+insert into books (uuid, title, author, info)
+values :tuple*:books
+    on conflict (uuid)
+do update set title = excluded.title,
+           author = excluded.author,
+           info = books.info || excluded.info,
+           modified_at = current_timestamp;
+-- :name find-book-by-title :? :*
+select * from books
+where title ilike ('%'|| :search ||'%');
+-- :name find-book-by-author :? :*
+select * from books
+where author ilike ('%' || :search || '%');
+-- :name find-book-by-title-author :? :*
+select * from books
+where author ilike ('%' || :search || '%') or title ilike ('%'|| :search ||'%');
+-- :name get-book :? :1
+select *
+from books
+where uuid = :id;

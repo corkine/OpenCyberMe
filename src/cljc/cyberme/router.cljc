@@ -169,4 +169,11 @@
     (merge {:name :cook}
            #?(:cljs {:view        #'core/cook-page
                      :controllers [{:start (fn [_]
-                                             (rf/dispatch [:user/fetch-from-local]))}]}))]])
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
+
+   ["/book"
+    (merge {:name :book}
+           #?(:cljs {:view        #'core/book-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
+                                             (rf/dispatch [:book/search-clean]))}]}))]])
