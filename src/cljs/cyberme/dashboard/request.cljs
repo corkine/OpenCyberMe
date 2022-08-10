@@ -168,9 +168,10 @@
         (let [find-new!
               (filterv #(let [title (get % :title "")]
                           (and (str/starts-with? title plan-first-4-words)
-                               (not (some (fn [log] (str/includes? (get log :title "") title)) logs))))
+                               (not (some (fn [log] (str/includes? (get log :name "") title)) logs))))
                        today-todo-list)]
-          (first find-new!))))))
+          ;如果有多个，最推荐未完成的
+          (first (reverse (sort :status find-new!))))))))
 
 ;获取最近笔记
 (ajax-flow {:call            :note/last
