@@ -36,68 +36,37 @@ Image 宽高：
   ![::*100px](url)
 ")
 
-(defn diary-filter []
+(defn diary-header []
   "日记页标题、描述和新建按钮、过滤器选项"
-  (let [labels @(rf/subscribe [:diary/all-labels])
-        filter @(rf/subscribe [:diary/filter])]
-    [:div {:style {:background-color "#48c774"}}
-     [:div.hero.is-small.container.is-success
-      [:div.hero-body
-       [:p.mb-4.mt-2 [:span.title "起居注"]
-        [:span.dui-tips
-         {:data-tooltip "点击查看语法帮助"}
-         [:a {:on-click #(rf/dispatch [:global/notice
-                                       {:pre-message help-message}])
+  [:div {:style {:background-color "#48c774"}}
+   [:div.hero.is-small.container.is-success
+    [:div.hero-body
+     [:p.mb-4.mt-2 [:span.title "起居注"]
+      [:span.dui-tips
+       {:data-tooltip "点击查看语法帮助"}
+       [:a {:on-click #(rf/dispatch [:global/notice
+                                     {:pre-message help-message}])
 
-              :style    {:cursor         :pointer
-                         :font-size      :10px
-                         :margin-left    :5px
-                         :margin-right   :10px
-                         :vertical-align :80%}}
-          [:i.material-icons {:style {:font-size :15px
-                                      :color     :white}} "help_outline"]]]
-        [:span.dui-tips
-         {:data-tooltip "写一篇新日记"}
-         [:a {:on-click #(rf/dispatch [:common/navigate! :diary-new])}
-          [:i.material-icons {:style {:font-size :30px
-                                      :color     :white}} "fiber_new"]]]]
-       [:div.columns
-        [:div.column.is-6.is-family-code
-         [:p
-          [:span
-           {:style {:padding-right "5px"
-                    :border-right  ".3em solid transparent"
-                    :animation     "cursor 1.5s infinite"}}
-           "Life is a struggle"]]]
-        [:div.column.is-6.has-text-right.has-text-left-mobile
-         {:style {:margin-top "-8px"}}
-         [:div.select.is-small.is-success.mr-2.mt-1>select
-          {:on-change (fn [e] (let [sel-o (-> e .-target .-value)
-                                    mg (if (= sel-o "所有标签")
-                                         (dissoc filter :labels)
-                                         (assoc filter :labels sel-o))]
-                                (rf/dispatch [:diary/set-filter mg])
-                                (storage/set-item "diary_filter" mg)
-                                (reitit.frontend.easy/replace-state :diary nil mg)))
-           :value     (or (:labels filter) "")}
-          [:option "所有标签"]
-          (for [label labels]
-            ^{:key label}
-            [:option {:value label} label])]
-         [:div.select.is-small.is-success.mr-2.mt-1>select
-          {:on-change (fn [e] (let [sel-o (-> e .-target .-value)
-                                    mg (if (= sel-o "所有时间")
-                                         (dissoc filter :contains)
-                                         (assoc filter :contains sel-o))]
-                                (rf/dispatch [:diary/set-filter mg])
-                                (storage/set-item "diary_filter" mg)
-                                (reitit.frontend.easy/replace-state :diary nil mg)))
-           :value     (or (:contains filter) "")}
-          [:option "所有时间"]
-          [:option {:value "week"} "一周以内"]
-          [:option {:value "month"} "一月以内"]
-          [:option {:value "month2"} "两月以内"]
-          [:option {:value "year"} "一年以内"]]]]]]]))
+            :style    {:cursor         :pointer
+                       :font-size      :10px
+                       :margin-left    :5px
+                       :margin-right   :10px
+                       :vertical-align :80%}}
+        [:i.material-icons {:style {:font-size :15px
+                                    :color     :white}} "help_outline"]]]
+      [:span.dui-tips
+       {:data-tooltip "写一篇新日记"}
+       [:a {:on-click #(rf/dispatch [:common/navigate! :diary-new])}
+        [:i.material-icons {:style {:font-size :30px
+                                    :color     :white}} "fiber_new"]]]]
+     [:div.columns
+      [:div.column.is-6.is-family-code
+       [:p
+        [:span
+         {:style {:padding-right "5px"
+                  :border-right  ".3em solid transparent"
+                  :animation     "cursor 1.5s infinite"}}
+         "Life is a struggle"]]]]]]])
 
 (defn diary-card [{:keys [id title content info create_at update_at] :as diary}]
   (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
@@ -106,9 +75,7 @@ Image 宽高：
         first-content-url (if (and first-content-url
                                    (str/includes? first-content-url "static2.mazhangjing.com"))
                             (str first-content-url oss-process)
-                            first-content-url)
-        ;用于过滤特定标签和日期的日记
-        filter-now @(rf/subscribe [:diary/filter])]
+                            first-content-url)]
     [:div.box.columns.mt-5 {:style (if first-content-url
                                      {:background
                                       (gstring/format "%s,url(%s)"
@@ -147,11 +114,7 @@ Image 宽高：
         [:p {:style {:margin-left :-7px :margin-top :10px :margin-bottom :-5px}}
          (for [label (:labels info)]
            ^{:key label}
-           [:a.ml-1 {:on-click (fn [_]
-                                 (let [filter-after (assoc filter-now :labels label)]
-                                   (rf/dispatch [:diary/set-filter filter-after])
-                                   (reitit.frontend.easy/push-state :diary nil filter-after)))}
-            [:span.tag.is-rounded (str "# " label)]])]
+           [:a.ml-1 [:span.tag.is-rounded (str "# " label)]])]
         [:p {:style {:margin-left :-7px :margin-top :10px}}
          [:a.ml-1]])]]))
 
@@ -159,8 +122,8 @@ Image 宽高：
   "Diary 主页展示"
   []
   [:<>
-   [diary-filter]
-   (let [datas @(rf/subscribe [:diary/list-data-filtered])]
+   [diary-header]
+   (let [{datas :data} @(rf/subscribe [:diary/list-data])]
      (if-not (empty? datas)
        (let [datas (vec (partition-all 2 datas))]
          [:section.section>div.container>div.content {:style {:margin-top "-50px"}}
@@ -175,7 +138,24 @@ Image 宽高：
               (when (second pair)
                 [diary-card (second pair) {:with-footer      true
                                            :with-description true
-                                           :with-edit        false}])]])])
+                                           :with-edit        false}])]])
+          [:nav.pagination.is-centered.is-justify-content-end.pt-5.mt-5
+           {:role "navigation" :aria-label "pagination"}
+           [:a.pagination-previous
+            {:on-click (fn [_]
+                         (let [[f t] @(rf/subscribe [:diary/current-range])]
+                           (if (<= f 10)
+                             (reitit.frontend.easy/replace-state
+                               :diary nil {:from 1 :to 10})
+                             (reitit.frontend.easy/push-state
+                               :diary nil {:from (- f 10) :to (- t 10)}))))}
+            "上一页"]
+           [:a.pagination-next
+            {:on-click (fn [_]
+                         (let [[f t] @(rf/subscribe [:diary/current-range])]
+                           (reitit.frontend.easy/push-state
+                             :diary nil {:from (+ f 10) :to (+ t 10)})))}
+            "下一页"]]])
        [:div.hero.is-small.pl-0.pr-0
         [:div.hero-body
          [:div.container.has-text-centered

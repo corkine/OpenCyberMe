@@ -13,47 +13,25 @@
     [clojure.string :as str]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; 日记 ;;;;;;;;;;;;;;;;;;;;;;
-;从 list-data 的 data info tags 获取 labels
-(rf/reg-sub
-  :diary/all-labels
-  (fn [db _]
-    (set (remove nil?
-                 (flatten
-                   (map #(-> % :info :labels)
-                        (-> db :diary/list-data :data)))))))
-
-(rf/reg-event-db
-  :diary/set-filter
-  (fn [db [_ data]]
-    (assoc db :diary/filter data)))
-
-(rf/reg-sub
-  :diary/filter
-  (fn [db _] (:diary/filter db)))
-
-;对 list-data 根据 filter 进行过滤
-(rf/reg-sub
-  :diary/list-data-filtered
-  (fn [db _]
-    (let [{:keys [data]} (:diary/list-data db)
-          {:keys [labels contains]} (:diary/filter db)
-          label-contain-fn #(contains? (-> % :info :labels set) labels)
-          contains-contain-fn #(satisfy-date contains %)
-          new-data (cond
-                     (and (str/blank? labels) (str/blank? contains)) data
-                     (str/blank? contains) (filter label-contain-fn data)
-                     (str/blank? labels) (filter contains-contain-fn data)
-                     :else (->> data
-                                (filter label-contain-fn)
-                                (filter contains-contain-fn)))]
-      (vec new-data))))
-
+;   |-----------------------------------------------------<------------------------------------------------------|
+;访问路由 /diary -> 触发事件 :diary/list -> 更新页码范围 :diary/current-range -> 得到数据 :diary/list-data -> 展示数据   |
+;上下翻页更新路由 /diary?from=x&to=y ----------------------------------->-------------------------------------------|
 ;最近日记
 (ajax-flow {:call           :diary/list
-            :uri-fn         #(str "/cyber/diaries")
+            :uri-fn         #(let [from (first %) to (second %)]
+                               (rf/dispatch [:diary/set-current-range! [from to]])
+                               (str "/cyber/diaries?from=" from "&to=" to))
             :data           :diary/list-data
             :clean          :diary/list-data-clean
             :failure-notice true})
+
+(rf/reg-sub
+  :diary/current-range
+  (fn [db _] (:diary/current-range db)))
+
+(rf/reg-event-db
+  :diary/set-current-range!
+  (fn [db [_ range]] (assoc db :diary/current-range range)))
 
 ;获取某一日记，失败提示
 (ajax-flow {:call           :diary/current-by-id

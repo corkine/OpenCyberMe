@@ -27,10 +27,10 @@
 
 (defn upload-db-file
   "上传 metadata.db 文件，只允许上传此文件名和类型的文件"
-  [filename file callback]
+  [filename file truncate callback]
   (if-not (= "metadata.db" filename)
     (callback {:message "上传的文件格式不合法，请上传 metadata.db 文件" :status 0 :data nil})
-    (let [form (doto (js/FormData.) (.append "file" file))]
+    (let [form (doto (js/FormData.) (.append "file" file) (.append "truncate" truncate))]
       (ajax/POST "/cyber/books/updating-with-calibre-db"
                  {:body            form
                   :response-format :json

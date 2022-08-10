@@ -542,16 +542,20 @@
 
 (s/def :diary/id int?)
 (s/def :diary/date string?)
+(s/def :diary/from int?)
+(s/def :diary/to int?)
 
 (def diary-route
   [""
    ["/diaries"
     {:tags #{"我的日记"}
      :get  {:summary     "获取最近的所有日记"
-            :description "日记包括 title content info create_at update_at id 信息"
-            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
+            :description "日记包括 title content info create_at update_at id 信息
+            其中 from to 表示开始和结束的条数，默认 from 从 0 开始，默认 to 为 100"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret
+                                                  :diary/from :diary/to])}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (diary/handle-recent-diaries query)))}}]
+                           (hr/response (diary/handle-diaries-limit query)))}}]
    ["/diary-new"
     {:tags #{"我的日记"}
      :post {:summary     "新建日记"
@@ -659,10 +663,11 @@
    {:swagger {:tags ["藏书服务"]}}
    ["/updating-with-calibre-db"
     {:post {:summary    "上传 Calibre 数据库"
-            :parameters {:multipart {:file multipart/temp-file-part}}
-            :handler    (fn [{{{:keys [file]} :multipart} :parameters}]
+            :parameters {:multipart {:file multipart/temp-file-part
+                                     :truncate boolean?}}
+            :handler    (fn [{{{:keys [file truncate]} :multipart} :parameters}]
                           (let [{:keys [filename tempfile]} file]
-                            (hr/response (book/handle-upload-file filename tempfile))))}}]
+                            (hr/response (book/handle-upload-file filename tempfile truncate))))}}]
    ["/search-author/:search"
     {:get  {:summary     "搜索作者"
             :description "根据作者进行书籍搜索"

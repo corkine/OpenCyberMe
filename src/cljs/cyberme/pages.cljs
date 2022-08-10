@@ -174,28 +174,28 @@
 (defn cook-page []
   [:<>
    [top-point]
-   [:div.container>div.content.mt-6
-    [:p "正在施工..."]]
-   [:footer.mt-6.mb-4
-    [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+   [:div
+    [:div.container>div.content.mt-6
+     [:p "正在施工..."]]
+    [:footer.mt-6.mb-4
+     [:p.footer-content.has-text-centered.has-text-grey
+      (str "© 2016-2022 "
+           "Marvin Studio."
+           " All Right Reserved.")]]]])
 
 (defn book-page []
   [:<>
    [top-point]
    [book/book-main]
-   [:footer.mt-6.mb-4
+   [:footer.mt-6.mb-4 {:style {:position :absolute
+                               :bottom   0 :left 0 :right 0 :z-index -1}}
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn package-page []
   [:<>
    [top-point]
-   [:selection.hero.is-large
+   [:div.hero.is-large
     [:div.hero-body.has-text-centered
      [:p.title.is-family-code [:i.fa.fa-exclamation-triangle] " Coming Soon..."]
      [:p.subtitle.is-family-code "正在施工"]]]
@@ -215,7 +215,7 @@
                  [:a.mb-3.mt-1.is-clickable.is-unselectable {:on-click #(swap! show not)}
                   [:span.mr-1 "设备：" device] [:span.mx-2 "地址：admin@192.168.1.2"]
                   #_[:a.button.is-info.is-rounded.is-small.is-outlined.ml-3
-                    (if @show "⚡ 折叠命令" "⭐ 展开命令")]]
+                     (if @show "⚡ 折叠命令" "⭐ 展开命令")]]
                  (if @show
                    [:pre.mt-4 (str
                                 "feature lacp\n",
@@ -276,17 +276,17 @@
       {:device "leaf-4"}]]
     [grouped-card "BGP 组播配置"
      [{:is-sub-task? true
-       :name "Pim RP 配置"
-       :device-list [{:device "leaf-1"}
-                     {:device "leaf-2"}
-                     {:device "leaf-3"}
-                     {:device "leaf-4"}]}
+       :name         "Pim RP 配置"
+       :device-list  [{:device "leaf-1"}
+                      {:device "leaf-2"}
+                      {:device "leaf-3"}
+                      {:device "leaf-4"}]}
       {:is-sub-task? true
-       :name "Anycast RP 配置"
-       :device-list [{:device "leaf-1"}
-                     {:device "leaf-2"}
-                     {:device "leaf-3"}
-                     {:device "leaf-4"}]}]]]
+       :name         "Anycast RP 配置"
+       :device-list  [{:device "leaf-1"}
+                      {:device "leaf-2"}
+                      {:device "leaf-3"}
+                      {:device "leaf-4"}]}]]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 "

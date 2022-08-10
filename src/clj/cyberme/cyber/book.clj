@@ -1,5 +1,6 @@
 (ns cyberme.cyber.book
-  (:require [cyberme.db.core :as db])
+  (:require [cyberme.db.core :as db]
+            [next.jdbc :as jdbc])
   (:import (java.io File)
            (java.nio.file Paths)
            (java.sql DriverManager ResultSet)
@@ -32,7 +33,7 @@
 (defn handle-upload-file
   "处理从前端上传的数据库文件，解析 SQLite 文件并将其同步到 PostgreSQL 中并返回
   传入参数：文件大小，文件名和文件"
-  [filename file]
+  [filename file with-truncate?]
   (try
     (let [{:keys [message data status]} (read-from-file (str file))]
       (if (= status -1)
@@ -45,7 +46,10 @@
                              data)]
           {:message (str "上传 " filename " 数据成功！")
            :status  1
-           :data    (db/insert-books-batch {:books seq-data})})))
+           :data    (jdbc/with-transaction
+                      [t db/*db*]
+                      (when with-truncate? (db/drop-all-books t))
+                      (db/insert-books-batch t {:books seq-data}))})))
     (catch Exception e
       {:message (str "未处理的异常：" (.getMessage e)) :status -1})))
 

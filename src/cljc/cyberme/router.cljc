@@ -76,16 +76,20 @@
    ["/diary"
     (merge {:name :diary}
            #?(:cljs {:view        #'core/diary-page
-                     :controllers [{:parameters {:query [:labels :contains]}
+                     :controllers [{:parameters {:query [:labels :contains :from :to]}
                                     :start      (fn [{query :query}]
-                                                  (if (or (nil? query) (empty? query))
-                                                    (let [data-db (storage/get-item "diary_filter")]
-                                                      (rf/dispatch [:diary/set-filter data-db])
-                                                      (reitit.frontend.easy/replace-state :diary nil data-db))
-                                                    (rf/dispatch [:diary/set-filter query]))
+                                                  ;加载本地存储保存的凭证
                                                   (rf/dispatch [:user/fetch-from-local])
+                                                  ;删除上一次处理的日记数据
                                                   (rf/dispatch [:diary/current-data-clean])
-                                                  (rf/dispatch [:diary/list])
+                                                  ;按照 query 获取指定范围的日记，如果解析出错，使用 1 - 10 范围
+                                                  (if (and (:from query) (:to query))
+                                                    (let [from (js/parseInt (:from query))
+                                                          from (if (< from 1) 1 from)
+                                                          to (js/parseInt (:to query))
+                                                          to (if (<= to from) (+ from 10) to)]
+                                                      (rf/dispatch [:diary/list [from to]]))
+                                                    (rf/dispatch [:diary/list [1 10]]))
                                                   ;FOR WEEK-PLAN 直接访问日记时，不显示周计划
                                                   #_(rf/dispatch [:dashboard/plant-week]))}]}))]
 
@@ -103,8 +107,8 @@
                                     :start      (fn [{path :path}]
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:diary/current-by-id (:id path)]))
-                                    :stop (fn [_]
-                                            (rf/dispatch [:diary/current-data-clean]))}]}))]
+                                    :stop       (fn [_]
+                                                  (rf/dispatch [:diary/current-data-clean]))}]}))]
 
    ["/diary/by-id/:id"
     (merge {:name :diary-view}
@@ -112,9 +116,9 @@
                      :controllers [{:parameters {:path [:id]}
                                     :start      (fn [{path :path}]
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  (rf/dispatch [:diary/current-by-id  (:id path)]))
-                                    :stop (fn [_]
-                                            (rf/dispatch [:diary/current-data-clean]))}]}))]
+                                                  (rf/dispatch [:diary/current-by-id (:id path)]))
+                                    :stop       (fn [_]
+                                                  (rf/dispatch [:diary/current-data-clean]))}]}))]
 
    ["/diary/by-date/:date/edit"
     (merge {:name :diary-edit-by-date}
@@ -123,8 +127,8 @@
                                     :start      (fn [{path :path}]
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:diary/current-by-date (:date path)]))
-                                    :stop (fn [_]
-                                            (rf/dispatch [:diary/current-data-clean]))}]}))]
+                                    :stop       (fn [_]
+                                                  (rf/dispatch [:diary/current-data-clean]))}]}))]
 
    ["/goods"
     (merge {:name :goods}

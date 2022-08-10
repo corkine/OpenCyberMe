@@ -57,6 +57,16 @@
     (catch Exception e
       {:message (str "获取最近的日记失败" (.getMessage e)) :status 0})))
 
+(defn handle-diaries-limit
+  "获取最近的日记，按照范围获取，from 最小值为 1"
+  [{:keys [from to] :or {from 1 to 100}}]
+  (try
+    {:message (format "获取日记从 %d 到 %d 条成功" from to)
+     :data (db/range-diary {:drop (- from 1) :take (+ (- to from) 1)})
+     :status 1}
+    (catch Exception e
+      {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
+
 (defn handle-diaries-range
   "获取最近范围的日志"
   [^LocalDate start ^LocalDate end]

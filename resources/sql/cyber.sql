@@ -320,6 +320,11 @@ order by date(start at time zone 'Asia/Shanghai') desc;
 select * from diary
 order by (info->>'day')::date desc, create_at desc
 limit 100;
+-- :name range-diary :? :*
+select * from diary
+order by (info->>'day')::date desc, create_at desc
+limit :take
+offset :drop;
 -- :name diaries-range :? :*
 select * from diary
 where ((info->>'day')::date >= :start) and ((info->>'day')::date <= :end)
@@ -368,3 +373,5 @@ where author ilike ('%' || :search || '%') or title ilike ('%'|| :search ||'%');
 select *
 from books
 where uuid = :id;
+-- :name drop-all-books :! :1
+truncate books;
