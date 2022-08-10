@@ -170,8 +170,8 @@
                           (and (str/starts-with? title plan-first-4-words)
                                (not (some (fn [log] (str/includes? (get log :name "") title)) logs))))
                        today-todo-list)]
-          ;如果有多个，最推荐未完成的
-          (first (reverse (sort :status find-new!))))))))
+          ;如果有多个，最推荐已完成的
+          (first (sort :status find-new!)))))))
 
 ;获取最近笔记
 (ajax-flow {:call            :note/last
