@@ -30,11 +30,13 @@
 
 ### 美剧更新通知服务
 
-<img src="demos/screenshorts/express-tv-update-example.jpg" width="500px"  alt="EXPRESS">
+<img src="demos/screenshorts/express-tv-update-example.jpg" width="500px" alt="EXPRESS">
 
-- 后台定时从美剧网站查询感兴趣的美剧更新信息，存储到数据库并通知更新到 Web 界面或 iPhone Slack 频道。
-- 后端服务 `src/clj/cyberme/cyber/mini4k.clj`
-- 前端组件 `src/cljs/cyberme/dashboard/core.cljs` 提供美剧订阅录入表单和最近更新剧集展示。
+后台定时从美剧网站查询感兴趣的美剧更新信息，存储到数据库并通知更新到 Web 界面或 iPhone Slack 频道。
+
+后端服务 `src/clj/cyberme/cyber/mini4k.clj`
+
+前端组件 `src/cljs/cyberme/dashboard/core.cljs` 提供美剧订阅录入表单和最近更新剧集展示。
 
 ### 喷嚏图卦新闻通知服务
 
@@ -44,7 +46,7 @@
 
 ### 天气定期预报和预警服务
 
-<img src="demos/screenshorts/notice.jpg" width="270px"  alt="Notice">
+<img src="demos/screenshorts/notice.jpg" width="270px" alt="Notice">
 
 后台定时获取彩云天气 API 并提供配置文件地点天气信息，推送到 Slack 频道，并提供 API 以供查询
 
@@ -52,7 +54,7 @@
 
 ### GPS 数据上报和轨迹追踪服务
 
-<img src="demos/screenshorts/track.jpg" width="470px"  alt="Track">
+<img src="demos/screenshorts/track.jpg" width="470px" alt="Track">
 
 后台提供 API 从 iPhone 等设备采集 GPS 信息，联动百度鹰眼和百度地图进行位置解析和记录上报（根据配置），以绘制活动轨迹。
 
@@ -68,9 +70,11 @@
 
 ### 图床上传服务
 
-- 后台提供 API 上传图片到阿里云 OSS，前端提供拖拽和粘贴事件监测以自动上传并获取 URL。
-- 后端服务 `src/clj/cyberme/cyber/file.clj`
-- 前端组件 `src/cljs/cyberme/core.cljs` 提供 Web 界面的便签输入和最近便签获取。
+后台提供 API 上传图片到阿里云 OSS，前端提供拖拽和粘贴事件监测以自动上传并获取 URL。
+
+后端服务 `src/clj/cyberme/cyber/file.clj`
+
+前端组件 `src/cljs/cyberme/core.cljs` 提供 Web 界面的便签输入和最近便签获取。
 
 ### 植物每天浇水、每周一学提醒服务
 
@@ -84,7 +88,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 每周计划 KPI 与激励服务
 
-<img src="demos/screenshorts/week-plan-exmaple.jpg" width="200px"  alt="WEEK PLAN">
+<img src="demos/screenshorts/week-plan-exmaple.jpg" width="200px" alt="WEEK PLAN">
 
 后台提供每周计划与完成进度跟踪的增删改查 API，前端提供增删改查界面，以跟踪锻炼、学习、工作和饮食 KPI。每周计划联动 Microsoft TODO 和当日日记，完成 TODO 事项后，自行更新计划并跳转到日记界面。
 
@@ -94,7 +98,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### Microsoft TODO 同步服务
 
-<img src="demos/screenshorts/todo-example.jpg" width="270px"  alt="TODO">
+<img src="demos/screenshorts/todo-example.jpg" width="270px" alt="TODO">
 
 后台定时从 Microsoft Graph API 获取 TODO 待办事项，和本地数据库进行交叉对比与同步，提供 API 进行展示和计分，此服务允许通过 OAuth 进行登录，用户凭证会自动刷新和维护。
 
@@ -152,7 +156,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 日记服务
 
-<img src="demos/screenshorts/diary-add-example.jpg" width="500px"  alt="Diary Add">
+<img src="demos/screenshorts/diary-add-example.jpg" width="500px" alt="Diary Add">
 
 后端提供日记的增删改查服务，基于阿里云 OSS 的图片存储服务，有 Web APP 和 Flutter APP 两个界面。
 
