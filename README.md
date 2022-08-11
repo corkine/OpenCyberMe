@@ -73,7 +73,7 @@
     - 后端服务 `src/clj/cyberme/cyber/week_plan.clj`
     - 前端界面 `src/cljs/cyberme/dashboard/week_plan.cljs` `src/cljs/cyberme/diary/edit.cljs`
 - Calibre 书籍搜索和同步服务
-    - 后台维护 Calibre 书库元数据，书籍实际存放在 OneDrive 中，可通过前端界面搜索、更新元数据，跳转到豆瓣读书、OneDrive 资源页。
+    - 后台维护 Calibre 书库元数据，书籍实际存放在 OneDrive 中，可通过前端界面搜索、更新元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。
     - 后端服务 `src/clj/cyberme/cyber/book.clj`
     - 前端界面 `src/cljs/cyberme/book.cljs`
 

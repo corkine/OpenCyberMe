@@ -1,6 +1,7 @@
 (ns cyberme.book
   (:require [clojure.string :as str]
             [cyberme.util.upload :as upload]
+            [goog.string :as gstring]
             [re-frame.core :as rf]
             [cyberme.util.request :refer [ajax-flow] :as req]))
 
@@ -13,6 +14,9 @@
 
 (def basic-cloud-path
   "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fcorkine%5Fone%5Fmazhangjing%5Fcom%2FDocuments%2Fcalibre")
+
+(def basic-cloud-download-path
+  "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/Documents/calibre")
 
 (def dou-ban-path
   "https://search.douban.com/book/subject_search?search_text=")
@@ -71,6 +75,15 @@
            ^{:key uuid}
            [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
                               :margin "5px 0 5px 0"}}
+            (when (and (= "PDF" (:format info)) (:resource info))
+              [:div {:style {:float "right" :margin "1em 1em 0 0"}}
+               [:a {:href (str basic-cloud-download-path "/" (get info :path "")
+                               "/" (get info :resource "") "."
+                               (str/lower-case (get info :format "PDF")))
+                    :target :_black
+                    :title (str "点击在线预览 PDF 文件\n大小："
+                                (gstring/format "%.2f MB" (/ (js/parseInt (or (:size info) "0")) 1048576)))}
+                [:i.fa.fa-file-pdf-o]]])
             [:div {:style {:float "right" :margin "1em 1em 0 0"}}
              [:a {:href (str basic-cloud-path "/" (get info :path ""))
                   :target :_black

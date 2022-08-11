@@ -124,6 +124,7 @@
                  [:i.fa.fa-star]]]]]
            [week/week-plan-add-dialog]
            [week/week-plan-log-add-dialog]
+           [week/week-plan-modify-item-dialog]
            [:div {:style {:margin "-10px 0px 20px 12px"}}
             [week/plan-widget week-items {:go-diary-add-log false}]]
            [:div.is-size-6.markdown-body {:style {:margin :12px}}

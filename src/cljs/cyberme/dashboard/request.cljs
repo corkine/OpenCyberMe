@@ -120,6 +120,14 @@
             :clean          :dashboard/week-plan-list-item-clean
             :failure-notice true})
 
+(ajax-flow {:call                   :dashboard/week-plan-modify-item
+            :uri-fn                 #(str "/cyber/week-plan/modify-item")
+            :is-post                true
+            :data                   :dashboard/week-plan-modify-item-data
+            :clean                  :dashboard/week-plan-modify-item-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
 (ajax-flow {:call                   :dashboard/week-plan-item-add-log
             :uri-fn                 #(str "/cyber/week-plan/update-item/" (:item-id %) "/add-log")
             :is-post                true
@@ -141,6 +149,11 @@
   :week-plan-db-set
   (fn [db [_ key value]]
     (assoc-in db [:week-plan key] value)))
+
+(rf/reg-event-db
+  :week-plan-db-unset
+  (fn [db [_ key]]
+    (dissoc db :week-plan key)))
 
 ;周计划当前展开和选择数据查询
 (rf/reg-sub

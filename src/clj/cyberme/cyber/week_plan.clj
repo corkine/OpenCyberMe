@@ -130,6 +130,28 @@
       (log/error "[week-plan] error: " (.getMessage e))
       {:message (str "新建本周计划项目" name "失败：" (.getMessage e)) :status -1})))
 
+(defn handle-modify-week-plan-item
+  "更新某一计划项目，只允许更新 name、description，需要有 id"
+  [{:keys [name description id]}]
+  (try
+    (jdbc/with-transaction
+      [t db/*db*]
+      (let [now (LocalDate/now)
+            items (-> (get-some-week t now) :info :plan)
+            current-item (first (filterv #(= id (:id %)) items))]
+        (if current-item
+          (let [merged-item (merge current-item
+                                   {:last-update (LocalDateTime/now)
+                                    :name (or name (:name current-item))
+                                    :description (or description (:description current-item))})]
+            (set-some-week t now {:plan (mapv #(if (= id (:id %)) merged-item %) items)})
+            {:message (str "更新本周计划项目" name "成功")
+             :status  1})
+          {:message (str "更新本周计划项目" name "失败，找不到 id " id) :status  -1})))
+    (catch Exception e
+      (log/error "[week-plan] error: " (.getMessage e))
+      {:message (str "更新本周计划项目" name "失败：" (.getMessage e)) :status -1})))
+
 (defn handle-delete-week-plan-item
   "删除本周计划特定项目和其所有日志。"
   [item-id]

@@ -5,6 +5,26 @@
             [re-frame.core :as rf]
             [cyberme.util.tool :as tool]))
 
+(defn week-plan-modify-item-dialog
+  "特定计划项目更新对话框"
+  []
+  (let [item @(rf/subscribe [:week-plan-db-query :modify-item])]
+    (dialog :modify-week-plan-item!
+            "更新周计划项目"
+            [[:name "名称*" "计划名称"]
+             [:description "详述" "计划详述" {:type :textarea :attr {:rows 3}}]]
+            "确定"
+            #(if-let [err (va/validate! @%1 [[:name va/required]])]
+               (reset! %2 err)
+               (rf/dispatch [:dashboard/week-plan-modify-item @%1]))
+            {:subscribe-ajax    [:dashboard/week-plan-modify-item-data]
+             :call-when-exit    [[:dashboard/week-plan-modify-item-clean]
+                                 [:week-plan-db-unset :modify-item]]
+             :call-when-success [[:dashboard/week-plan-modify-item-clean]
+                                 #_[:dashboard/plant-week]]
+             :origin-data       (select-keys item [:name :description :id])
+             :origin-data-is-subscribed true})))
+
 (defn week-plan-add-dialog
   "添加本周计划项目，必须传入 progress-delta 项，可以有 name，description，id，update"
   []
@@ -22,7 +42,7 @@
           {:subscribe-ajax    [:dashboard/week-plan-add-item-data]
            :call-when-exit    [[:dashboard/week-plan-add-item-clean]]
            :call-when-success [[:dashboard/week-plan-add-item-clean]
-                               [:dashboard/plant-week]]
+                               #_[:dashboard/plant-week]]
            :origin-data       {:category "learn" :progress "0.0"}}))
 
 (defn week-plan-log-add-dialog
@@ -91,7 +111,13 @@
                            ;(rf/dispatch [:week-plan-db-set :item-id item-id]) ;显示当前展开的 WEEK PLAN ITEM
                            (rf/dispatch [:app/show-modal :add-week-plan-log!]) ;显示对话框
                            )}
-             (gstring/format "%d%%" progress)]]
+             (gstring/format "%d%%" progress)]
+            [:span.is-clickable
+             {:title "点击修改此项目"
+              :on-click (fn [_]
+                          (rf/dispatch [:week-plan-db-set :modify-item item])
+                          (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
+             "_"]]
            ;每个 WEEK PLAN ITEM 的 LOG
            (when @(rf/subscribe [:week-plan-db-query item-id])
              [:div.mb-2

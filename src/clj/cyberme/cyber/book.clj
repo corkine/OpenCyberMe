@@ -1,6 +1,7 @@
 (ns cyberme.cyber.book
   (:require [cyberme.db.core :as db]
-            [next.jdbc :as jdbc])
+            [next.jdbc :as jdbc]
+            [clojure.tools.logging :as logger])
   (:import (java.io File)
            (java.nio.file Paths)
            (java.sql DriverManager ResultSet)
@@ -18,9 +19,17 @@
           (let [statement (.createStatement connection)]
             (.setQueryTimeout statement 10)
             (let [resultset ^ResultSet
-                            (.executeQuery statement "select * from books
-                        order by last_modified desc")
-                  result (mapv #(select-keys % [:title :author_sort :path :uuid :last_modified])
+                            ;如果一本书有多种格式，只列出一种文件格式
+                            #_"select * from books order by last_modified desc"
+                            (.executeQuery statement
+                                           "select books.*, data.name as resource, data.format as format,
+                                           data.uncompressed_size as size
+                                           from books, data
+                                           where books.id = data.book
+                                           group by books.uuid
+                                           order by last_modified desc")
+                  result (mapv #(select-keys % [:title :author_sort :path :uuid :last_modified
+                                                :resource :format :size])
                                (resultset-seq resultset))]
               {:message "读取文件成功" :status 1 :data result}))
           (catch Exception e
@@ -42,8 +51,13 @@
                                [(get row :uuid (str (UUID/randomUUID)))
                                 (get row :title "未知标题")
                                 (get row :author_sort "佚名")
-                                {:last_modified (:last_modified row) :path (:path row)}])
+                                {:last_modified (:last_modified row)
+                                 :path          (:path row)
+                                 :resource      (get row :resource "未知资源")
+                                 :format        (get row :format "未知格式")
+                                 :size          (get row :size 0)}])
                              data)]
+          (logger/info seq-data)
           {:message (str "上传 " filename " 数据成功！")
            :status  1
            :data    (jdbc/with-transaction

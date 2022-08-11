@@ -631,6 +631,13 @@
                           :body any?}
             :handler     (fn [{{body :body} :parameters}]
                            (hr/response (week/handle-add-week-plan-item body)))}}]
+   ["/modify-item"
+    {:post {:summary     "更新本周计划项目"
+            :description "更新本周计划项目，需要传入 id，只能更新 name 和description"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :body any?}
+            :handler     (fn [{{body :body} :parameters}]
+                           (hr/response (week/handle-modify-week-plan-item body)))}}]
    ["/delete-item/:item-id"
     {:post {:summary     "删除本周计划项目"
             :description "删除此项目和项目的每个记录，最后一条会同时删除记录行/本周计划"
