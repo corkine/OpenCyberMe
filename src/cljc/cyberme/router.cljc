@@ -178,6 +178,9 @@
    ["/book"
     (merge {:name :book}
            #?(:cljs {:view        #'core/book-page
-                     :controllers [{:start (fn [_]
+                     :controllers [{:parameters {:query [:q]}
+                                    :start (fn [{{query :q} :query}]
                                              (rf/dispatch [:user/fetch-from-local])
-                                             (rf/dispatch [:book/search-clean]))}]}))]])
+                                             (if query
+                                               (rf/dispatch [:book/search query])
+                                               (rf/dispatch [:book/search-clean])))}]}))]])

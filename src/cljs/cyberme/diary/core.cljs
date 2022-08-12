@@ -147,14 +147,17 @@ Image 宽高：
                            (if (<= f 10)
                              (reitit.frontend.easy/replace-state
                                :diary nil {:from 1 :to 10})
-                             (reitit.frontend.easy/push-state
-                               :diary nil {:from (- f 10) :to (- t 10)}))))}
+                             (do
+                               (reitit.frontend.easy/push-state
+                                 :diary nil {:from (- f 10) :to (- t 10)})
+                               (.scrollTo js/window 0 0)))))}
             "上一页"]
            [:a.pagination-next
             {:on-click (fn [_]
                          (let [[f t] @(rf/subscribe [:diary/current-range])]
                            (reitit.frontend.easy/push-state
-                             :diary nil {:from (+ f 10) :to (+ t 10)})))}
+                             :diary nil {:from (+ f 10) :to (+ t 10)})
+                           (.scrollTo js/window 0 0)))}
             "下一页"]]])
        [:div.hero.is-small.pl-0.pr-0
         [:div.hero-body

@@ -60,10 +60,12 @@
      [:div.control.has-icons-right.container
       [:input.input.is-rounded
        {:type "text" :placeholder "输入书籍名/作者名"
+        :defaultValue (or (-> (js/URL. (.-location js/window)) (.-searchParams) (.get "q")) "")
         :on-key-up (fn [e]
                      (if (= 13 (.-keyCode e))
                        (if-let [search (.-value (.-target e))]
-                         (rf/dispatch [:book/search search]))))}]
+                         #_(rf/dispatch [:book/search search])
+                         (reitit.frontend.easy/replace-state :book nil {:q search}))))}]
       [:span.icon.is-small.is-right
        [:i.fa.fa-search.mr-3]]]]]
    [:div.container.mt-5
