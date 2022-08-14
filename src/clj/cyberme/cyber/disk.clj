@@ -9,7 +9,7 @@
     :or {just-folder false just-file false type :path}}]
   (try
     {:message "搜索成功"
-     :data    (case type
+     :data    (case (keyword type)
                 :path (cond just-folder (db/find-file-by-path-folder {:search q})
                             just-file (db/find-file-by-path-file {:search q})
                             :else (db/find-file-by-path {:search q}))
@@ -30,21 +30,24 @@
   upload-info 格式 {:upload-at Timestamp :upload-disk 'xxx' :upload-machine 'xxx'}"
   [files upload-info truncate]
   (try
-    (let [{:keys [disk] :or {disk "UnknownDisk"}} upload-info
+    (let [{:keys [upload-disk] :or {upload-disk "UnknownDisk"}} upload-info
           ;batch order: path name size info
           map-files (mapv (fn [{:keys [path file last-modified type size]}]
                             [path file size {:last-modified last-modified
-                                             :type type :disk disk}]) files)]
+                                             :type type :disk upload-disk}]) files)]
+      (when (empty? map-files)
+        (throw (RuntimeException. "没有传入数据，已终止上传")))
       (jdbc/with-transaction
         [t db/*db*]
         {:message (str "上传成功")
          :data (if truncate
                  (do
-                   (db/drop-disk-files {:disk disk})
-                   (db/insert-files-batch {:files map-files}))Ï
+                   (db/drop-disk-files {:disk upload-disk})
+                   (db/insert-files-batch {:files map-files}))
                  (db/insert-files-batch {:files map-files}))
          :status 1}))
     (catch Exception e
+      (.printStackTrace e)
       (log/error "[disk:upload] failed: " (.getMessage e))
       {:message (str "未处理的异常：" (.getMessage e)) :status -1})))
 
@@ -68,12 +71,6 @@
              (java.security MessageDigest)
              (java.util ArrayList Base64)))
 
-  (def config
-    {:path           "/Volumes/新加卷"
-     :deps           4
-     :upload-disk    "WD1TB"
-     :upload-machine "MAC_MINI_2018"})
-
   (defn encode-sha-b64
     "将明文进行 SHA1 和 Base64 加密"
     [^String plain]
@@ -91,13 +88,26 @@
                          (str (encode-sha-b64 (format "%s::%d" plain expired))
                               "::" expired)))))
 
+  (def config
+    {:path           "/Volumes/新加卷"
+     :deps           4
+     :upload-disk    "WD1TB"
+     :upload-machine "MAC_MINI_2018"})
+
+  (def basic
+    {:url #_"https://cyber.mazhangjing.com/cyber/disks/updating-disk-metadata"
+     "http://localhost:3000/cyber/disks/updating-disk-metadata"
+     :user "xxxxx"
+     :pass (pass-encode "xxxxx" 1000)})
+
   (defn send-request!
     "将文件元数据上传"
     [files]
     (let [req
-          (client/request {:url     "https://cyber.mazhangjing.com/cyber/disks/updating-disk-metadata"
+          (client/request {:url     (:url basic)
                            :method  :post
                            :headers {"Content-Type" "application/json"}
+                           :basic-auth [(:user basic) (:pass basic)]
                            :body    (json/generate-string
                                       {:truncate    true
                                        :files       files

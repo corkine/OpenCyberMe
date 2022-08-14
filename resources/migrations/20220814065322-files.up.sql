@@ -1,7 +1,7 @@
 create table if not exists files
 (
     id serial primary key,
-    path varchar(1000) not null,
+    path varchar(1000) unique not null,
     name varchar(255) not null,
     size bigint default 0,
     info jsonb default '{}'::jsonb,
