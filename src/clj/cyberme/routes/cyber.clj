@@ -28,7 +28,8 @@
     [clojure.tools.logging :as log]
     [cyberme.cyber.week-plan :as week]
     [cyberme.cyber.psych :as psych]
-    [cyberme.cyber.book :as book])
+    [cyberme.cyber.book :as book]
+    [cyberme.cyber.disk :as disk])
   (:import (java.time LocalDate)))
 
 (s/def :global/user string?)
@@ -704,6 +705,30 @@
                                       (io/resource)
                                       (io/input-stream))})}}]])
 
+(s/def :disks/q string?)
+(s/def :disks/type string?)
+(s/def :disks/just-folder boolean?)
+(s/def :disks/just-file boolean?)
+
+(def disks-route
+  ["/disks"
+   {:swagger {:tags ["文件服务"]}}
+   ["/updating-disk-metadata"
+    {:post {:summary    "上传磁盘文件元数据"
+            :parameters {:body {:truncate boolean?
+                                :files any?
+                                :upload-info any?}}
+            :handler    (fn [{{{:keys [files upload-info truncate]} :body} :parameters}]
+                          (hr/response (disk/handle-upload files upload-info truncate)))}}]
+   ["/search"
+    {:get  {:summary     "搜索文件(综合)"
+            :description "根据路径或名称进行文件搜索"
+            :parameters  {:query (s/keys :req-un [:disks/q]
+                                         :opt-un [:global/user :global/secret
+                                                  :disks/type :disks/just-folder :disks/just-file])}
+            :handler     (fn [{{query :query} :parameters}]
+                           (hr/response (disk/handle-search query)))}}]])
+
 (defn cyber-routes []
   (conj
     basic-route
@@ -722,4 +747,5 @@
     diary-route
     task-route
     week-plan-route
-    books-route))
+    books-route
+    disks-route))

@@ -375,3 +375,55 @@ from books
 where uuid = :id;
 -- :name drop-all-books :! :1
 truncate books;
+
+--------------------- disks ---------------------
+-- :name insert-files-batch :! :*
+insert into files(path, name, size, info)
+values :tuple*:files
+    on conflict (path)
+do update set name = excluded.name,
+           size = excluded.size,
+           info = files.info || excluded.info,
+           create_at = current_timestamp;
+-- :name find-file-by-path :? :*
+select * from files
+where path ilike ('%'|| :search ||'%');
+-- :name find-file-by-name :? :*
+select * from files
+where name ilike ('%' || :search || '%');
+-- :name find-file :? :*
+select * from files
+where path ilike ('%' || :search || '%') or name ilike ('%'|| :search ||'%');
+-- :name find-file-by-path-folder :? :*
+select * from files
+where path ilike ('%'|| :search ||'%')
+and info->>'type' = 'FOLDER';
+-- :name find-file-by-name-folder :? :*
+select * from files
+where name ilike ('%' || :search || '%')
+  and info->>'type' = 'FOLDER';
+-- :name find-file-folder :? :*
+select * from files
+where path ilike ('%' || :search || '%') or name ilike ('%'|| :search ||'%')
+    and info->>'type' = 'FOLDER';
+-- :name find-file-by-path-file :? :*
+select * from files
+where path ilike ('%'|| :search ||'%')
+  and info->>'type' = 'FILE';
+-- :name find-file-by-name-file :? :*
+select * from files
+where name ilike ('%' || :search || '%')
+  and info->>'type' = 'FILE';
+-- :name find-file-file :? :*
+select * from files
+where path ilike ('%' || :search || '%') or name ilike ('%'|| :search ||'%')
+    and info->>'type' = 'FILE';
+-- :name get-file :? :1
+select *
+from files
+where id = :id;
+-- :name drop-all-files :! :1
+truncate files;
+-- :name drop-disk-files :! :1
+delete from files
+where info->>'disk' = :disk;
