@@ -175,12 +175,12 @@
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local]))}]}))]
 
-   ["/book"
-    (merge {:name :book}
-           #?(:cljs {:view        #'core/book-page
-                     :controllers [{:parameters {:query [:q]}
-                                    :start (fn [{{query :q} :query}]
-                                             (rf/dispatch [:user/fetch-from-local])
-                                             (if query
-                                               (rf/dispatch [:book/search query])
-                                               (rf/dispatch [:book/search-clean])))}]}))]])
+   ["/file"
+    (merge {:name :file}
+           #?(:cljs {:view        #'core/file-page
+                     :controllers [{:parameters {:query [:q :type]}
+                                    :start      (fn [{{query :q type :type} :query}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (if query
+                                                    (rf/dispatch [:file/search [type query]])
+                                                    (rf/dispatch [:file/search-clean])))}]}))]])

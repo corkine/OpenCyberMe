@@ -706,9 +706,9 @@
                                       (io/input-stream))})}}]])
 
 (s/def :disks/q string?)
-(s/def :disks/type string?)
-(s/def :disks/just-folder boolean?)
-(s/def :disks/just-file boolean?)
+(s/def :disks/type int?)
+(s/def :disks/take int?)
+(s/def :disks/drop int?)
 
 (def disks-route
   ["/disks"
@@ -724,8 +724,7 @@
     {:get  {:summary     "搜索文件(综合)"
             :description "根据路径或名称进行文件搜索"
             :parameters  {:query (s/keys :req-un [:disks/q]
-                                         :opt-un [:global/user :global/secret
-                                                  :disks/type :disks/just-folder :disks/just-file])}
+                                         :opt-un [:global/user :global/secret :disks/type :disks/take :disks/drop])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (disk/handle-search query)))}}]])
 

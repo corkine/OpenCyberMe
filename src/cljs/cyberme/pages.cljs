@@ -12,7 +12,7 @@
     [cyberme.work.whole :as work-all]
     [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
-    [cyberme.book :as book]
+    [cyberme.file :as file]
     [cyberme.psych.exp1.main :as exp1]
     [clojure.string :as string]))
 
@@ -183,10 +183,10 @@
            "Marvin Studio."
            " All Right Reserved.")]]]])
 
-(defn book-page []
+(defn file-page []
   [:<>
    [top-point]
-   [book/book-main]
+   [file/file-main]
    [:footer.mt-6.mb-4 {:style {:position :absolute
                                :bottom   0 :left 0 :right 0 :z-index -1}}
     [:p.footer-content.has-text-centered.has-text-grey

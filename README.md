@@ -30,8 +30,6 @@
 
 ### 美剧更新通知服务
 
-<img src="demos/screenshorts/express-tv-update-example.jpg" width="500px" alt="EXPRESS">
-
 后台定时从美剧网站查询感兴趣的美剧更新信息，存储到数据库并通知更新到 Web 界面或 iPhone Slack 频道。
 
 后端服务 `src/clj/cyberme/cyber/mini4k.clj`
@@ -88,8 +86,6 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 每周计划 KPI 与激励服务
 
-<img src="demos/screenshorts/week-plan-exmaple.jpg" width="200px" alt="WEEK PLAN">
-
 后台提供每周计划与完成进度跟踪的增删改查 API，前端提供增删改查界面，以跟踪锻炼、学习、工作和饮食 KPI。每周计划联动 Microsoft TODO 和当日日记，完成 TODO 事项后，自行更新计划并跳转到日记界面。
 
 后端服务 `src/clj/cyberme/cyber/week_plan.clj`
@@ -97,8 +93,6 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 前端界面 `src/cljs/cyberme/dashboard/week_plan.cljs` `src/cljs/cyberme/diary/edit.cljs`
 
 ### Microsoft TODO 同步服务
-
-<img src="demos/screenshorts/todo-example.jpg" width="270px" alt="TODO">
 
 后台定时从 Microsoft Graph API 获取 TODO 待办事项，和本地数据库进行交叉对比与同步，提供 API 进行展示和计分，此服务允许通过 OAuth 进行登录，用户凭证会自动刷新和维护。
 
@@ -118,8 +112,6 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### HCM 打卡、加班和工时自动化服务
 
-<img src="demos/screenshorts/work-example.jpg" width="300px"  alt="WORK">
-
 后台定时从 HCM 获取打卡信息，并提供 API 以提供加班时长查询、工作时长计算、统计和打卡提醒功能（以及一个实验性质的自动化服务，依赖移动设备在特定时间段执行自动化服务，后台定时查询其任务是否派发，如果失败提供通知功能）。
 
 后端服务 `src/clj/cyberme/cyber/inspur.clj`
@@ -128,8 +120,6 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 物品管理服务
 
-<img src="demos/screenshorts/goods.jpg" width="500px"  alt="Goods">
-
 后端提供物品、位置、打包的增删改查服务，有 Web APP 和 Flutter APP 两个界面。
 
 后端服务 `src/clj/cyberme/cyber/goods.clj`
@@ -137,8 +127,6 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 前端组件 `src/cljs/cyberme/good` `src/cljs/cyberme/place` 提供美剧订阅录入表单和最近更新剧集展示。
 
 ### 心理学在线问卷和实验分发服务
-
-<img src="demos/screenshorts/psych-exp.jpg" width="500px"  alt="Psych Experiment">
 
 提供前端的心理学在线实验和后端的实验数据收集服务，业务联系 <mailto:psych@mazhangjing.com>。
 
@@ -164,17 +152,17 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图片拖拽上传等功能。
 
-### Calibre 书籍搜索和同步服务
+### Calibre 书籍与磁盘文件搜索和同步服务
 
-<img src="demos/screenshorts/book-demo.jpg" width="500px" alt="Calibre">
+<img src="demos/screenshorts/book-demo2.png" width="500px" alt="Calibre">
 
-后台维护 Calibre 书库元数据，书籍实际存放在 OneDrive 中，可通过前端界面搜索、更新元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。
+后台维护 Calibre 书库（由 OneDrive 同步）、多个存储磁盘文件系统的元数据，对于书籍，可通过前端界面搜索书籍、更新书籍元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。对于磁盘文件，可通过前端界面搜索和查看路径、文件和文件夹信息。
 
-后端服务 `src/clj/cyberme/cyber/book.clj`
+后端服务 `src/clj/cyberme/cyber/book.clj` `src/clj/cyberme/cyber/disk.clj`
 
-前端界面 `src/cljs/cyberme/book.cljs`
+前端界面 `src/cljs/cyberme/file.cljs`
 
-> 本仓库仅包含后端服务代码和前端 Web App 代码，Flutter 客户端实现参见这里：[开源早期版本](https://github.com/corkine/cyber-me-client-early)
+> 本仓库仅包含后端服务代码和前端 Web App 代码，Flutter 客户端实现参见这里：[CyberMe 客户端](https://github.com/corkine/cyber-me-client)
 
 ## Running
     

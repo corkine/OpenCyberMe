@@ -1,24 +1,22 @@
 (ns cyberme.cyber.disk
+  "设计约束：磁盘文件路径不可冲突，多个磁盘默认挂载同一电脑不同路径，如果路径冲突插入操作被看做更新，且 info->disk 信息被重写"
   (:require [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
             [next.jdbc :as jdbc]))
 
 (defn handle-search
-  "搜索路径或文件名"
-  [{:keys [q type just-folder just-file]
-    :or {just-folder false just-file false type :path}}]
+  "搜索路径或文件名
+  type 1 只搜索文件，查找文件名
+  type 2 只搜索文件，查找文件路径
+  type 3 搜索文件+文件夹，查找文件路径"
+  [{:keys [q type take drop]
+    :or {type 1 take 300 drop 0}}]
   (try
     {:message "搜索成功"
-     :data    (case (keyword type)
-                :path (cond just-folder (db/find-file-by-path-folder {:search q})
-                            just-file (db/find-file-by-path-file {:search q})
-                            :else (db/find-file-by-path {:search q}))
-                :name (cond just-folder (db/find-file-by-name-folder {:search q})
-                            just-file (db/find-file-by-name-file {:search q})
-                            :else (db/find-file-by-name {:search q}))
-                :unify (cond just-folder (db/find-file-folder {:search q})
-                             just-file (db/find-file-file {:search q})
-                             :else (db/find-file {:search q}))
+     :data    (case type
+                1 (db/find-file-by-name {:search q :take take :drop drop})
+                2 (db/find-file-by-path {:search q :take take :drop drop})
+                3 (db/find-path {:search q :take take :drop drop})
                 (throw (RuntimeException. "未指定搜索类型")))
      :status  1}
     (catch Exception e

@@ -185,7 +185,7 @@
                   [nav-link "/" "Dashboard" :dashboard]
                   [nav-link "/work" "Work" :work]
                   [nav-link "/diary" "Diary" :diary]
-                  [nav-link "/book" "Books" :book]
+                  [nav-link "/file" "Files" :file]
                   #_[nav-link "/cook" "厨记" :cook]
                   [nav-link "/properties" "Goods" :properties]
                   #_[nav-link "/clothes" "衣物" :clothes]
