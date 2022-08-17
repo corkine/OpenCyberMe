@@ -164,6 +164,8 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 > 本仓库仅包含后端服务代码和前端 Web App 代码，Flutter 客户端实现参见这里：[CyberMe 客户端](https://github.com/corkine/cyber-me-client)
 
+> 一些配合 CyberMe 使用的本地脚本，比如上传 Calibre 数据库文件、磁盘元信息参见 /demos/scripts/README.md
+
 ## Running
     
 ```shell

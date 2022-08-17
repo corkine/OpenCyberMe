@@ -30,3 +30,6 @@ cache.json
 /demos/tasks/GK22*.png
 /demos/tasks/temp.png
 /demos/tasks/package2/
+/demos/scripts/.cpcache
+/demos/scripts/.cpcache/*
+/demos/scripts/.nrepl-port

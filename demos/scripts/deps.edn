@@ -1,0 +1,3 @@
+{:paths ["."] :deps {clj-file-zip/clj-file-zip {:mvn/version "0.1.0"}
+                     http-kit/http-kit {:mvn/version "2.5.0"}
+                     cheshire/cheshire {:mvn/version "5.10.0"}}}

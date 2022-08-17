@@ -5,6 +5,45 @@
             [re-frame.core :as rf]
             [cyberme.util.request :refer [ajax-flow] :as req]))
 
+(def basic-book-cloud-path
+  "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fcorkine%5Fone%5Fmazhangjing%5Fcom%2FDocuments%2Fcalibre")
+
+(def basic-book-cloud-download-path
+  "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/Documents/calibre")
+
+(def book-dou-ban-path
+  "https://search.douban.com/book/subject_search?search_text=")
+
+(def basic-cloud-search-url
+  "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/_layouts/15/onedrive.aspx?q=%s&view=7")
+
+(def basic-share-search-url
+  "https://share.mazhangjing.com/zh-CN/")
+
+(def default-search-type :book)
+
+;书籍，磁盘，私有云，共享云，正则 or 简单，最早 or 最晚，磁盘 A or 磁盘 B，文件名 or 完整路径
+
+;触发 URL 变更，在 cljc 中触发事件 file/search
+(rf/reg-event-db
+  :file/trigger-url-search
+  (fn [db [_ search-obj]]
+    ;{:q xxx :search-type :search-kind :search-sort :search-range-x range-y}
+    (reitit.frontend.easy/replace-state :file nil search-obj)
+    (rf/dispatch [:file/search-clean])
+    db))
+
+;统一搜索
+(rf/reg-event-db
+  :file/search
+  (fn [db [_ {:keys [file/search-type q] :as search-obj}]]
+    (rf/dispatch (case search-type :book [:book/search search-obj]
+                                   :file [:disk/search search-obj]
+                                   :onedrive-cn [:file/open-url [basic-cloud-search-url q]]
+                                   :onedrive [:file/open-url [basic-share-search-url nil]]
+                                   [:book/search search-obj]))
+    (assoc db :file/search-type search-type)))
+
 ;书籍搜索
 (ajax-flow {:call           :book/search
             :uri-fn         #(str "/cyber/books/search?q=" %)
@@ -19,16 +58,11 @@
             :clean          :disk/search-clean
             :failure-notice true})
 
-;统一搜索
 (rf/reg-event-db
-  :file/search
-  (fn [db [_ [type query]]]
-    (rf/dispatch (case type "0" [:book/search query]
-                            "1" [:disk/search [1 query]]
-                            "2" [:disk/search [2 query]]
-                            "3" [:disk/search [3 query]]
-                            [:book/search query]))
-    (assoc db :file/search-type type)))
+  :file/open-url
+  (fn [db [_ [basic-url query]]]
+    (.open js/window (if query (gstring/format basic-url query) basic-url) "_blank")
+    db))
 
 (rf/reg-event-db
   :file/search-clean
@@ -37,27 +71,46 @@
     (rf/dispatch [:book/search-clean])
     db))
 
-;触发 URL 变更，在 cljc 中触发事件 file/search
-(rf/reg-event-db
-  :file/trigger-url-search
-  (fn [db [_ [type search]]]
-    (reitit.frontend.easy/replace-state :file nil {:q search :type type})
-    (rf/dispatch [:file/search-clean])
-    db))
-
 (rf/reg-sub
   :file/search-type
   (fn [db _]
     (:file/search-type db)))
 
-(def basic-cloud-path
-  "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fcorkine%5Fone%5Fmazhangjing%5Fcom%2FDocuments%2Fcalibre")
+(rf/reg-sub
+  :file/search-kind
+  (fn [db _]
+    (let [type (or (:file/search-type db) default-search-type)]
+      (if (= type :disk) ["正则搜索" "简单搜索"] []))))
 
-(def basic-cloud-download-path
-  "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/Documents/calibre")
+(rf/reg-sub
+  :file/search-size
+  (fn [db _]
+    (let [type (or (:file/search-type db) default-search-type)]
+      (if (= type :disk) ["1MB 以下" "1-10 MB" "10MB 以下" "10-100 MB"
+                          "1-100 MB" "100MB 以下" "100MB 以上"] []))))
 
-(def dou-ban-path
-  "https://search.douban.com/book/subject_search?search_text=")
+(rf/reg-sub
+  :file/search-sort
+  (fn [db _]
+    (let [type (or (:file/search-type db) default-search-type)]
+      (if (or (= type :disk) (= type :book)) ["最早优先" "最晚优先"] []))))
+
+(rf/reg-sub
+  :file/search-range-x
+  (fn [db _]
+    (let [type (or (:file/search-type db) default-search-type)]
+      (if (or (= type :disk)) ["文件名" "完整路径"] []))))
+
+(rf/reg-sub
+  :file/search-range-y
+  (fn [db _]
+    (let [type (or (:file/search-type db) default-search-type)]
+      (if (or (= type :disk))
+        (let [disk-res (get db :disk/search-data [])
+              all-disk (set (filter (comp not nil?)
+                                    (map #(-> % :info :disk) disk-res)))]
+          (if (empty? all-disk) [] (vec all-disk)))
+        []))))
 
 (defn file-main []
   (let [params (-> (js/URL. (.-location js/window)) (.-searchParams))
@@ -100,26 +153,26 @@
             [:i.fa.fa-upload]]]]]]
        [:div.control.has-icons-right.container
         [:input.input.is-rounded
-         {:type "text" :placeholder "输入书籍名/作者名"
+         {:type         "text" :placeholder "输入书籍名/作者名"
           :defaultValue search-in-bar
-          :on-key-up (fn [e]
-                       (if (= 13 (.-keyCode e))
-                         (if-let [search (.-value (.-target e))]
-                           (rf/dispatch [:file/trigger-url-search [type search]]))))}]
+          :on-key-up    (fn [e]
+                          (if (= 13 (.-keyCode e))
+                            (if-let [search (.-value (.-target e))]
+                              (rf/dispatch [:file/trigger-url-search [type search]]))))}]
         [:span.icon.is-small.is-right
          [:i.fa.fa-search.mr-3]]
         [:div.control {:style {#_:float #_"left" :margin "10px 0 0 0px"}}
          [:label.radio
-          [:input {:type "radio" :name "type" :default-checked (when (= type 0) "checked")
+          [:input {:type     "radio" :name "type" :default-checked (when (= type 0) "checked")
                    :on-click #(rf/dispatch [:file/trigger-url-search [0 search-in-bar]])}] " 书籍"]
          [:label.radio
-          [:input {:type "radio" :name "type" :default-checked (when (= type 1) "checked")
+          [:input {:type     "radio" :name "type" :default-checked (when (= type 1) "checked")
                    :on-click #(rf/dispatch [:file/trigger-url-search [1 search-in-bar]])}] " 磁盘文件(文件名)"]
          [:label.radio
-          [:input {:type "radio" :name "type" :default-checked (when (= type 2) "checked")
+          [:input {:type     "radio" :name "type" :default-checked (when (= type 2) "checked")
                    :on-click #(rf/dispatch [:file/trigger-url-search [2 search-in-bar]])}] " 磁盘文件(路径)"]
          [:label.radio
-          [:input {:type "radio" :name "type" :default-checked (when (= type 3) "checked")
+          [:input {:type     "radio" :name "type" :default-checked (when (= type 3) "checked")
                    :on-click #(rf/dispatch [:file/trigger-url-search [3 search-in-bar]])}] " 磁盘文件和文件夹"]]]]]
      [:div.container.mt-2
       (let [search-type @(rf/subscribe [:file/search-type])
@@ -132,24 +185,24 @@
              (for [{:keys [uuid title author info]} data]
                ^{:key uuid}
                [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
-                                  :margin "5px 0 5px 0"}}
+                                  :margin     "5px 0 5px 0"}}
                 (when (and (= "PDF" (:format info)) (:resource info))
                   [:div {:style {:float "right" :margin "1em 1em 0 0"}}
-                   [:a {:href (str basic-cloud-download-path "/" (get info :path "")
-                                   "/" (get info :resource "") "."
-                                   (str/lower-case (get info :format "PDF")))
+                   [:a {:href   (str basic-book-cloud-download-path "/" (get info :path "")
+                                     "/" (get info :resource "") "."
+                                     (str/lower-case (get info :format "PDF")))
                         :target :_black
-                        :title (str "点击在线预览 PDF 文件\n大小："
-                                    (gstring/format "%.2f MB" (/ (js/parseInt (or (:size info) "0")) 1048576)))}
+                        :title  (str "点击在线预览 PDF 文件\n大小："
+                                     (gstring/format "%.2f MB" (/ (js/parseInt (or (:size info) "0")) 1048576)))}
                     [:i.fa.fa-file-pdf-o]]])
                 [:div {:style {:float "right" :margin "1em 1em 0 0"}}
-                 [:a {:href (str basic-cloud-path "/" (get info :path ""))
+                 [:a {:href   (str basic-book-cloud-path "/" (get info :path ""))
                       :target :_black
-                      :title "点击在 OneDrive 中查看资源"} [:i.fa.fa-cloud]]]
+                      :title  "点击在 OneDrive 中查看资源"} [:i.fa.fa-cloud]]]
                 [:div {:style {:float "right" :margin "1em 1em 0 0"}}
-                 [:a {:href (str dou-ban-path title)
+                 [:a {:href   (str book-dou-ban-path title)
                       :target :_black
-                      :title "点击跳转豆瓣图书搜索"} [:i.fa.fa-search]]]
+                      :title  "点击跳转豆瓣图书搜索"} [:i.fa.fa-search]]]
                 [:p.ml-1
                  [:span.mr-1.is-clickable title]
                  (let [date (first (str/split (or (-> info :last_modified) "") " "))]
@@ -161,7 +214,7 @@
                [:<>
                 (let [{:keys [disk type last-modified]} info]
                   [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
-                                     :margin "5px 0 5px 0"}}
+                                     :margin     "5px 0 5px 0"}}
                    [:div {:style {:float "right" :margin "1em 1em 0 0"}}
                     (case type
                       "FOLDER" [:i.fa.fa-folder-open-o.mr-2 {:aria-hidden "true"}]
