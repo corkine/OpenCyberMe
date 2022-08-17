@@ -56,6 +56,8 @@
           (str "降雨带：" target "外"))
         (str/includes? in "，放心出门吧")
         (str/replace in "，放心出门吧" "")
+        (str/includes? in "出门还是带把伞吧")
+        "附近正在下雨，记得带伞"
         :else in))
 
 (defonce weather-cache (atom {}))
@@ -78,6 +80,9 @@
                                                 update (LocalDateTime/now)))
                                   "m")))))
 
+(defn will-notice-warn? [in]
+  (str/includes? in "正在下"))
+
 (defn weather-routine-test []
   (let [now (LocalTime/now)
         hour (.getHour now)]
@@ -93,7 +98,9 @@
                 (and (> hour 7) (<= hour 20))
                 (if-let [weather (check-weather token locale false)]
                   (do (set-weather-cache! check weather)
-                      (slack/notify (str name ": " weather) "SERVER")))
+                      (slack/notify (str name ": " weather) "PIXEL")
+                      (when (will-notice-warn? weather)
+                        (slack/notify (str name ": " weather) "SERVER"))))
                 :else
                 (unset-weather-cache! check)))))))
 
@@ -116,7 +123,9 @@
                   (and (> hour 7) (<= hour 20))
                   (if-let [weather (check-weather token locale false)]
                     (do (set-weather-cache! check weather)
-                        (slack/notify (str name ": " weather) "PIXEL")))
+                        (slack/notify (str name ": " weather) "PIXEL")
+                        (when (will-notice-warn? weather)
+                          (slack/notify (str name ": " weather) "SERVER"))))
                   :else
                   (unset-weather-cache! check))))))))
 
