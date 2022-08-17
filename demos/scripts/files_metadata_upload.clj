@@ -1,4 +1,4 @@
-;clojure -Sdeps "{:paths [\".\"] :deps {http-kit/http-kit {:mvn/version,\"2.5.0\"} cheshire/cheshire {:mvn/version,\"5.10.0\"}}}" -M -m files-metadata-upload
+#!/usr/bin/env bb
 (ns files-metadata-upload
   "上传磁盘元数据信息。
 
@@ -121,3 +121,6 @@
   (println "running script files-metadata-upload...")
   (let [files (collect-files)]
     (println (send-request! files))))
+
+(when (= "SCI" (-> *clojure-version* :qualifier))
+  (-main))

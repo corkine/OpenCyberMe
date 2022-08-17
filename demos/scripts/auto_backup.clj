@@ -1,3 +1,4 @@
+#!/usr/bin/env bb
 ;clojure -Sdeps '{:paths ["".""] :deps {clj-file-zip/clj-file-zip {:mvn/version,""0.1.0""}}}' -M -m auto-backup
 (ns auto-backup
   (:gen-class)
@@ -66,3 +67,6 @@
           (.delete (clojure.java.io/file backup-path))
           (println "deleted zip file done!")
           (System/exit 0))))))
+
+(when (= "SCI" (-> *clojure-version* :qualifier))
+  (-main))

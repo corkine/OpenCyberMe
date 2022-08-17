@@ -1,4 +1,4 @@
-;clojure -Sdeps '{:paths ["".""] :deps {http-kit/http-kit {:mvn/version,""2.5.0""} cheshire/cheshire {:mvn/version,""5.10.0""}}}' -M -m calibre-upload
+#!/usr/bin/env bb
 (ns calibre-upload
   "上传 Calibre metadata.db 数据库，需要配置环境变量 CALIBRE_SEC user:token 或 CALIBRE_SEC_SIMPLE user:secret，
   如果 metadata.db 不在当前目录下较浅的层次，那么定义 CALIBRE_SEARCH_PATH 从此处查找 metadata.db，将上传第一个找到的。
@@ -106,3 +106,6 @@
                     :find-path  (get-env "CALIBRE_SEARCH_PATH" ".")
                     :find-level 3})]
     (find-and-upload!)))
+
+(when (= "SCI" (-> *clojure-version* :qualifier))
+  (-main))
