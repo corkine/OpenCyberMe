@@ -1,9 +1,16 @@
 (ns cyberme.file
+  "统一前端搜索页面：书籍、私有云、公有云和磁盘文件
+
+  搜索关键词 q ----> 搜索类型（书籍、磁盘..）---> 搜索选项（大小排序、特定磁盘） ---> 更新 URL Query Param ---> 搜索
+  Enter 触发    -----  使用默认值     --------   不同搜索类型选项不同   -------  |                            |
+                      下拉框选择 --------------------- 使用默认值- ----------- | 在 cljc 中触发搜索 -> 分派请求 |
+                                                    下拉框选择 ------------- |                            |
+  "
   (:require [clojure.string :as str]
+            [cyberme.util.request :refer [ajax-flow]]
             [cyberme.util.upload :as upload]
             [goog.string :as gstring]
-            [re-frame.core :as rf]
-            [cyberme.util.request :refer [ajax-flow] :as req]))
+            [re-frame.core :as rf]))
 
 (def basic-book-cloud-path
   "https://mvst-my.sharepoint.cn/personal/corkine_one_mazhangjing_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fcorkine%5Fone%5Fmazhangjing%5Fcom%2FDocuments%2Fcalibre")
@@ -20,10 +27,10 @@
 (def basic-share-search-url
   "https://share.mazhangjing.com/zh-CN/")
 
-(def default-search-type "书籍")
-
 ;书籍，磁盘，私有云，共享云，正则 or 简单，最早 or 最晚，磁盘 A or 磁盘 B，文件名 or 完整路径
 (def all-kind ["书籍" "磁盘" "私有云" "公有云"])
+
+(def default-search-type (first all-kind))
 
 (def type-map {"书籍"   :book
                "磁盘"   :disk
@@ -61,8 +68,8 @@
   :file/drop-search-obj!
   (fn [db _]
     (if-let [obj-q (get (:file/search-obj db) :q)]
-      (do (dissoc db :file/search-obj)
-          (assoc-in db [:file/search-obj :q] obj-q))
+      (-> (dissoc db :file/search-obj)
+          (assoc-in [:file/search-obj :q] obj-q))
       (dissoc db :file/search-obj))))
 
 (rf/reg-sub
@@ -96,7 +103,7 @@
 (rf/reg-event-db
   :file/search
   (fn [db [_ {:keys [search-type q] :as search-obj}]]
-    (println "searching " search-type "with query" q)
+    ;(println "searching " search-type "with query" q)
     (when q
       (rf/dispatch (case (get type-map search-type :book)
                      :book [:book/search search-obj]
@@ -135,7 +142,7 @@
 
 (defn file-main []
   (let [params (-> (js/URL. (.-location js/window)) (.-searchParams))
-        type (js/parseInt (or (.get params "type") "0"))
+        ;type (js/parseInt (or (.get params "type") "0"))
         search-in-bar (or (.get params "q") "")]
     [:div
      [:div.hero.is-full-height.is-info
@@ -205,63 +212,64 @@
           [:div {:style {:text-align "center" :margin-top "30px"}}
            [:div.select.is-light.is-small.mr-1
             [:select (merge basic-style
-                            {:on-change     #(do (rf/dispatch [:file/drop-search-obj!])
-                                                 (rf/dispatch [:file/search-obj-set!
-                                                               [:search-type (.. % -target -value)]])
-                                                 (rf/dispatch [:file/trigger-url-search!]))
+                            {:on-change
+                             #(do (rf/dispatch [:file/drop-search-obj!])
+                                  (rf/dispatch [:file/search-obj-set!
+                                                [:search-type (.. % -target -value)]])
+                                  (rf/dispatch [:file/trigger-url-search!]))
                              :default-value (:search-type search-obj-now)})
-             (for [type all-kind] ^{:key type}
-                                  [:option type])]]
+             (for [type all-kind] ^{:key type} [:option type])]]
            (when (not-empty search-sort)
              [:div.select.is-white.is-small.mr-1
               [:select (merge basic-style
-                              {:on-change     #(do (rf/dispatch [:file/search-obj-set!
-                                                                 [:search-sort (.. % -target -value)]])
-                                                   (rf/dispatch [:file/trigger-url-search!]))
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-sort (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
                                :default-value (:search-sort search-obj-now)})
-               (for [type search-sort] ^{:key type}
-                                       [:option type])]])
+               (for [type search-sort] ^{:key type} [:option type])]])
            (when (not-empty search-kind)
              [:div.select.is-white.is-small.mr-1
               [:select (merge basic-style
-                              {:on-change     #(do (rf/dispatch [:file/search-obj-set!
-                                                                 [:search-kind (.. % -target -value)]])
-                                                   (rf/dispatch [:file/trigger-url-search!]))
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-kind (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
                                :default-value (:search-kind search-obj-now)})
-               (for [type search-kind] ^{:key type}
-                                       [:option type])]])
+               (for [type search-kind] ^{:key type} [:option type])]])
            (when (not-empty search-range-x)
              [:div.select.is-white.is-small.mr-1
               [:select (merge basic-style
-                              {:on-change     #(do (rf/dispatch [:file/search-obj-set!
-                                                                 [:search-range-x (.. % -target -value)]])
-                                                   (rf/dispatch [:file/trigger-url-search!]))
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-range-x (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
                                :default-value (:search-range-x search-obj-now)})
-               (for [type search-range-x] ^{:key type}
-                                          [:option type])]])
+               (for [type search-range-x] ^{:key type} [:option type])]])
            (when (not-empty search-range-y)
              [:div.select.is-white.is-small.mr-1
               [:select (merge basic-style
-                              {:on-change     #(do (rf/dispatch [:file/search-obj-set!
-                                                                 [:search-range-y (.. % -target -value)]])
-                                                   (rf/dispatch [:file/trigger-url-search!]))
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-range-y (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
                                :default-value (:search-range-y search-obj-now)})
-               (for [type search-range-y] ^{:key type}
-                                          [:option type])]])
+               (for [type search-range-y] ^{:key type} [:option type])]])
            (when (not-empty search-size)
              [:div.select.is-white.is-small.mr-1
               [:select (merge basic-style
-                              {:on-change     #(do (rf/dispatch [:file/search-obj-set!
-                                                                 [:search-size (.. % -target -value)]])
-                                                   (rf/dispatch [:file/trigger-url-search!]))
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-size (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
                                :default-value (:search-size search-obj-now)})
-               (for [type search-size] ^{:key type}
-                                       [:option type])]])])]]]
+               (for [type search-size] ^{:key type} [:option type])]])])]]]
      [:div.container.mt-5
       (let [{search-type :search-type} @(rf/subscribe [:file/search-obj])
             search-type (get type-map search-type :book)
             is-searching-book? (= :book search-type)
-            {:keys [data]} @(rf/subscribe [(if is-searching-book? :book/search-data :disk/search-data)])]
+            {:keys [data]} @(rf/subscribe [(if is-searching-book?
+                                             :book/search-data :disk/search-data)])]
         (if (empty? data)
           [:div.ml-2.pt-3 (if (nil? data) "" "没有相关的搜索结果 (；′⌒`)。")]
           [:<>
