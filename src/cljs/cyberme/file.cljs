@@ -186,7 +186,7 @@
               basic-style {:style {:background-color "#3298dc" :color "white"
                                    :border-radius    "20px" :box-shadow "none"}}]
           [:div {:style {:text-align "center" :margin-top "30px"}}
-           [:div.select.is-light.is-small.mr-1
+           [:div.select.is-light.is-small.mr-1.mt-1
             [:select (merge basic-style
                             {:on-change
                              #(do (rf/dispatch [:file/drop-search-obj!])
