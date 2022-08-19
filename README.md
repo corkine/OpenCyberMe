@@ -1,6 +1,6 @@
 # CyberMe - 个人服务平台
 
-一个 C/S 架构的 Web 应用，使用 clojure 和 clojurescript 搭建，承载了各种个人业务。
+一个 C/S 架构的 Web 应用，使用 clojure 和 clojurescript 搭建，用于高效、正确、可扩展的实现各种想法，提供对应服务。
 
 <img src="demos/screenshorts/cyber.jpg" width="500px" style="margin-left: 0px" alt="CyberMe">
 
@@ -14,9 +14,9 @@
 
 ## Features
 
-- 使用 ClojureScript 和 Message Bus 应对前端状态变化，将副作用从视图分离。
-- 使用 Clojure 的丰富表达能力、宏和动态特性实现鉴权并加快后端 API 开发。
-- 使用 PostgresSQL 的 JSON 特性提供从前端直接到数据库的业务变更快速支持。
+- 使用 ClojureScript 基于 React(reagent) 和 re-frame 通过事件模型应对前端状态变化，将副作用从视图分离，实现响应式前端交互界面。
+- 使用 Clojure 的丰富表达能力、宏和动态特性实现后端鉴权、业务逻辑处理和第三方系统接入，并共享前后端代码：验证、路由和工具库。
+- 使用 PostgresSQL 提供从前端直接到数据库的业务变更快速支持。
 
 ## Functions
 
@@ -37,6 +37,8 @@
 前端组件 `src/cljs/cyberme/dashboard/core.cljs` 提供美剧订阅录入表单和最近更新剧集展示。
 
 ### 喷嚏图卦新闻通知服务
+
+<img src="demos/screenshorts/news.jpg" width="270px" alt="Notice">
 
 后台在特定时间段抓取当日的“喷嚏图卦”，推送到 Slack 频道。
 
@@ -102,7 +104,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 每日生活提醒和习惯保持服务
 
-<img src="demos/screenshorts/dashboard-example.jpg" width="500px"  alt="Diary Show">
+<img src="demos/screenshorts/dashboard.png" width="500px"  alt="Diary Show">
 
 后台提供 API 从 Apple Watch 和 iOS 健康应用通过自动化快捷指令上传饮食、站立、健身、心率和运动数据，进行按周计分，最长坚持计算并提供 Scriptable 小组件、Flutter APP 以及前端 Web 界面展示。
 
@@ -112,6 +114,8 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### HCM 打卡、加班和工时自动化服务
 
+<img src="demos/screenshorts/work.png" width="500px"  alt="Work">
+
 后台定时从 HCM 获取打卡信息，并提供 API 以提供加班时长查询、工作时长计算、统计和打卡提醒功能（以及一个实验性质的自动化服务，依赖移动设备在特定时间段执行自动化服务，后台定时查询其任务是否派发，如果失败提供通知功能）。
 
 后端服务 `src/clj/cyberme/cyber/inspur.clj`
@@ -119,6 +123,8 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 前端组件 `src/cljs/cyberme/dashboard/core.cljs` `src/cljs/cyberme/work`
 
 ### 物品管理服务
+
+<img src="demos/screenshorts/goods_show.png" width="500px"  alt="Goods">
 
 后端提供物品、位置、打包的增删改查服务，有 Web APP 和 Flutter APP 两个界面。
 
@@ -144,7 +150,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 日记服务
 
-<img src="demos/screenshorts/diary-add-example.jpg" width="500px" alt="Diary Add">
+<img src="demos/screenshorts/diary_list.png" width="500px" alt="Diary List">
 
 后端提供日记的增删改查服务，基于阿里云 OSS 的图片存储服务，有 Web APP 和 Flutter APP 两个界面。
 
@@ -154,7 +160,9 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### Calibre 书籍与磁盘文件搜索和同步服务
 
-<img src="demos/screenshorts/book-demo2.png" width="500px" alt="Calibre">
+<img src="demos/screenshorts/book_search.png" width="500px" alt="Calibre">
+
+<img src="demos/screenshorts/disk_search.png" width="500px" alt="Disk Search">
 
 后台维护 Calibre 书库（由 OneDrive 同步）、多个存储磁盘文件系统的元数据，对于书籍，可通过前端界面搜索书籍、更新书籍元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。对于磁盘文件，可通过前端界面搜索和查看路径、文件和文件夹信息。
 
@@ -164,7 +172,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 > 本仓库仅包含后端服务代码和前端 Web App 代码，Flutter 客户端实现参见这里：[CyberMe 客户端](https://github.com/corkine/cyber-me-client)
 
-> 一些配合 CyberMe 使用的本地脚本，比如上传 Calibre 数据库文件、磁盘元信息参见 /demos/scripts/README.md
+> 一些配合 CyberMe 使用的本地脚本(使用 clj-run 或 babashka)，比如上传 Calibre 数据库文件、磁盘元信息参见 /demos/scripts/README.md
 
 ## Running
     
