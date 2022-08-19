@@ -199,7 +199,7 @@
              ^{:key (str (random-uuid) search-opinion)}
              [:<>
               (if (not-empty (get hint search-opinion))
-                [:div.select.is-white.is-small.mr-1
+                [:div.select.is-white.is-small.mr-1.mt-1
                  [:select (merge basic-style
                                  {:on-change
                                   #(do (rf/dispatch [:file/search-obj-set!
