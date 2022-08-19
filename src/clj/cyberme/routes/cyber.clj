@@ -29,7 +29,6 @@
     [cyberme.cyber.week-plan :as week]
     [cyberme.cyber.psych :as psych]
     [cyberme.cyber.book :as book]
-    [cyberme.file-share :refer [file-query-range-first]]
     [cyberme.cyber.disk :as disk])
   (:import (java.time LocalDate)))
 
@@ -697,15 +696,6 @@
             :handler     (fn [{{{search :q sort :sort} :query} :parameters}]
                            (hr/response (book/handle-search :unify search sort)))}}]])
 
-(s/def :disks/q string?)
-(s/def :disks/sort string?)
-(s/def :disks/kind string?)
-(s/def :disks/size string?)
-(s/def :disks/range-x string?)
-(s/def :disks/range-y string?)
-(s/def :disks/take int?)
-(s/def :disks/drop int?)
-
 (def disks-route
   ["/disks"
    {:swagger {:tags ["文件服务"]}}
@@ -718,16 +708,13 @@
                           (hr/response (disk/handle-upload files upload-info truncate)))}}]
    ["/search"
     {:get  {:summary     "搜索文件(综合)"
-            :description "根据路径或名称进行文件搜索"
+            :description "根据路径或名称进行文件搜索
+            参数：q 查询关键词，sort 排序方法，kind 查找方式，size 过滤文件大小
+            range-x 查找范围，range-y 查找磁盘 take 获取 drop 跳过"
             ;see file_share.cljc
-            :parameters  {:query (s/keys :req-un [:disks/q]
-                                         :opt-un [:global/user :global/secret
-                                                  :disks/sort :disks/kind :disks/size
-                                                  :disks/range-x :disks/range-y
-                                                  :disks/take :disks/drop])}
+            :parameters  {:query any?}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (disk/handle-search
-                                          (merge file-query-range-first query))))}}]])
+                           (hr/response (disk/handle-search query)))}}]])
 
 (defn cyber-routes []
   (conj

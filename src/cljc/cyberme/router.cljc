@@ -182,6 +182,7 @@
                      :controllers [{:parameters {:query file-share/file-key}
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:user/fetch-from-local])
+                                                  (println "query " query)
                                                   (if (:q query)
                                                     (rf/dispatch [:file/search query])
                                                     (rf/dispatch [:file/search-clean])))}]}))]])

@@ -2,13 +2,15 @@
 
 ;/file 前端 URL 允许出现的查询参数，file.cljs 允许更新到 URL Query Param 的参数
 (def file-key
-  [:search-kind
-   :search-size
-   :search-sort
-   :search-range-x
-   :search-range-y
-   :search-type
-   :q])
+  [:kind
+   :size
+   :sort
+   :range-x
+   :range-y
+   :type
+   :q
+   :take
+   :drop])
 
 (def file-cn->k {"书籍"   :book
                  "磁盘"   :disk
@@ -20,12 +22,19 @@
                  :onedrive-cn "私有云"
                  :onedrive    "公有云"})
 
-(def file-query-range
-  {:sort    ["最早优先" "最晚优先"]
-   :kind    ["正则表达式" "简单搜索"]
-   :size    ["不限大小" "1MB 以下" "1-10 MB" "10MB 以下" "10-100 MB"
-             "1-100 MB" "100MB 以下" "100MB 以上"]
-   :range-x ["仅搜索文件名" "搜索完整路径"]})
+(def file-query-range-size
+  [["不限大小" [0 2147483647]]
+   ["1MB 以下" [0 1048576]]
+   ["1MB 以上" [1048576 2147483647]]
+   ["1-10 MB" [1048576 10485760]]
+   ["10MB 以下" [0 10485760]]
+   ["10-100 MB" [10485760 104857600]]
+   ["1-100 MB" [1048576 104857600]]
+   ["100MB 以下" [0 104857600]]
+   ["100MB 以上" [104857600 2147483647]]])
 
-(def file-query-range-first
-  (into {} (for [[k v] file-query-range] [k (first v)])))
+(def file-query-range
+  {:sort    ["最晚优先" "最早优先"]
+   :kind    ["简单搜索" "正则表达式"]
+   :size    (mapv first file-query-range-size)
+   :range-x ["仅搜索文件名" "搜索完整路径"]})

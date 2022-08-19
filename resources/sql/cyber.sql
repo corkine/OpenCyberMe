@@ -390,18 +390,20 @@ do update set name = excluded.name,
            size = excluded.size,
            info = files.info || excluded.info,
            create_at = current_timestamp;
--- :name find-file-by-path :? :*
+-- :name find-file :? :*
 select * from files
-where path ilike ('%'|| :search ||'%')
-  and info->>'type' = 'FILE'
-order by info->>'last-modified' desc
-limit :take
-offset :drop;
--- :name find-file-by-name :? :*
-select * from files
-where name ilike ('%' || :search || '%')
-  and info->>'type' = 'FILE'
-order by info->>'last-modified' desc
+where
+--~ (if (:by-path params) "path" "name")
+/*~ (if (:regex params) */
+~ :search
+/*~*/
+ilike ('%'|| :search ||'%')
+/*~ ) ~*/
+and info->>'type' = 'FILE'
+--~ (if (:disk params) (str "and info->>'disk' = :disk"))
+--~ (if (and (:size-from params) (:size-to params)) "and size >= :size-from and size <= :size-to")
+order by info->>'last-modified'
+--~ (if (:desc params) "desc" "asc")
 limit :take
 offset :drop;
 -- :name find-path :? :*

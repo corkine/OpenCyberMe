@@ -33,6 +33,8 @@
 ;书籍，磁盘，私有云，共享云，正则 or 简单，最早 or 最晚，磁盘 A or 磁盘 B，文件名 or 完整路径
 (def all-kind ["书籍" "磁盘" "私有云" "公有云"])
 
+(def default-all-disk "所有磁盘")
+
 (def default-search-type (first all-kind))
 
 (rf/reg-event-db
@@ -47,7 +49,7 @@
                                   (merge search-hint-first
                                          @(rf/subscribe [:file/search-obj])))))]
       (reitit.frontend.easy/replace-state :file nil real-search-obj)
-      #_(rf/dispatch [:file/search-clean])
+      (rf/dispatch [:file/search-clean]) ;搜索时残留上一次结果，这里清除，后期可以加上 loading 状态
       db)))
 
 (rf/reg-event-db
@@ -73,26 +75,25 @@
 (rf/reg-sub
   :file/search-hint
   (fn [db _]
-    (let [type (get file-cn->k (or (-> db :file/search-obj :search-type)
-                                   default-search-type))]
-      {:search-kind    (if (= type :disk) (:kind file-query-range) [])
-       :search-size    (if (= type :disk) (:size file-query-range) [])
-       :search-sort    (if (or (= type :disk) (= type :book)) (:sort file-query-range) [])
-       :search-range-x (if (or (= type :disk)) (:range-x file-query-range) [])
-       :search-range-y (if (or (= type :disk))
+    (let [type (get file-cn->k (or (-> db :file/search-obj :type) default-search-type))]
+      {:kind    (if (= type :disk) (:kind file-query-range) [])
+       :size    (if (= type :disk) (:size file-query-range) [])
+       :sort    (if (or (= type :disk) (= type :book)) (:sort file-query-range) [])
+       :range-x (if (or (= type :disk)) (:range-x file-query-range) [])
+       :range-y (if (or (= type :disk))
                          (let [disk-res (get-in db [:disk/search-data :data] [])
                                all-disk (set (filter (comp not nil?)
                                                      (map #(-> % :info :disk) disk-res)))]
-                           (if (empty? all-disk) [] (vec all-disk)))
+                           (if (empty? all-disk) [default-all-disk] (into [default-all-disk] (vec all-disk))))
                          [])})))
 
 ;;;;;;;;;;;;;;;;; real search action ;;;;;;;;;;;;;;;;;
 ;统一搜索
 (rf/reg-event-db
   :file/search
-  (fn [db [_ {:keys [search-type q] :as search-obj}]]
+  (fn [db [_ {:keys [type q] :as search-obj}]]
     (when q
-      (rf/dispatch (case (get file-cn->k search-type :book)
+      (rf/dispatch (case (get file-cn->k type :book)
                      :book [:book/search search-obj]
                      :disk [:disk/search search-obj]
                      :onedrive-cn [:file/open-url [basic-cloud-search-url q]]
@@ -102,17 +103,17 @@
 
 ;书籍搜索
 (ajax-flow {:call           :book/search
-            :uri-fn         #(str "/cyber/books/search?q=" (:q %) "&sort=" (:search-sort %))
+            :uri-fn         #(str "/cyber/books/search?q=" (:q %) "&sort=" (:sort %))
             :data           :book/search-data
             :clean          :book/search-clean
             :failure-notice true})
 
 ;文件搜索
 (ajax-flow {:call           :disk/search
-            :uri-fn         #(str "/cyber/disks/search?q=" (:q %) "&sort=" (:search-sort %)
-                                  "&kind=" (:search-kind %) "&size=" (:search-size %)
-                                  "&range-x=" (:search-range-x %)
-                                  "&range-y=" (:search-range-y %))
+            :uri-fn         #(str "/cyber/disks/search?q=" (:q %) "&sort=" (:sort %)
+                                  "&kind=" (:kind %) "&size=" (:size %)
+                                  "&range-x=" (:range-x %)
+                                  "&range-y=" (if (= default-all-disk (:range-y %)) nil (:range-y %)))
             :data           :disk/search-data
             :clean          :disk/search-clean
             :failure-notice true})
@@ -132,7 +133,6 @@
 
 (defn file-main []
   (let [params (-> (js/URL. (.-location js/window)) (.-searchParams))
-        ;type (js/parseInt (or (.get params "type") "0"))
         search-in-bar (or (.get params "q") "")]
     [:div
      [:div.hero.is-full-height.is-info
@@ -181,21 +181,7 @@
                               #_(rf/dispatch [:file/trigger-url-search [type search]]))))}]
         [:span.icon.is-small.is-right
          [:i.fa.fa-search.mr-3]]
-        #_[:div.control {:style {#_:float #_"left" :margin "10px 0 0 0px"}}
-           [:label.radio
-            [:input {:type     "radio" :name "type" :default-checked (when (= type 0) "checked")
-                     :on-click #(rf/dispatch [:file/trigger-url-search [0 search-in-bar]])}] " 书籍"]
-           [:label.radio
-            [:input {:type     "radio" :name "type" :default-checked (when (= type 1) "checked")
-                     :on-click #(rf/dispatch [:file/trigger-url-search [1 search-in-bar]])}] " 磁盘文件(文件名)"]
-           [:label.radio
-            [:input {:type     "radio" :name "type" :default-checked (when (= type 2) "checked")
-                     :on-click #(rf/dispatch [:file/trigger-url-search [2 search-in-bar]])}] " 磁盘文件(路径)"]
-           [:label.radio
-            [:input {:type     "radio" :name "type" :default-checked (when (= type 3) "checked")
-                     :on-click #(rf/dispatch [:file/trigger-url-search [3 search-in-bar]])}] " 磁盘文件和文件夹"]]
-        (let [{:keys [search-kind search-size search-sort search-range-x search-range-y]}
-              @(rf/subscribe [:file/search-hint])
+        (let [hint @(rf/subscribe [:file/search-hint])
               search-obj-now @(rf/subscribe [:file/search-obj])
               basic-style {:style {:background-color "#3298dc" :color "white"
                                    :border-radius    "20px" :box-shadow "none"}}]
@@ -205,57 +191,24 @@
                             {:on-change
                              #(do (rf/dispatch [:file/drop-search-obj!])
                                   (rf/dispatch [:file/search-obj-set!
-                                                [:search-type (.. % -target -value)]])
+                                                [:type (.. % -target -value)]])
                                   (rf/dispatch [:file/trigger-url-search!]))
-                             :default-value (:search-type search-obj-now)})
+                             :default-value (:type search-obj-now)})
              (for [type all-kind] ^{:key type} [:option type])]]
-           (when (not-empty search-range-y)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-range-y (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-range-y search-obj-now)})
-               (for [type search-range-y] ^{:key type} [:option type])]])
-           (when (not-empty search-size)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-size (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-size search-obj-now)})
-               (for [type search-size] ^{:key type} [:option type])]])
-           (when (not-empty search-range-x)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-range-x (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-range-x search-obj-now)})
-               (for [type search-range-x] ^{:key type} [:option type])]])
-           (when (not-empty search-kind)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-kind (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-kind search-obj-now)})
-               (for [type search-kind] ^{:key type} [:option type])]])
-           (when (not-empty search-sort)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-sort (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-sort search-obj-now)})
-               (for [type search-sort] ^{:key type} [:option type])]])])]]]
-     [:div.container.mt-5.mb-5
-      (let [{search-type :search-type} @(rf/subscribe [:file/search-obj])
+           (for [search-opinion [:range-y :size :range-x :kind :sort]]
+             ^{:key (str (random-uuid) search-opinion)}
+             [:<>
+              (if (not-empty (get hint search-opinion))
+                [:div.select.is-white.is-small.mr-1
+                 [:select (merge basic-style
+                                 {:on-change
+                                  #(do (rf/dispatch [:file/search-obj-set!
+                                                     [search-opinion (.. % -target -value)]])
+                                       (rf/dispatch [:file/trigger-url-search!]))
+                                  :default-value (get search-obj-now search-opinion)})
+                  (for [type (get hint search-opinion)] ^{:key type} [:option type])]])])])]]]
+     [:div.container.mt-3.mb-5
+      (let [{search-type :type} @(rf/subscribe [:file/search-obj])
             search-type (get file-cn->k search-type :book)
             is-searching-book? (= :book search-type)
             {:keys [data]} @(rf/subscribe [(if is-searching-book?
