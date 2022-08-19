@@ -1,7 +1,8 @@
 (ns cyberme.cyber.book
   (:require [cyberme.db.core :as db]
             [next.jdbc :as jdbc]
-            [clojure.tools.logging :as logger])
+            [clojure.tools.logging :as logger]
+            [clojure.string :as str])
   (:import (java.io File)
            (java.nio.file Paths)
            (java.sql DriverManager ResultSet)
@@ -69,17 +70,19 @@
 
 (defn handle-search
   "搜索书籍名或者作者"
-  [search-kind search-text]
-  (try
-    {:message "搜索成功"
-     :data    (case search-kind
-                :author (db/find-book-by-author {:search search-text})
-                :title (db/find-book-by-title {:search search-text})
-                :unify (db/find-book-by-title-author {:search search-text})
-                (throw (RuntimeException. "未指定搜索类型")))
-     :status  1}
-    (catch Exception e
-      {:message (str "未处理的异常：" (.getMessage e)) :status -1})))
+  [search-kind search-text sort]
+  ;see file_share.cljc
+  (let [desc? (or (nil? sort) (not (str/includes? sort "早")))]
+    (try
+      {:message "搜索成功"
+       :data    (case search-kind
+                  :author (db/find-book-by-author {:search search-text :desc desc?})
+                  :title (db/find-book-by-title {:search search-text :desc desc?})
+                  :unify (db/find-book-by-title-author {:search search-text :desc desc?})
+                  (throw (RuntimeException. "未指定搜索类型")))
+       :status  1}
+      (catch Exception e
+        {:message (str "未处理的异常：" (.getMessage e)) :status -1}))))
 
 (comment
   (def connection (DriverManager/getConnection "jdbc:sqlite:D:/test.db"))

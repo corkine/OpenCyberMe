@@ -9,6 +9,9 @@
   (:require [clojure.string :as str]
             [cyberme.util.request :refer [ajax-flow]]
             [cyberme.util.upload :as upload]
+            [cyberme.file-share :refer
+             [file-cn->k file-k->cn
+              file-query-range]]
             [goog.string :as gstring]
             [re-frame.core :as rf]))
 
@@ -31,16 +34,6 @@
 (def all-kind ["书籍" "磁盘" "私有云" "公有云"])
 
 (def default-search-type (first all-kind))
-
-(def type-map {"书籍"   :book
-               "磁盘"   :disk
-               "私有云" :onedrive-cn
-               "公有云" :onedrive})
-
-(def reverse-type-map {:book        "书籍"
-                       :disk        "磁盘"
-                       :onedrive-cn "私有云"
-                       :onedrive    "公有云"})
 
 (rf/reg-event-db
   :file/trigger-url-search!
@@ -80,32 +73,26 @@
 (rf/reg-sub
   :file/search-hint
   (fn [db _]
-    (let [type (get type-map (or (-> db :file/search-obj :search-type) default-search-type))
-          kind (if (= type :disk) ["正则表达式" "简单搜索"] [])
-          size (if (= type :disk) ["1MB 以下" "1-10 MB" "10MB 以下" "10-100 MB"
-                                   "1-100 MB" "100MB 以下" "100MB 以上"] [])
-          sort (if (or (= type :disk) (= type :book)) ["最早优先" "最晚优先"] [])
-          range-x (if (or (= type :disk)) ["仅搜索文件名" "搜索完整路径"] [])
-          range-y (if (or (= type :disk))
-                    (let [disk-res (get db :disk/search-data [])
-                          all-disk (set (filter (comp not nil?)
-                                                (map #(-> % :info :disk) disk-res)))]
-                      (if (empty? all-disk) [] (vec all-disk)))
-                    [])]
-      {:search-kind    kind
-       :search-size    size
-       :search-sort    sort
-       :search-range-x range-x
-       :search-range-y range-y})))
+    (let [type (get file-cn->k (or (-> db :file/search-obj :search-type)
+                                   default-search-type))]
+      {:search-kind    (if (= type :disk) (:kind file-query-range) [])
+       :search-size    (if (= type :disk) (:size file-query-range) [])
+       :search-sort    (if (or (= type :disk) (= type :book)) (:sort file-query-range) [])
+       :search-range-x (if (or (= type :disk)) (:range-x file-query-range) [])
+       :search-range-y (if (or (= type :disk))
+                         (let [disk-res (get-in db [:disk/search-data :data] [])
+                               all-disk (set (filter (comp not nil?)
+                                                     (map #(-> % :info :disk) disk-res)))]
+                           (if (empty? all-disk) [] (vec all-disk)))
+                         [])})))
 
 ;;;;;;;;;;;;;;;;; real search action ;;;;;;;;;;;;;;;;;
 ;统一搜索
 (rf/reg-event-db
   :file/search
   (fn [db [_ {:keys [search-type q] :as search-obj}]]
-    ;(println "searching " search-type "with query" q)
     (when q
-      (rf/dispatch (case (get type-map search-type :book)
+      (rf/dispatch (case (get file-cn->k search-type :book)
                      :book [:book/search search-obj]
                      :disk [:disk/search search-obj]
                      :onedrive-cn [:file/open-url [basic-cloud-search-url q]]
@@ -115,14 +102,17 @@
 
 ;书籍搜索
 (ajax-flow {:call           :book/search
-            :uri-fn         #(str "/cyber/books/search?q=" (:q %))
+            :uri-fn         #(str "/cyber/books/search?q=" (:q %) "&sort=" (:search-sort %))
             :data           :book/search-data
             :clean          :book/search-clean
             :failure-notice true})
 
 ;文件搜索
 (ajax-flow {:call           :disk/search
-            :uri-fn         #(str "/cyber/disks/search?q=" (:q %) "&type=" "1")
+            :uri-fn         #(str "/cyber/disks/search?q=" (:q %) "&sort=" (:search-sort %)
+                                  "&kind=" (:search-kind %) "&size=" (:search-size %)
+                                  "&range-x=" (:search-range-x %)
+                                  "&range-y=" (:search-range-y %))
             :data           :disk/search-data
             :clean          :disk/search-clean
             :failure-notice true})
@@ -219,33 +209,6 @@
                                   (rf/dispatch [:file/trigger-url-search!]))
                              :default-value (:search-type search-obj-now)})
              (for [type all-kind] ^{:key type} [:option type])]]
-           (when (not-empty search-sort)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-sort (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-sort search-obj-now)})
-               (for [type search-sort] ^{:key type} [:option type])]])
-           (when (not-empty search-kind)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-kind (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-kind search-obj-now)})
-               (for [type search-kind] ^{:key type} [:option type])]])
-           (when (not-empty search-range-x)
-             [:div.select.is-white.is-small.mr-1
-              [:select (merge basic-style
-                              {:on-change
-                               #(do (rf/dispatch [:file/search-obj-set!
-                                                  [:search-range-x (.. % -target -value)]])
-                                    (rf/dispatch [:file/trigger-url-search!]))
-                               :default-value (:search-range-x search-obj-now)})
-               (for [type search-range-x] ^{:key type} [:option type])]])
            (when (not-empty search-range-y)
              [:div.select.is-white.is-small.mr-1
               [:select (merge basic-style
@@ -263,10 +226,37 @@
                                                   [:search-size (.. % -target -value)]])
                                     (rf/dispatch [:file/trigger-url-search!]))
                                :default-value (:search-size search-obj-now)})
-               (for [type search-size] ^{:key type} [:option type])]])])]]]
-     [:div.container.mt-5
+               (for [type search-size] ^{:key type} [:option type])]])
+           (when (not-empty search-range-x)
+             [:div.select.is-white.is-small.mr-1
+              [:select (merge basic-style
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-range-x (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
+                               :default-value (:search-range-x search-obj-now)})
+               (for [type search-range-x] ^{:key type} [:option type])]])
+           (when (not-empty search-kind)
+             [:div.select.is-white.is-small.mr-1
+              [:select (merge basic-style
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-kind (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
+                               :default-value (:search-kind search-obj-now)})
+               (for [type search-kind] ^{:key type} [:option type])]])
+           (when (not-empty search-sort)
+             [:div.select.is-white.is-small.mr-1
+              [:select (merge basic-style
+                              {:on-change
+                               #(do (rf/dispatch [:file/search-obj-set!
+                                                  [:search-sort (.. % -target -value)]])
+                                    (rf/dispatch [:file/trigger-url-search!]))
+                               :default-value (:search-sort search-obj-now)})
+               (for [type search-sort] ^{:key type} [:option type])]])])]]]
+     [:div.container.mt-5.mb-5
       (let [{search-type :search-type} @(rf/subscribe [:file/search-obj])
-            search-type (get type-map search-type :book)
+            search-type (get file-cn->k search-type :book)
             is-searching-book? (= :book search-type)
             {:keys [data]} @(rf/subscribe [(if is-searching-book?
                                              :book/search-data :disk/search-data)])]
@@ -326,6 +316,5 @@
                     [:span path]
                     [:span " - " (if (< size 100000)
                                    (gstring/format "%.2f KB" (/ size 1024))
-                                   (gstring/format "%.2f MB" (/ size 1048576)))]]])]))
-           [:div.mt-5]]))]]))
+                                   (gstring/format "%.2f MB" (/ size 1048576)))]]])]))]))]]))
 

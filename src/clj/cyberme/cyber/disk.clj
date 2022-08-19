@@ -5,12 +5,12 @@
             [next.jdbc :as jdbc]))
 
 (defn handle-search
-  "搜索路径或文件名
-  type 1 只搜索文件，查找文件名
-  type 2 只搜索文件，查找文件路径
-  type 3 搜索文件+文件夹，查找文件路径"
+  "搜索路径或文件名"
+  ;see file_share.cljc
   [{:keys [q type take drop]
-    :or {type 1 take 300 drop 0}}]
+    :or {type 1 take 300 drop 0}
+    :as all}]
+  (println "all search " all)
   (try
     {:message "搜索成功"
      :data    (case type

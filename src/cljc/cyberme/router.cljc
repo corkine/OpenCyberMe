@@ -6,17 +6,9 @@
                [re-frame.core :as rf]
                [cyberme.pages :as core]
                [cyberme.about :as about]
+               [cyberme.file-share :as file-share]
                [cyberme.util.storage :as storage]])
     [clojure.string :as str]))
-
-(def file-key
-  [:search-kind
-   :search-size
-   :search-sort
-   :search-range-x
-   :search-range-y
-   :search-type
-   :q])
 
 (defn parse-params
   []
@@ -187,9 +179,9 @@
    ["/file"
     (merge {:name :file}
            #?(:cljs {:view        #'core/file-page
-                     :controllers [{:parameters {:query file-key}
+                     :controllers [{:parameters {:query file-share/file-key}
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:user/fetch-from-local])
-                                                  (if (and query (:q query))
+                                                  (if (:q query)
                                                     (rf/dispatch [:file/search query])
                                                     (rf/dispatch [:file/search-clean])))}]}))]])

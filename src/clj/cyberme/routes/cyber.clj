@@ -29,6 +29,7 @@
     [cyberme.cyber.week-plan :as week]
     [cyberme.cyber.psych :as psych]
     [cyberme.cyber.book :as book]
+    [cyberme.file-share :refer [file-query-range-first]]
     [cyberme.cyber.disk :as disk])
   (:import (java.time LocalDate)))
 
@@ -681,32 +682,27 @@
             :description "根据作者进行书籍搜索"
             :parameters  {:path {:search string?}}
             :handler     (fn [{{{search :search} :path} :parameters}]
-                           (hr/response (book/handle-search :author search)))}}]
+                           (hr/response (book/handle-search :author search true)))}}]
    ["/search-title/:search"
     {:get  {:summary     "搜索书籍"
             :description "根据书籍名称进行书籍搜索"
             :parameters  {:path {:search string?}}
             :handler     (fn [{{{search :search} :path} :parameters}]
-                           (hr/response (book/handle-search :title search)))}}]
+                           (hr/response (book/handle-search :title search true)))}}]
    ["/search"
     {:get  {:summary     "搜索书籍(综合)"
             :description "根据书籍名称或作者进行书籍搜索"
-            :parameters  {:query {:q string?}}
-            :handler     (fn [{{{search :q} :query} :parameters}]
-                           (hr/response (book/handle-search :unify search)))}}]
-
-   #_["/download"
-      {:get {:summary "从 OSS 上下载文件"
-             :swagger {:produces ["image/png"]}
-             :handler (fn [_]
-                        {:status  200
-                         :headers {"Content-Type" "image/png"}
-                         :body    (-> "public/img/warning_clojure.png"
-                                      (io/resource)
-                                      (io/input-stream))})}}]])
+            ;see file_share.cljc
+            :parameters  {:query {:q string? :sort string?}}
+            :handler     (fn [{{{search :q sort :sort} :query} :parameters}]
+                           (hr/response (book/handle-search :unify search sort)))}}]])
 
 (s/def :disks/q string?)
-(s/def :disks/type int?)
+(s/def :disks/sort string?)
+(s/def :disks/kind string?)
+(s/def :disks/size string?)
+(s/def :disks/range-x string?)
+(s/def :disks/range-y string?)
 (s/def :disks/take int?)
 (s/def :disks/drop int?)
 
@@ -723,10 +719,15 @@
    ["/search"
     {:get  {:summary     "搜索文件(综合)"
             :description "根据路径或名称进行文件搜索"
+            ;see file_share.cljc
             :parameters  {:query (s/keys :req-un [:disks/q]
-                                         :opt-un [:global/user :global/secret :disks/type :disks/take :disks/drop])}
+                                         :opt-un [:global/user :global/secret
+                                                  :disks/sort :disks/kind :disks/size
+                                                  :disks/range-x :disks/range-y
+                                                  :disks/take :disks/drop])}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (disk/handle-search query)))}}]])
+                           (hr/response (disk/handle-search
+                                          (merge file-query-range-first query))))}}]])
 
 (defn cyber-routes []
   (conj

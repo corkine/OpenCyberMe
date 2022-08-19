@@ -1,5 +1,4 @@
-#!/usr/bin/env bb
-;clojure -Sdeps '{:paths ["".""] :deps {clj-file-zip/clj-file-zip {:mvn/version,""0.1.0""}}}' -M -m auto-backup
+;clojure -Sdeps '{:paths ["."] :deps {clj-file-zip/clj-file-zip {:mvn/version,"0.1.0"}}}' -M -m auto-backup
 (ns auto-backup
   (:gen-class)
   (:require [clojure.string :as str]

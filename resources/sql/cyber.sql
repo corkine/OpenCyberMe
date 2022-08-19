@@ -368,7 +368,12 @@ select * from books
 where author ilike ('%' || :search || '%');
 -- :name find-book-by-title-author :? :*
 select * from books
-where author ilike ('%' || :search || '%') or title ilike ('%'|| :search ||'%');
+where author ilike ('%' || :search || '%') or title ilike ('%'|| :search ||'%')
+/*~ (if (:desc params) */
+order by info->>'last_modified' desc;
+/*~*/
+order by info->>'last_modified' asc;
+/*~ ) ~*/
 -- :name get-book :? :1
 select *
 from books
