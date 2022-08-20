@@ -231,7 +231,7 @@
             search-type (get file-cn->k search-type :book)
             {:keys [data]} @(rf/subscribe [(case search-type
                                              :short :short/search-data
-                                             :file :file/search-data
+                                             :disk :disk/search-data
                                              :book/search-data)])]
         (if (empty? data)
           [:div.ml-2.pt-3 (if (nil? data) "" "没有相关的搜索结果 (；′⌒`)。")]
@@ -258,7 +258,7 @@
                      (str (.substr redirectURL 0 120) "...") redirectURL)]]
                  [:p.mt-0.ml-1.is-size-7.has-text-grey
                   [:span note]]]])
-             :file
+             :disk
              (for [{:keys [path name size create_at info]} data]
                ^{:key path}
                [:<>
