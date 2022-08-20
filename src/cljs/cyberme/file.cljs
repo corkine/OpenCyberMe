@@ -258,7 +258,7 @@
                      (str (.substr redirectURL 0 120) "...") redirectURL)]]
                  [:p.mt-0.ml-1.is-size-7.has-text-grey
                   [:span note]]]])
-             :disk
+             :file
              (for [{:keys [path name size create_at info]} data]
                ^{:key path}
                [:<>
