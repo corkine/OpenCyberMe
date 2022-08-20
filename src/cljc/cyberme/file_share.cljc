@@ -12,16 +12,6 @@
    :take
    :drop])
 
-(def file-cn->k {"书籍"   :book
-                 "磁盘"   :disk
-                 "私有云" :onedrive-cn
-                 "公有云" :onedrive})
-
-(def file-k->cn {:book        "书籍"
-                 :disk        "磁盘"
-                 :onedrive-cn "私有云"
-                 :onedrive    "公有云"})
-
 (def file-query-range-size
   [["不限大小" [0 2147483647]]
    ["1MB 以下" [0 1048576]]

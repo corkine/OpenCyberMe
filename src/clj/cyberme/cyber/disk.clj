@@ -5,7 +5,25 @@
             [cyberme.file-share :refer [file-query-range file-query-range-size]]
             [next.jdbc :as jdbc]
             [hugsql.core :as hug]
-            [clojure.string :as str]))
+            [org.httpkit.client :as http]
+            [cyberme.config :refer [edn-in]]
+            [clojure.string :as str]
+            [cheshire.core :as json]))
+
+(defn handle-short-search
+  "搜索 go.mazhangjing.com 短链接"
+  [query]
+  (try
+    (let [req (http/request {:url (str "https://go.mazhangjing.com/searchjson/" query)
+                             :method :get
+                             :content-type :json
+                             :basic-auth (edn-in [:short :token])})
+          resp @req]
+      {:message "搜索成功"
+       :status 1
+       :data (vec (-> resp :body (json/parse-string true)))})
+    (catch Exception e
+      {:message (str "搜索失败" (.getMessage e)) :status -1})))
 
 (defn handle-search
   "搜索路径或文件名"

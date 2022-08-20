@@ -716,6 +716,16 @@
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (disk/handle-search query)))}}]])
 
+(def short-route
+  ["/short"
+   {:swagger {:tags ["短链接服务"]}}
+   ["/search/:id"
+    {:get  {:summary     "搜索短链接"
+            :description "查找短链接"
+            :parameters  {:path {:id string?}}
+            :handler     (fn [{{{id :id} :path} :parameters}]
+                           (hr/response (disk/handle-short-search id)))}}]])
+
 (defn cyber-routes []
   (conj
     basic-route
@@ -735,4 +745,5 @@
     task-route
     week-plan-route
     books-route
-    disks-route))
+    disks-route
+    short-route))

@@ -158,13 +158,13 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图片拖拽上传等功能。
 
-### Calibre 书籍与磁盘文件搜索和同步服务
+### Calibre 书籍、磁盘文件、短链接搜索和同步服务
 
 <img src="demos/screenshorts/book_search.png" width="500px" alt="Calibre">
 
 <img src="demos/screenshorts/disk_search.png" width="500px" alt="Disk Search">
 
-后台维护 Calibre 书库（由 OneDrive 同步）、多个存储磁盘文件系统的元数据，对于书籍，可通过前端界面搜索书籍、更新书籍元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。对于磁盘文件，可通过前端界面搜索和查看路径、文件和文件夹信息。
+后台维护 Calibre 书库（由 OneDrive 同步）、多个存储磁盘文件系统的元数据，对于书籍，可通过前端界面搜索书籍、更新书籍元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。对于磁盘文件，可通过前端界面搜索和查看路径、文件和文件夹信息。对于短链接，提供搜索查询服务。
 
 后端服务 `src/clj/cyberme/cyber/book.clj` `src/clj/cyberme/cyber/disk.clj`
 

@@ -9,9 +9,7 @@
   (:require [clojure.string :as str]
             [cyberme.util.request :refer [ajax-flow]]
             [cyberme.util.upload :as upload]
-            [cyberme.file-share :refer
-             [file-cn->k file-k->cn
-              file-query-range]]
+            [cyberme.file-share :refer [file-query-range]]
             [goog.string :as gstring]
             [re-frame.core :as rf]))
 
@@ -31,7 +29,19 @@
   "https://share.mazhangjing.com/zh-CN/")
 
 ;书籍，磁盘，私有云，共享云，正则 or 简单，最早 or 最晚，磁盘 A or 磁盘 B，文件名 or 完整路径
-(def all-kind ["书籍" "磁盘" "私有云" "公有云"])
+(def all-kind ["书籍" "磁盘" "短链接" "私有云" "公有云"])
+
+(def file-cn->k {"书籍"   :book
+                 "磁盘"   :disk
+                 "短链接" :short
+                 "私有云" :onedrive-cn
+                 "公有云" :onedrive})
+
+(def file-k->cn {:book        "书籍"
+                 :disk        "磁盘"
+                 :short       "短链接"
+                 :onedrive-cn "私有云"
+                 :onedrive    "公有云"})
 
 (def default-all-disk "所有磁盘")
 
@@ -49,7 +59,7 @@
                                   (merge search-hint-first
                                          @(rf/subscribe [:file/search-obj])))))]
       (reitit.frontend.easy/replace-state :file nil real-search-obj)
-      (rf/dispatch [:file/search-clean]) ;搜索时残留上一次结果，这里清除，后期可以加上 loading 状态
+      (rf/dispatch [:file/search-clean])                    ;搜索时残留上一次结果，这里清除，后期可以加上 loading 状态
       db)))
 
 (rf/reg-event-db
@@ -81,11 +91,11 @@
        :sort    (if (or (= type :disk) (= type :book)) (:sort file-query-range) [])
        :range-x (if (or (= type :disk)) (:range-x file-query-range) [])
        :range-y (if (or (= type :disk))
-                         (let [disk-res (get-in db [:disk/search-data :data] [])
-                               all-disk (set (filter (comp not nil?)
-                                                     (map #(-> % :info :disk) disk-res)))]
-                           (if (empty? all-disk) [default-all-disk] (into [default-all-disk] (vec all-disk))))
-                         [])})))
+                  (let [disk-res (get-in db [:disk/search-data :data] [])
+                        all-disk (set (filter (comp not nil?)
+                                              (map #(-> % :info :disk) disk-res)))]
+                    (if (empty? all-disk) [default-all-disk] (into [default-all-disk] (vec all-disk))))
+                  [])})))
 
 ;;;;;;;;;;;;;;;;; real search action ;;;;;;;;;;;;;;;;;
 ;统一搜索
@@ -96,6 +106,7 @@
       (rf/dispatch (case (get file-cn->k type :book)
                      :book [:book/search search-obj]
                      :disk [:disk/search search-obj]
+                     :short [:short/search search-obj]
                      :onedrive-cn [:file/open-url [basic-cloud-search-url q]]
                      :onedrive [:file/open-url [basic-share-search-url nil]]
                      [:book/search search-obj])))
@@ -118,6 +129,13 @@
             :clean          :disk/search-clean
             :failure-notice true})
 
+;短链搜索
+(ajax-flow {:call           :short/search
+            :uri-fn         #(str "/cyber/short/search/" (:q %))
+            :data           :short/search-data
+            :clean          :short/search-clean
+            :failure-notice true})
+
 (rf/reg-event-db
   :file/open-url
   (fn [db [_ [basic-url query]]]
@@ -129,6 +147,7 @@
   (fn [db _]
     (rf/dispatch [:disk/search-clean])
     (rf/dispatch [:book/search-clean])
+    (rf/dispatch [:short/search-clean])
     db))
 
 (defn file-main []
@@ -210,13 +229,62 @@
      [:div.container.mt-3.mb-5
       (let [{search-type :type} @(rf/subscribe [:file/search-obj])
             search-type (get file-cn->k search-type :book)
-            is-searching-book? (= :book search-type)
-            {:keys [data]} @(rf/subscribe [(if is-searching-book?
-                                             :book/search-data :disk/search-data)])]
+            {:keys [data]} @(rf/subscribe [(case search-type
+                                             :short :short/search-data
+                                             :file :file/search-data
+                                             :book/search-data)])]
         (if (empty? data)
           [:div.ml-2.pt-3 (if (nil? data) "" "没有相关的搜索结果 (；′⌒`)。")]
           [:<>
-           (if is-searching-book?
+           (case search-type
+             :short
+             (for [{:keys [keyword redirectURL note updateTime id]} data]
+               ^{:key (str keyword id)}
+               [:<>
+                [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
+                                   :margin     "5px 0 5px 0"}}
+                 [:div {:style {:float "right" :margin "1em 1em 0 0"}}
+                  [:i.fa.fa-sticky-note-o.mr-2 {:aria-hidden "true"}]]
+                 [:p.ml-1
+                  [:span.tag.is-info.is-light.mr-2 id]
+                  [:span.mr-1.is-clickable
+                   {:title    (str "点击查看日志\n" "记录添加时间：" updateTime)
+                    :on-click #(.open js/window (str "https://go.mazhangjing.com/logsId/" id) "_black")}
+                   keyword]]
+                 [:p.mt-1.ml-1.is-size-7.has-text-grey
+                  [:a {:title redirectURL
+                       :href  redirectURL}
+                   (if (> (count redirectURL) 120)
+                     (str (.substr redirectURL 0 120) "...") redirectURL)]]
+                 [:p.mt-0.ml-1.is-size-7.has-text-grey
+                  [:span note]]]])
+             :disk
+             (for [{:keys [path name size create_at info]} data]
+               ^{:key path}
+               [:<>
+                (let [{:keys [disk type last-modified]} info]
+                  [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
+                                     :margin     "5px 0 5px 0"}}
+                   [:div {:style {:float "right" :margin "1em 1em 0 0"}}
+                    (case type
+                      "FOLDER" [:i.fa.fa-folder-open-o.mr-2 {:aria-hidden "true"}]
+                      "FILE" [:i.fa.fa-file-o.mr-2 {:aria-hidden "true"}])]
+                   [:p.ml-1
+                    [:span.tag.is-info.is-light.mr-2 disk]
+                    (let [last-mod (try
+                                     (let [date (js/Date. last-modified)]
+                                       (gstring/format "%04d-%02d-%02d %02d:%02d:%02d"
+                                                       (.getFullYear date) (+ (.getMonth date) 1) (.getDate date)
+                                                       (.getHours date) (.getMinutes date) (.getSeconds date)))
+                                     (catch js/Error _ "未知日期"))]
+                      [:span.mr-1.is-clickable
+                       {:title (str "文件系统记录最后修改：" last-mod
+                                    "\n" "数据库更新日期：" create_at)} name])]
+                   [:p.mt-1.ml-1.is-size-7.has-text-grey
+                    [:span path]
+                    [:span " - " (if (< size 100000)
+                                   (gstring/format "%.2f KB" (/ size 1024))
+                                   (gstring/format "%.2f MB" (/ size 1048576)))]]])])
              (for [{:keys [uuid title author info]} data]
                ^{:key uuid}
                [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
@@ -243,31 +311,5 @@
                  (let [date (first (str/split (or (-> info :last_modified) "") " "))]
                    [:span.tag.is-white.is-rounded.is-small.is-family-code.has-text-grey.is-clickable
                     {:title (str "Calibre 书库更新日期：" date)} date])]
-                [:p.mt-1.ml-1.is-size-6.has-text-grey author]])
-             (for [{:keys [path name size create_at info]} data]
-               ^{:key path}
-               [:<>
-                (let [{:keys [disk type last-modified]} info]
-                  [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
-                                     :margin     "5px 0 5px 0"}}
-                   [:div {:style {:float "right" :margin "1em 1em 0 0"}}
-                    (case type
-                      "FOLDER" [:i.fa.fa-folder-open-o.mr-2 {:aria-hidden "true"}]
-                      "FILE" [:i.fa.fa-file-o.mr-2 {:aria-hidden "true"}])]
-                   [:p.ml-1
-                    [:span.tag.is-info.is-light.mr-2 disk]
-                    (let [last-mod (try
-                                     (let [date (js/Date. last-modified)]
-                                       (gstring/format "%04d-%02d-%02d %02d:%02d:%02d"
-                                                       (.getFullYear date) (+ (.getMonth date) 1) (.getDate date)
-                                                       (.getHours date) (.getMinutes date) (.getSeconds date)))
-                                     (catch js/Error _ "未知日期"))]
-                      [:span.mr-1.is-clickable
-                       {:title (str "文件系统记录最后修改：" last-mod
-                                    "\n" "数据库更新日期：" create_at)} name])]
-                   [:p.mt-1.ml-1.is-size-7.has-text-grey
-                    [:span path]
-                    [:span " - " (if (< size 100000)
-                                   (gstring/format "%.2f KB" (/ size 1024))
-                                   (gstring/format "%.2f MB" (/ size 1048576)))]]])]))]))]]))
+                [:p.mt-1.ml-1.is-size-6.has-text-grey author]]))]))]]))
 
