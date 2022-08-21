@@ -96,12 +96,26 @@
                                (format "%s-%s-%s" from-year 1 1)
                                from-month
                                (format "%s-%s-%s" (.getYear (LocalDate/now)) from-month 1))
-                 :to     (cond (and to-year to-month)
-                               (format "%s-%s-%s" to-year to-month 1)
-                               to-year
-                               (format "%s-%s-%s" to-year 1 1)
-                               to-month
-                               (format "%s-%s-%s" (.getYear (LocalDate/now)) to-month 1))})
+                 :to     (let [to-year1 (when to-year (Integer/parseInt to-year))
+                               to-month1 (when to-month (Integer/parseInt to-month))]
+                           (cond (and to-year1 to-month1)
+                                 (format "%s-%s-%s" to-year1 to-month1
+                                         (.getDayOfMonth
+                                           (.minusDays
+                                             (.plusMonths (LocalDate/of to-year1 to-month1
+                                                                        1) 1) 1)))
+                                 to-year1
+                                 (format "%s-%s-%s" to-year1 12
+                                         (.getDayOfMonth
+                                           (.minusDays
+                                             (.plusMonths (LocalDate/of to-year1 12 1) 1) 1)))
+                                 to-month1
+                                 (let [year (.getYear (LocalDate/now))]
+                                   (format "%s-%s-%s" year to-month1
+                                           (.getDayOfMonth
+                                             (.minusDays
+                                               (.plusMonths (LocalDate/of year to-month1
+                                                                          1) 1) 1))))))})
      :status  1}
     (catch Exception e
       {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
