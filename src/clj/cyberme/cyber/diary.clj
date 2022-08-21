@@ -4,7 +4,9 @@
             [next.jdbc :as jdbc]
             [cyberme.cyber.inspur :as inspur]
             [cyberme.tool :as tool]
-            [cyberme.cyber.week-plan :as week])
+            [hugsql.core :as hug]
+            [cyberme.cyber.week-plan :as week]
+            [clojure.string :as str])
   (:import
     (java.time.format DateTimeFormatter)
     (java.time LocalDate LocalDateTime)))
@@ -62,8 +64,45 @@
   [{:keys [from to] :or {from 1 to 100}}]
   (try
     {:message (format "获取日记从 %d 到 %d 条成功" from to)
-     :data (db/range-diary {:drop (- from 1) :take (+ (- to from) 1)})
-     :status 1}
+     :data    (db/range-diary {:drop (- from 1) :take (+ (- to from) 1)})
+     :status  1}
+    (catch Exception e
+      {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
+
+(defn handle-diaries-query
+  "获取最近的日记，按照范围获取，from 最小值为 1"
+  [{:keys [from to search tag year month from-year from-month to-year to-month]
+    :or   {from 1 to 100}}]
+  (try
+    {:message (format "获取日记从 %d 到 %d 条成功" from to)
+     :data    (db/find-diary
+                {:drop   (- from 1)
+                 :take   (+ (- to from) 1)
+                 ;目前只搜索第一个关键词
+                 :search (if (vector? search)
+                           (first search)
+                           search)
+                 ;tag 标签目前不搜索，其需要对 JSON 的字段进行模糊匹配
+                 ;后期抽取为单独的表
+                 :tag    (when tag
+                           (if (vector? tag)
+                             (str/replace (first tag) "#" "")
+                             (str/replace tag "#" "")))
+                 :year   year
+                 :month  month
+                 :from   (cond (and from-year from-month)
+                               (format "%s-%s-%s" from-year from-month 1)
+                               from-year
+                               (format "%s-%s-%s" from-year 1 1)
+                               from-month
+                               (format "%s-%s-%s" (.getYear (LocalDate/now)) from-month 1))
+                 :to     (cond (and to-year to-month)
+                               (format "%s-%s-%s" to-year to-month 1)
+                               to-year
+                               (format "%s-%s-%s" to-year 1 1)
+                               to-month
+                               (format "%s-%s-%s" (.getYear (LocalDate/now)) to-month 1))})
+     :status  1}
     (catch Exception e
       {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
 
@@ -72,8 +111,8 @@
   [^LocalDate start ^LocalDate end]
   (try
     {:message "获取成功"
-     :data (db/diaries-range {:start start :end end})
-     :status 1}
+     :data    (db/diaries-range {:start start :end end})
+     :status  1}
     (catch Exception e
       {:message (str "获取最近范围的日记失败" (.getMessage e)) :status 0})))
 
@@ -227,8 +266,8 @@
         count-learn-done (count (filterv #(-> % :info :learn-done nil? not) full-week-info))
         learn-done (= count-learn-req count-learn-done)]
     {:message "获取成功"
-     :data    {:status status
-               :learn  (if learn-done :done :not-done)
+     :data    {:status    status
+               :learn     (if learn-done :done :not-done)
                :week-plan (week/handle-get-week-plan)}
      :status  1}))
 
@@ -249,7 +288,7 @@
             status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)]
         {:message (format "之前%s, 现已更新为%s。" (if non-plant? "没浇花" "浇花了")
                           (if-not non-plant? "没浇花" "浇花了"))
-         :data    {:status    status}
+         :data    {:status status}
          :status  1}))
     (catch Exception e
       (log/error e)
@@ -272,7 +311,7 @@
         (if (and end
                  (= :done (-> (handle-plant-learn-week) :data :learn)))
           (throw (RuntimeException. "没有尚未完成的任务需要标记完成。")))
-        (db/set-someday t {:day  (LocalDate/now) :info today-info})
+        (db/set-someday t {:day (LocalDate/now) :info today-info})
         {:message (format "更新当日学习成功。 req: %s, done: %s"
                           (:learn-request today-info)
                           (:learn-done today-info))

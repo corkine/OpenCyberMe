@@ -325,6 +325,17 @@ select * from diary
 order by (info->>'day')::date desc, create_at desc
 limit :take
 offset :drop;
+-- :name find-diary :? :*
+select * from diary
+where 1=1
+--~ (if (:search params) (str "and (title ilike ('%' || :search || '%') or content ilike ('%' || :search || '%'))"))
+--~ (if (:year params) (str "and date_part('year',(info->>'day')::date) = :year::int"))
+--~ (if (:month params) (str "and date_part('month',(info->>'day')::date) = :month::int"))
+--~ (if (:from params) (str "and (info->>'day')::date >= :from::date"))
+--~ (if (:to params) (str "and (info->>'day')::date <= :to::date"))
+order by (info->>'day')::date desc, create_at desc
+limit :take
+    offset :drop;
 -- :name diaries-range :? :*
 select * from diary
 where ((info->>'day')::date >= :start) and ((info->>'day')::date <= :end)

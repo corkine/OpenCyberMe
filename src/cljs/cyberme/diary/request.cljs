@@ -13,25 +13,13 @@
     [clojure.string :as str]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;; 日记 ;;;;;;;;;;;;;;;;;;;;;;
-;   |-----------------------------------------------------<------------------------------------------------------|
-;访问路由 /diary -> 触发事件 :diary/list -> 更新页码范围 :diary/current-range -> 得到数据 :diary/list-data -> 展示数据   |
-;上下翻页更新路由 /diary?from=x&to=y ----------------------------------->-------------------------------------------|
 ;最近日记
 (ajax-flow {:call           :diary/list
-            :uri-fn         #(let [from (first %) to (second %)]
-                               (rf/dispatch [:diary/set-current-range! [from to]])
-                               (str "/cyber/diaries?from=" from "&to=" to))
+            :uri-fn         #(str "/cyber/diaries")
+            :is-post        true
             :data           :diary/list-data
             :clean          :diary/list-data-clean
             :failure-notice true})
-
-(rf/reg-sub
-  :diary/current-range
-  (fn [db _] (:diary/current-range db)))
-
-(rf/reg-event-db
-  :diary/set-current-range!
-  (fn [db [_ range]] (assoc db :diary/current-range range)))
 
 ;获取某一日记，失败提示
 (ajax-flow {:call           :diary/current-by-id

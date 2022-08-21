@@ -182,7 +182,6 @@
 (defn handle-upload [json-data]
   (try
     (let [data (json->data json-data false)
-          ;_ (clojure.pprint/pprint data)
           line-in (count data)
           [{count :next.jdbc/update-count}] (db/insert-fitness-batch {:records data})]
       {:message (str "批量上传成功，共 " line-in " 条数据，插入结果：" count)

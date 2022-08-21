@@ -76,23 +76,27 @@
 
    ["/diary"
     (merge {:name :diary}
-           #?(:cljs {:view        #'core/diary-page
-                     :controllers [{:parameters {:query [:labels :contains :from :to]}
-                                    :start      (fn [{query :query}]
-                                                  ;加载本地存储保存的凭证
-                                                  (rf/dispatch [:user/fetch-from-local])
-                                                  ;删除上一次处理的日记数据
-                                                  (rf/dispatch [:diary/current-data-clean])
-                                                  ;按照 query 获取指定范围的日记，如果解析出错，使用 1 - 10 范围
-                                                  (if (and (:from query) (:to query))
-                                                    (let [from (js/parseInt (:from query))
-                                                          from (if (< from 1) 1 from)
-                                                          to (js/parseInt (:to query))
-                                                          to (if (<= to from) (+ from 10) to)]
-                                                      (rf/dispatch [:diary/list [from to]]))
-                                                    (rf/dispatch [:diary/list [1 10]]))
-                                                  ;FOR WEEK-PLAN 直接访问日记时，不显示周计划
-                                                  #_(rf/dispatch [:dashboard/plant-week]))}]}))]
+           #?(:cljs {:view #'core/diary-page
+                     :controllers
+                     [{:parameters {:query file-share/diary-key}
+                       :start
+                       (fn [{query :query}]
+                         ;加载本地存储保存的凭证
+                         (rf/dispatch [:user/fetch-from-local])
+                         ;删除上一次处理的日记数据
+                         (rf/dispatch [:diary/current-data-clean])
+                         ;按照 query 获取指定范围的日记，如果解析出错，使用 1 - 10 范围
+                         (let [[from to] (if (and (:from query) (:to query))
+                                           (let [from (js/parseInt (:from query))
+                                                 from (if (< from 1) 1 from)
+                                                 to (js/parseInt (:to query))
+                                                 to (if (<= to from) (+ from 10) to)]
+                                             [from to]) [1 10])
+                               all-obj (merge query {:from from :to to})]
+                           (rf/dispatch [:diary/search-obj-reset! all-obj])
+                           (rf/dispatch [:diary/list all-obj]))
+                         ;FOR WEEK-PLAN 直接访问日记时，不显示周计划
+                         #_(rf/dispatch [:dashboard/plant-week]))}]}))]
 
    ["/diary-new"
     (merge {:name :diary-new}

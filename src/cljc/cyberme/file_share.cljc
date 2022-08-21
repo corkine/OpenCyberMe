@@ -2,15 +2,7 @@
 
 ;/file 前端 URL 允许出现的查询参数，file.cljs 允许更新到 URL Query Param 的参数
 (def file-key
-  [:kind
-   :size
-   :sort
-   :range-x
-   :range-y
-   :type
-   :q
-   :take
-   :drop])
+  [:kind :size :sort :range-x :range-y :type :q :take :drop])
 
 (def file-query-range-size
   [["不限大小" [0 2147483647]]
@@ -28,3 +20,7 @@
    :kind    ["简单搜索" "正则表达式"]
    :size    (mapv first file-query-range-size)
    :range-x ["仅搜索文件名" "搜索完整路径"]})
+
+(def diary-key
+  [:search :origin :tag :from-year :to-year :from-month :to-month :year :month
+   :from :to])

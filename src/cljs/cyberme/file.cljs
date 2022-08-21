@@ -28,24 +28,19 @@
 (def basic-share-search-url
   "https://share.mazhangjing.com/zh-CN/")
 
-;书籍，磁盘，私有云，共享云，正则 or 简单，最早 or 最晚，磁盘 A or 磁盘 B，文件名 or 完整路径
-(def all-kind ["书籍" "磁盘" "短链接" "私有云" "公有云"])
-
 (def file-cn->k {"书籍"   :book
                  "磁盘"   :disk
                  "短链接" :short
                  "私有云" :onedrive-cn
                  "公有云" :onedrive})
 
-(def file-k->cn {:book        "书籍"
-                 :disk        "磁盘"
-                 :short       "短链接"
-                 :onedrive-cn "私有云"
-                 :onedrive    "公有云"})
+(def all-kind (keys file-cn->k))
+
+(def file-k->cn (apply assoc {} (flatten (mapv (fn [[k v]] [v k]) file-cn->k))))
+
+(def default-search-type "书籍")
 
 (def default-all-disk "所有磁盘")
-
-(def default-search-type (first all-kind))
 
 (rf/reg-event-db
   :file/trigger-url-search!

@@ -556,7 +556,15 @@
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret
                                                   :diary/from :diary/to])}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (diary/handle-diaries-limit query)))}}]
+                           (hr/response (diary/handle-diaries-limit query)))}
+     :post {:summary     "获取特定查询参数日记"
+            :description "查询参数包括：from, to(用于分页),
+            from-year, to-year, from-month, to-month, year, month(过滤查询)
+            origin, search, tag(搜索原始关键字和搜索关键字)"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :body any?}
+            :handler     (fn [{{body :body} :parameters}]
+                           (hr/response (diary/handle-diaries-query body)))}}]
    ["/diary-new"
     {:tags #{"我的日记"}
      :post {:summary     "新建日记"

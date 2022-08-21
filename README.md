@@ -152,11 +152,11 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 <img src="demos/screenshorts/diary_list.png" width="500px" alt="Diary List">
 
-后端提供日记的增删改查服务，基于阿里云 OSS 的图片存储服务，有 Web APP 和 Flutter APP 两个界面。
-
+后端提供日记的增删改和灵活查询服务，基于阿里云 OSS 的图片存储服务，有 Web APP 和 Flutter APP 两个界面。
+``
 后端服务 `src/clj/cyberme/cyber/diary.clj` `src/clj/cyberme/cyber/file.clj`
 
-前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图片拖拽上传等功能。
+前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图``片拖拽上传等功能。
 
 ### Calibre 书籍、磁盘文件、短链接搜索和同步服务
 

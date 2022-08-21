@@ -1,15 +1,14 @@
 (ns cyberme.diary.core
-  (:require [cyberme.diary.edit :as edit]
-            [re-frame.core :as rf]
-            [reagent.core :as r]
-            [clojure.string :as string]
-            [cyberme.util.storage :as storage]
-            [cyberme.util.tool :as tool]
-            [cljs-time.format :as format]
-            [goog.string :as gstring]
+  "整体设计：
+  搜索关键词 --> 搜索关键词翻译 --> 更新 URL --> :diary/list 触发 HTTP 查询 --> 展示结果
+                   翻页 ------>
+  "
+  (:require [clojure.string :as string]
+            [clojure.string :as str]
+            [cyberme.diary.edit :as edit]
             [cyberme.diary.util :refer [diary-date-str oss-process]]
-            [cljs-time.core :as t]
-            [clojure.string :as str]))
+            [goog.string :as gstring]
+            [re-frame.core :as rf]))
 
 (def help-message "日记支持通用 Markdown 语法、链接高亮以及如下特殊语法：
 TODO 标记：
@@ -36,37 +35,138 @@ Image 宽高：
   ![::*100px](url)
 ")
 
+(def search-message "搜索语法：
+2022
+2022.03
+2021-2022
+2021.03-2022.03
+#abc #def
+keyword1 keyword2")
+
+(defn search-unit [input]
+  (condp re-matches input
+    #"(\d{4})" :>> (fn [[_ year]] {:year (js/parseInt year)})
+    #"(\d{4})\.(\d+)" :>> (fn [[_ year month]] {:year  (js/parseInt year)
+                                                :month (js/parseInt month)})
+    #"(\d{4})-(\d{4})" :>> (fn [[_ from-year to-year]] {:from-year (js/parseInt from-year)
+                                                        :to-year   (js/parseInt to-year)})
+    #"(\d{4})\.(\d+)-(\d{4})\.(\d+)" :>> (fn [[_ from-year from-month
+                                               to-year to-month]]
+                                           {:from-year  (js/parseInt from-year)
+                                            :from-month (js/parseInt from-month)
+                                            :to-year    (js/parseInt to-year)
+                                            :to-month   (js/parseInt to-month)})
+    #"(#[A-Za-z0-9\u4e00-\u9fa5-_]+)" :>> (fn [[_ tag]] {:tag tag})
+    {:search input}))
+
+(defn search-input [input]
+  (assoc
+    (reduce (fn [agg new]
+              ;只允许 search 和 tag 有多个，其余全部取最后一个
+              (let [{:keys [year month from-year from-month
+                            to-year to-month tag search]}
+                    (search-unit new)]
+                {:year       year
+                 :month      month
+                 :from-year  from-year
+                 :from-month from-month
+                 :to-year    to-year
+                 :to-month   to-month
+                 :tag        (if tag (conj (or (:tag agg) []) tag)
+                                     (:tag agg))
+                 :search     (if search (conj (or (:search agg) []) search)
+                                        (:search agg))}))
+            {}
+            (str/split input #" "))
+    :origin input))
+
+(rf/reg-event-db
+  :diary/trigger-url-search!
+  (fn [db [_ push-state?]]
+    (let [real-search-obj (:diary/search-obj db)]
+      (if push-state?
+        (reitit.frontend.easy/push-state :diary nil real-search-obj)
+        (reitit.frontend.easy/replace-state :diary nil real-search-obj))
+      db)))
+
+(rf/reg-event-db
+  :diary/search-obj-set!
+  (fn [db [_ [key value]]]
+    (if (:diary/search-obj db)
+      (assoc-in db [:diary/search-obj key] value)
+      (assoc db :diary/search-obj {key value}))))
+
+(rf/reg-event-db
+  :diary/search-obj-merge!
+  (fn [db [_ new-map]]
+    (if-let [old (:diary/search-obj db)]
+      (assoc db :diary/search-obj (merge old new-map))
+      (assoc db :diary/search-obj new-map))))
+
+(rf/reg-event-db
+  :diary/search-obj-reset!
+  (fn [db [_ maps]]
+    (assoc db :diary/search-obj maps)))
+
+(rf/reg-sub
+  :diary/current-range
+  (fn [db _] (let [obj (:diary/search-obj db)]
+               [(:from obj) (:to obj)])))
+
 (defn diary-header []
   "日记页标题、描述和新建按钮、过滤器选项"
   [:div {:style {:background-color "#48c774"}}
    [:div.hero.is-small.container.is-success
     [:div.hero-body
-     [:p.mb-4.mt-2 [:span.title "起居注"]
-      [:span.dui-tips
-       {:data-tooltip "点击查看语法帮助"}
-       [:a {:on-click #(rf/dispatch [:global/notice
-                                     {:pre-message help-message}])
-
-            :style    {:cursor         :pointer
-                       :font-size      :10px
-                       :margin-left    :5px
-                       :margin-right   :10px
-                       :vertical-align :80%}}
-        [:i.material-icons {:style {:font-size :15px
-                                    :color     :white}} "help_outline"]]]
-      [:span.dui-tips
-       {:data-tooltip "写一篇新日记"}
-       [:a {:on-click #(rf/dispatch [:common/navigate! :diary-new])}
-        [:i.material-icons {:style {:font-size :30px
-                                    :color     :white}} "fiber_new"]]]]
      [:div.columns
       [:div.column.is-6.is-family-code
+       [:p.mb-4.mt-2 [:span.title "起居注"]
+        [:span.dui-tips
+         {:data-tooltip "点击查看语法帮助"}
+         [:a {:on-click #(rf/dispatch [:global/notice
+                                       {:pre-message help-message}])
+
+              :style    {:cursor         :pointer
+                         :font-size      :10px
+                         :margin-left    :5px
+                         :margin-right   :10px
+                         :vertical-align :80%}}
+          [:i.material-icons {:style {:font-size :15px
+                                      :color     :white}} "help_outline"]]]
+        [:span.dui-tips
+         {:data-tooltip "写一篇新日记"}
+         [:a {:on-click #(rf/dispatch [:common/navigate! :diary-new])}
+          [:i.material-icons {:style {:font-size :30px
+                                      :color     :white}} "fiber_new"]]]]
        [:p
         [:span
          {:style {:padding-right "5px"
                   :border-right  ".3em solid transparent"
                   :animation     "cursor 1.5s infinite"}}
-         "Life is a struggle"]]]]]]])
+         "Life is a struggle"]]]
+      (let [params (-> (js/URL. (.-location js/window)) (.-searchParams))
+            search-in-bar (or (.get params "origin") "")]
+        [:div.column.is-6.is-align-self-center
+         [:div.float-reactive
+          [:p.control.has-icons-left
+           {:style {:width :258px} :title search-message}
+           [:input.input.is-success.is-small.is-rounded
+            {:type      "text" :placeholder "搜索日记"
+             :default-value search-in-bar
+             :on-key-up (fn [e]
+                          (if (= 13 (.-keyCode e))
+                            (when-let [search (.-value (.-target e))]
+                              (let [search-result (search-input search)
+                                    non-empty-keys (reduce (fn [agg [k v]]
+                                                         (if-not (nil? v) (conj agg k) agg))
+                                                       [] search-result)
+                                    clean-result (select-keys search-result non-empty-keys)]
+                                (rf/dispatch [:diary/search-obj-reset!
+                                              (merge clean-result {:from 1 :to 10})])
+                                ;每次搜索都可以返回到上一次结果
+                                (rf/dispatch [:diary/trigger-url-search! true])))))}]
+           [:span.icon.is-left
+            [:i.fa.fa-search {:aria-hidden "true"}]]]]])]]]])
 
 (defn diary-card [{:keys [id title content info create_at update_at] :as diary}]
   (let [description (or (first (string/split-lines (or content ""))) "暂无描述")
@@ -145,18 +245,22 @@ Image 宽高：
             {:on-click (fn [_]
                          (let [[f t] @(rf/subscribe [:diary/current-range])]
                            (if (<= f 10)
-                             (reitit.frontend.easy/replace-state
-                               :diary nil {:from 1 :to 10})
                              (do
-                               (reitit.frontend.easy/push-state
-                                 :diary nil {:from (- f 10) :to (- t 10)})
+                               (rf/dispatch [:diary/search-obj-merge!
+                                             {:from 1 :to 10}])
+                               (rf/dispatch [:diary/trigger-url-search! true]))
+                             (do
+                               (rf/dispatch [:diary/search-obj-merge!
+                                             {:from (- f 10) :to (- t 10)}])
+                               (rf/dispatch [:diary/trigger-url-search! true])
                                (.scrollTo js/window 0 0)))))}
             "上一页"]
            [:a.pagination-next
             {:on-click (fn [_]
                          (let [[f t] @(rf/subscribe [:diary/current-range])]
-                           (reitit.frontend.easy/push-state
-                             :diary nil {:from (+ f 10) :to (+ t 10)})
+                           (rf/dispatch [:diary/search-obj-merge!
+                                         {:from (+ f 10) :to (+ t 10)}])
+                           (rf/dispatch [:diary/trigger-url-search! true])
                            (.scrollTo js/window 0 0)))}
             "下一页"]]])
        [:div.hero.is-small.pl-0.pr-0
