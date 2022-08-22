@@ -21,10 +21,16 @@
 
 ;Dashboard 核心数据
 (ajax-flow {:call           :dashboard/recent
-            :uri-fn         #(str "/cyber/dashboard/summary?day=5")
+            :uri-fn         #(let [now (t/day-of-week (t/time-now))
+                                   ;周一、周二、周三 显示最近 3 天记录
+                                   ;周四、周五显示最近 5 天记录
+                                   ;周六、周日显示最近 7 天记录
+                                   record-show (cond (and (>= now 1) (<= now 3)) 3
+                                                     (and (>= now 4) (<= now 5)) 5
+                                                     :else 7)]
+                               (str "/cyber/dashboard/summary?day=" record-show))
             :data           :dashboard/recent-data
             :clean          :dashboard/recent-data-clean
-            ;:success-callback-event [[:dashboard/clean-changed!]]
             :failure-notice true})
 
 ;核心数据查询：是否有当日 clean 记录决定记录对话框参数
@@ -161,7 +167,7 @@
   (fn [db [_ key]]
     (get (:week-plan db) key)))
 
-;核心数据查询：是否有当日日记决定新建周计划项目日志时跳转到的位置
+;核心数据查询：是否有当日日记决定新建周计划项目日志时跳转到的位置 - 新日记 or 当天日记
 (rf/reg-sub
   :week-plan/today-diary-exist?
   (fn [db _]

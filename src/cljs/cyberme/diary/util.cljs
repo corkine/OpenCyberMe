@@ -15,6 +15,10 @@
           alter (tool/datetime->date create_at)]
       (if day day alter))))
 
+(defn is-diary-this-week? [date]
+  (let [now (t/time-now)]
+    (t/after? date (t/minus now (t/days (t/day-of-week now))))))
+
 (defn diary-date-str
   [diary]
   (format/unparse-local-date

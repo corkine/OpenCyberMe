@@ -1,25 +1,26 @@
 (ns cyberme.diary.edit
   (:require ["react-markdown" :default ReactMarkdown]
             ["remark-gfm" :default remarkGfm]
-            [reagent.core :as r]
+            [clojure.string :as string]
+            [clojure.string]
+            [cyberme.dashboard.week-plan :as week]
+            [cyberme.diary.util :refer [diary-date diary-date-str is-diary-this-week? oss-process]]
+            [cyberme.util.markdown :as md]
+            [cyberme.util.tool :as libs]
+            [cyberme.util.upload :as up]
             [goog.string :as gstring]
             [re-frame.core :as rf]
-            [clojure.string :as string]
-            [cyberme.util.tool :as libs]
-            [cyberme.diary.util :refer [diary-date-str oss-process]]
-            [cyberme.util.markdown :as md]
-            [cyberme.util.form :refer [dialog]]
-            [cyberme.dashboard.week-plan :as week]
-            [cyberme.util.upload :as up]
-            [clojure.string :as str]
-            [cyberme.validation :as va]))
+            [reagent.core :as r]))
 
 (defn edit-page [{:keys [id title content info]
                   :or   {title "未命名日记" content ""}
                   :as   old} first-show-preview]
   [:div
-   ;只有从 Dashboard/Diary Home 进来才有此数据
-   (let [week-items @(rf/subscribe [:dashboard/week-plan])]
+   ;只有从 Dashboard/Diary Home 进来的新建 or 本周日记才有此数据
+   (let [week-items @(rf/subscribe [:dashboard/week-plan])
+         week-items (when (or (nil? id)
+                              (is-diary-this-week? (diary-date old)))
+                      week-items)]
      (r/with-let
        [show-preview (r/atom (or first-show-preview false))
         title (r/atom title)
@@ -37,8 +38,9 @@
               tags-in-str @tags-in
               preview? @show-preview]
           [:<>
-           [:div.columns.mb-5
-            [:div.column.is-2.py-0
+           [:div.mb-5 {:style {:display   :flex :justify-content :space-between
+                               :flex-wrap :wrap}}
+            [:div
              ;日期框
              [:input.input.is-light.is-family-code
               (merge
@@ -46,17 +48,19 @@
                              :border-radius 0
                              :border-color  :transparent
                              :margin-left   "-3px"
-                             :margin-top    "3px"
+                             :margin-top    "3.5px"
                              :white-space   :nowrap
-                             :font-size     "1.25em"}
+                             :font-size     "1.25em"
+                             :max-width     "7em"}
                  :value     date-str
-                 :on-change #(reset! date (.. % -target -value))}
+                 :on-change #(do (reset! date (.. % -target -value))
+                                 )}
                 (if preview? {:readOnly "readOnly"} {}))]]
-            [:div.column.is-narrow.is-hidden-touch.py-0
+            [:div.is-narrow.is-hidden-touch.py-0
              ;间隔框
              [:div.is-size-5.is-family-code
-              {:style {:margin-top "12px"}} " / "]]
-            [:div.column.is-7.py-0
+              {:style {:margin-top "12px" :text-align "center"}} " / "]]
+            [:div.py-0.is-flex-grow-5
              ;标题框
              [:input.input.mr-3.is-light.is-size-5
               (merge
@@ -66,10 +70,17 @@
                  :value     title-str
                  :on-change #(reset! title (.. % -target -value))}
                 (if preview? {:readOnly "readOnly"} {}))]]
-            [:div.column.is-3.pr-5.py-0.mt-2
+            [:div.py-0.mt-2 {:style {:text-align    "right"
+                                     :padding-right "5px"
+                                     :padding-left  "14px"}}
              ;编辑/预览和新建/保存框
+             [(if preview?
+                :button.button.is-info.mr-2
+                :button.button.is-link.mr-2)
+              {:on-click #(reset! show-preview (not preview?))}
+              (if preview? "编辑" "预览")]
              (if (nil? id)
-               [:button.button.is-danger.is-pulled-right
+               [:button.button.is-danger.mr-2
                 {:on-click #(rf/dispatch [:diary/new
                                           {:title   @title
                                            :content @content
@@ -77,7 +88,7 @@
                                                      :labels (libs/s->l @tags-in)
                                                      :score  (js/parseInt @score)}}])}
                 "新建"]
-               [:button.button.is-danger.is-pulled-right
+               [:button.button.is-danger.mr-2
                 {:on-click (fn [_]
                              (rf/dispatch
                                [:diary/update-current
@@ -88,12 +99,7 @@
                                         :info    (assoc info :labels (libs/s->l @tags-in)
                                                              :day @date
                                                              :score (js/parseInt @score))})]))}
-                "保存"])
-             [(if preview?
-                :button.button.is-info.is-pulled-right.mr-2.ml-2.is-align-self-flex-end
-                :button.button.is-link.is-pulled-right.mr-2.ml-2.is-align-self-flex-end)
-              {:on-click #(reset! show-preview (not preview?))}
-              (if preview? "编辑" "预览")]]]
+                "保存"])]]
            ;标签和评分框
            [:div.columns {:style {:margin-left "-10px" :margin-bottom "20px"}}
             [:div.column.py-0
@@ -125,9 +131,10 @@
            [week/week-plan-add-dialog]
            [week/week-plan-log-add-dialog]
            [week/week-plan-modify-item-dialog]
-           [:div {:style {:margin "-10px 0px 20px 12px"}}
-            [week/plan-widget week-items {:go-diary-add-log false}]]
-           [:div.is-size-6.markdown-body {:style {:margin :12px}}
+           (when week-items
+             [:div {:style {:margin "-10px 0px 20px 12px"}}
+              [week/plan-widget week-items {:go-diary-add-log false :show-todo true}]])
+           [:div.is-size-6.markdown-body {:style {:margin "12px 12px 12px 12px"}}
             (if preview?
               [md/mark-down (string/replace content-str #"(https://static2.mazhangjing.com/.*?\.\w+)\)" (str "$1" oss-process ")"))]
               [:textarea.textarea.is-light
@@ -156,12 +163,9 @@
                 :on-drag-over  (fn [e] (.preventDefault e))
                 :on-drag       (fn [e])
                 :on-drag-start (fn [e] (set! (.. e -target -style -opacity) 0.2))
-                :on-drag-enter (fn [e] (set! (.. e -target -style -background) "lightyellow"))
-                ;:on-drag-end   (fn [e] (set! (.. e -target -style -opacity) ""))
-                ;:on-drag-leave (fn [e] (set! (.. e -target -style -background) ""))
-                }])]
+                :on-drag-enter (fn [e] (set! (.. e -target -style -background) "lightyellow"))}])]
            (if (and (not (nil? id)) preview?)
-             [:div.has-text-danger.is-clickable
+             [:div.is-clickable.is-size-7
               {:on-click #(rf/dispatch [:global/notice
                                         {:message  "确定删除此日记吗，此操作不可恢复！"
                                          :callback [[:diary/delete-current id]
@@ -170,7 +174,7 @@
                           :padding-top "30px"
                           :margin-left "12px"
                           :width       "5em"}}
-              "删除此日记"]
+              [:i.fa.fa-trash-o] " 删除"]
              [:p.file.is-light.is-small {:style {:margin-top :0em :margin-left :1em}}
               [:label.file-label
                [:input.file-input
