@@ -145,7 +145,7 @@
            (for [[day day-items] (vec items)]
              ^{:key day}
              [:<>
-              [:p.mb-1.mt-2.is-family-code.has-text-weight-bold day]
+              [:p.mb-3.is-family-code.has-text-weight-bold day]
               (for [{:keys [list title status time create_at finish_at importance]} day-items]
                 ^{:key (str title create_at)}
                 [:p.my-1 [:span list] " / " [:span title]])]))]
@@ -153,4 +153,4 @@
          {:on-click #(rf/dispatch [:week-plan-db-set :todo true])
           :title (str "点击显示最近待办事项")
           :style {:text-align "right"
-                  :margin-right "1.5em"}} [:i.fa.fa-info]]))]])
+                  :margin-right "1.3em"}} [:i.fa.fa-info]]))]])
