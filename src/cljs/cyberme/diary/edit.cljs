@@ -48,13 +48,12 @@
                              :border-radius 0
                              :border-color  :transparent
                              :margin-left   "-3px"
-                             :margin-top    "3.5px"
                              :white-space   :nowrap
                              :font-size     "1.25em"
-                             :max-width     "7em"}
+                             :vertical-align "text-top"
+                             :max-width     "7.8em"}
                  :value     date-str
-                 :on-change #(do (reset! date (.. % -target -value))
-                                 )}
+                 :on-change #(reset! date (.. % -target -value))}
                 (if preview? {:readOnly "readOnly"} {}))]]
             [:div.is-narrow.is-hidden-touch.py-0
              ;间隔框
@@ -101,7 +100,7 @@
                                                              :score (js/parseInt @score))})]))}
                 "保存"])]]
            ;标签和评分框
-           [:div.columns {:style {:margin-left "-10px" :margin-bottom "20px"}}
+           [:div.columns {:style {:margin-left "-8px"}}
             [:div.column.py-0
              [:div.control.has-icons-left
               [:input.input.is-light
