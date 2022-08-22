@@ -139,13 +139,14 @@
     (when show-todo
       (if @(rf/subscribe [:week-plan-db-query :todo])
         [:div.is-clickable
-         {:on-click #(rf/dispatch [:week-plan-db-set :todo nil])}
+         {:on-click #(rf/dispatch [:week-plan-db-set :todo nil])
+          :style {:margin-top "-0.5em"}}
          (let [todo @(rf/subscribe [:dashboard/recent-data])
                items (-> todo :data :todo)]
            (for [[day day-items] (vec items)]
              ^{:key day}
              [:<>
-              [:p.mb-3.is-family-code.has-text-weight-bold day]
+              [:p.mb-1.mt-2.is-family-code.has-text-weight-bold day]
               (for [{:keys [list title status time create_at finish_at importance]} day-items]
                 ^{:key (str title create_at)}
                 [:p.my-1 [:span list] " / " [:span title]])]))]
