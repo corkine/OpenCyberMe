@@ -4,5 +4,5 @@
 
 一些敏感的用户凭据从环境变量中读取。
 
-每个脚本都可以独立的通过 [clj-runner](https://github.com/corkine/clj-runner) 关联 .clj 文件后双击执行 —— clj-runner 是一个 Go 开发的简单程序，其让 .clj 文件可以像通过安装包安装的 Python 环境一样，双击 .py 脚本直接运行 —— 使用本地缓存的 .m2 依赖库，依赖 clojure CLI。
+每个脚本都可以独立的通过 [clj-runner](https://github.com/corkine/clj-runner) 执行，clj-runner 判断 .clj 文件头，并且决定使用何种方式来运行脚本：使用 `#!/usr/bin/env bb` 开头的交给 babashka 运行，其余的将第一行注释转换为命令行执行，比如 `bb clojure -Sdeps '{:paths ["."]}' -M -m xx.clj` 或者 `clojure -Sdeps '{:paths ["."]}' -M -m xx.clj` —— Clojure CLI 将依赖本地 .m2 仓库缓存的库执行代码，这种动态调用让大部分脚本的任务能够比 bash/powershell 脚本更快运行，而少部分复杂任务、项目和后台服务也可以在 JVM 虚拟机上高效执行。在 Windows下，将 clj-runner 关联 .clj 文件后可双击执行 Clojure 脚本。
 
