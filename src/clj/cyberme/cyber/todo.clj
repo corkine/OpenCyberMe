@@ -8,7 +8,8 @@
             [cyberme.config :refer [edn edn-in]]
             [cyberme.cyber.slack :as slack]
             [cyberme.tool :as tool]
-            [cyberme.cyber.news :as news])
+            [cyberme.cyber.news :as news]
+            [cuerdas.core :as str])
   (:import (java.time LocalDateTime LocalDate LocalTime)
            (java.time.format DateTimeFormatter)))
 
@@ -235,6 +236,54 @@
   [{day :day :or {day 7}}]
   (let [data (db/to-do-recent-day-2 {:day day})]
     (group-by #(str (:time %)) data)))
+
+(defn handle-work-today
+  "获取今日的工作事项"
+  []
+  (try
+    {:message "Success"
+     :status 1
+     :data
+     (let [recent-items (db/to-do-recent-day-2 {:day 2})
+           today (LocalDate/now)
+           today-work-items (filterv (fn [{:keys [time list]}]
+                                       (and (.isEqual today time)
+                                            (str/includes? list "工作")))
+                                     recent-items)
+           with-time-items (mapv (fn [item]
+                                   (let [title (or (:title item) "")
+                                         [_ hour] (re-find #"\^(\d)h" title)]
+                                     {:title title :hour (when hour (Integer/parseInt hour))}))
+                                 today-work-items)
+           ;空白、一个空hour（填充）、一个非空hour（异常）、两个空hour（填充）、三个空hour（填充分配）
+           ;三个hour两个空（剩余分配）
+           ;with-time-items [{:title "1" :hour nil} {:title "2" :hour nil} {:title "3" :hour 3}]
+           all-hour-today (reduce (fn [agg item]
+                                    (+ agg (or (:hour item) 0)))
+                                  0 with-time-items)
+           rest-hour (- 8 all-hour-today)
+           rest-items (filterv #(nil? (:hour %)) with-time-items)]
+       #_(println with-time-items all-hour-today rest-hour)
+       (if (and (> rest-hour 0) (> (count rest-items) 0))
+         (let [rest-count (count rest-items)
+               each-item-need-carry (unchecked-divide-int rest-hour rest-count)
+               the-last-item-need (if (= (mod rest-hour rest-count) 0)
+                                    each-item-need-carry
+                                    (- rest-hour (* (- rest-count 1) each-item-need-carry)))
+               non-last-items (take (- rest-count 1) rest-items)
+               last-item (last rest-items)]
+           #_(println rest-items rest-count each-item-need-carry
+                      the-last-item-need non-last-items last-item)
+           (let [fixed-rest-items
+                 (conj (mapv (fn [item] (assoc item :hour each-item-need-carry))
+                             non-last-items)
+                       (assoc last-item :hour the-last-item-need))]
+             (into (filterv #(not (nil? (:hour %))) with-time-items)
+                   fixed-rest-items)))
+         with-time-items))}
+    (catch Exception e
+      {:message (str "Error:" (.getMessage e))
+       :status -1})))
 
 (defn handle-week-static
   "返回本周的 TODO 待办事项，格式：{:2022-03-01 {:finished 3 :total 4}}"

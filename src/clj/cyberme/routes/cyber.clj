@@ -179,7 +179,14 @@
            :parameters  {:query (s/keys :req-un []
                                         :opt-un [:global/user :global/secret :todo/day])}
            :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (todo/handle-recent query)))}}]])
+                          (hr/response (todo/handle-recent query)))}}]
+
+   ["/work-today"
+    {:get {:summary "获取当日的工作事项"
+           :description "获取当日的工作事项"
+           :parameters  {:query (s/keys :req-un []
+                                        :opt-un [:global/user :global/secret])}
+           :handler (fn [_] (hr/response (todo/handle-work-today)))}}]])
 
 (def check-route
   ["/check"
