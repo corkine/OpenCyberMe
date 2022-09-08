@@ -54,10 +54,16 @@
   (cond (str/includes? in "最近的降雨带")
         (let [[_ target] (re-find #"最近的降雨带在(.*?)外呢" (str (or in "")))]
           (str "降雨带：" target "外"))
+
         (str/includes? in "，放心出门吧")
         (str/replace in "，放心出门吧" "")
+
+        (str/includes? in "在室内休息休息吧")
+        (str/replace in "，在室内休息休息吧" "，室内活动最佳")
+
         (str/includes? in "出门还是带把伞吧")
         "附近正在下雨，记得带伞"
+
         :else in))
 
 (defonce weather-cache (atom {}))

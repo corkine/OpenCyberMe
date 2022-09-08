@@ -188,11 +188,13 @@
          {:type         "text" :placeholder "键入内容，回车搜索"
           :defaultValue search-in-bar
           :on-key-up    (fn [e]
-                          (if (= 13 (.-keyCode e))
-                            (when-let [search (.-value (.-target e))]
-                              (rf/dispatch [:file/search-obj-set! [:q search]])
-                              (rf/dispatch [:file/trigger-url-search!])
-                              #_(rf/dispatch [:file/trigger-url-search [type search]]))))}]
+                          (let [search-input (.-value (.-target e))]
+                            ;按下 Enter 键，有输入内容且和当前数据不同，则执行搜索
+                            (when (and (= 13 (.-keyCode e))
+                                       search-input
+                                       (not= search-in-bar search-input))
+                              (rf/dispatch [:file/search-obj-set! [:q search-input]])
+                              (rf/dispatch [:file/trigger-url-search!]))))}]
         [:span.icon.is-small.is-right
          [:i.fa.fa-search.mr-3]]
         (let [hint @(rf/subscribe [:file/search-hint])
