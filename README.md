@@ -184,6 +184,12 @@ lein repl
 lein shadow watch app
 ```
 
+## History
+
+这个仓库的数万行代码是“自底向上”实现需求的典型范例，尽管这些需求长期零散的被各种语言、框架割裂，在迭代的过程中被重构、更新或者废弃，下面是我实现这些零散的需求的历史，大部分都是在接触过一门语言后拿来练手的项目，代码风格千变万化，大部分仓库可以在 [这里](https://github.com/corkine) 找到。CyberMe Clojure 实现将这些零散的特性整合了起来，配合 ClojureScript 和 Reagent/re-frame 实现了高效开发和联动，提供了统一的使用体验。
+
+![](https://static2.mazhangjing.com/cyber/202209/c7ec0acb_图片.png)
+
 由 [Jetbrains OpenSource Support](https://jb.gg/OpenSourceSupport) 提供开发支持
 
 <img src="https://resources.jetbrains.com/storage/products/company/brand/logos/IntelliJ_IDEA.png" width="300px">
