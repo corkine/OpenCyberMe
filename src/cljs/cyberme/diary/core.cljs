@@ -80,6 +80,14 @@ keyword1 keyword2")
             (str/split input #" "))
     :origin input))
 
+(defn clean-search-input [input]
+  (let [search-result (search-input input)
+        non-empty-keys (reduce (fn [agg [k v]]
+                                 (if-not (nil? v) (conj agg k) agg))
+                               [] search-result)
+        clean-result (select-keys search-result non-empty-keys)]
+    clean-result))
+
 (rf/reg-event-db
   :diary/trigger-url-search!
   (fn [db [_ push-state?]]
@@ -156,13 +164,10 @@ keyword1 keyword2")
              :on-key-up (fn [e]
                           (if (= 13 (.-keyCode e))
                             (when-let [search (.-value (.-target e))]
-                              (let [search-result (search-input search)
-                                    non-empty-keys (reduce (fn [agg [k v]]
-                                                         (if-not (nil? v) (conj agg k) agg))
-                                                       [] search-result)
-                                    clean-result (select-keys search-result non-empty-keys)]
+                              (do
                                 (rf/dispatch [:diary/search-obj-reset!
-                                              (merge clean-result {:from 1 :to 10})])
+                                              (merge (clean-search-input search)
+                                                     {:from 1 :to 10})])
                                 ;每次搜索都可以返回到上一次结果
                                 (rf/dispatch [:diary/trigger-url-search! true])))))}]
            [:span.icon.is-left

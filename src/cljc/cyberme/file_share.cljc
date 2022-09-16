@@ -2,7 +2,7 @@
 
 ;/file 前端 URL 允许出现的查询参数，file.cljs 允许更新到 URL Query Param 的参数
 (def file-key
-  [:kind :size :sort :range-x :range-y :type :q :take :drop])
+  [:kind :size :sort :range-x :range-y :type :q :take :drop :clean])
 
 (def file-query-range-size
   [["不限大小" [0 2147483647]]

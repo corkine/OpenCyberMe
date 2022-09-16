@@ -19,9 +19,13 @@
                              :content-type :json
                              :basic-auth (edn-in [:short :token])})
           resp @req]
-      {:message "搜索成功"
-       :status 1
-       :data (vec (-> resp :body (json/parse-string true)))})
+      (let [response (-> resp :body (json/parse-string true))]
+        (if (:message response)
+          {:message (str "搜索失败，远程服务器返回消息：" (:message response))
+           :status -1}
+          {:message "搜索成功"
+           :status 1
+           :data (vec response)})))
     (catch Exception e
       {:message (str "搜索失败" (.getMessage e)) :status -1})))
 

@@ -65,6 +65,13 @@
       (assoc db :file/search-obj {key value}))))
 
 (rf/reg-event-db
+  :file/reset-search-obj-if-outdated!
+  (fn [db [_ obj]]
+    ;来自搜索栏搜索 or 来自 URL 直接访问
+    (when (or (:clean obj) (empty? (:file/search-obj db)))
+      (assoc db :file/search-obj obj))))
+
+(rf/reg-event-db
   :file/drop-search-obj!
   (fn [db _]
     (if-let [obj-q (get (:file/search-obj db) :q)]
@@ -209,7 +216,7 @@
                                   (rf/dispatch [:file/search-obj-set!
                                                 [:type (.. % -target -value)]])
                                   (rf/dispatch [:file/trigger-url-search!]))
-                             :default-value (:type search-obj-now)})
+                             :value (or (:type search-obj-now) (first all-kind))})
              (for [type all-kind] ^{:key type} [:option type])]]
            (for [search-opinion [:range-y :size :range-x :kind :sort]]
              ^{:key (str (random-uuid) search-opinion)}

@@ -187,5 +187,11 @@
                                     :start      (fn [{query :query}]
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (if (:q query)
-                                                    (rf/dispatch [:file/search query])
+                                                    (do
+                                                      ;search-obj 用来指导页面展示数据
+                                                      ;如果第一次加载，没有 search-obj 这里构造
+                                                      ;如果由页面搜索触发，选择选项的时候已经有了 search-obj，这里什么也不做
+                                                      ;如果由搜索栏触发，这里有 clean 字段，等同于第一次加载，清空并重新构造 search-obj
+                                                      (rf/dispatch [:file/reset-search-obj-if-outdated! query])
+                                                      (rf/dispatch [:file/search query]))
                                                     (rf/dispatch [:file/search-clean])))}]}))]])

@@ -12,6 +12,29 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>CyberMe</title>
     <style type="text/css">
+        #search-bar:hover {
+            width: 20em;
+            -webkit-transition-duration: 0.3s;
+            -moz-transition-duration: 0.3s;
+            -o-transition-duration: 0.3s;
+            transition-duration: 0.3s;
+        }
+        #search-bar {
+            width: 10em;
+            -webkit-transition-duration: 0.3s;
+            -moz-transition-duration: 0.3s;
+            -o-transition-duration: 0.3s;
+            transition-duration: 0.3s;
+            background-color: #3298dc;
+            border-color: white;
+            color: white;
+        }
+        #search-bar::-moz-placeholder {
+            color: white;
+        }
+        #search-bar ~ span {
+            color: #ffffff91;
+        }
         .dui-tips {
             position: relative;
             display: inline-block;

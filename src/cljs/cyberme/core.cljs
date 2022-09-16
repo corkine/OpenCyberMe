@@ -30,7 +30,8 @@
     [cyberme.validation :as va]
     [clojure.string :as str]
     [cljs-time.format :as format]
-    [cljs-time.core :as t])
+    [cljs-time.core :as t]
+    [clojure.string :as string])
   (:import goog.History))
 
 (defn nav-link [uri title page]
@@ -192,6 +193,27 @@
                   #_[nav-link "/foods" "耗材" :foods]
                   [nav-link "/about" "About" :about]]
                  [:div.navbar-end {:style {:margin-right :15px}}
+                  [:div.navbar-item
+                   [:p.control.has-icons-left
+                    [:input#search-bar.input.is-info.is-small.is-rounded
+                     {:type      "text" :placeholder "搜索"
+                      :title     (str "搜索任意内容，语法：book/file/short/cloud/diary [keyword..]")
+                      :on-key-up (fn [e]
+                                   (if (= 13 (.-keyCode e))
+                                     (when-let [search (.-value (.-target e))]
+                                       (when-let [kw (string/join " " (rest (str/split search " ")))]
+                                         (cond (str/starts-with? search "b")
+                                               (rf/dispatch [:common/navigate! :file nil {:q kw :type "书籍" :clean true}])
+                                               (str/starts-with? search "f")
+                                               (rf/dispatch [:common/navigate! :file nil {:q kw :type "磁盘" :clean true}])
+                                               (str/starts-with? search "s")
+                                               (rf/dispatch [:common/navigate! :file nil {:q kw :type "短链接" :clean true}])
+                                               (str/starts-with? search "c")
+                                               (rf/dispatch [:common/navigate! :file nil {:q kw :type "私有云" :clean true}])
+                                               (str/starts-with? search "d")
+                                               (rf/dispatch [:common/navigate! :diary nil (cyberme.diary.core/clean-search-input kw)]))))))}]
+                    [:span.icon.is-left
+                     [:i.fa.fa-search {:aria-hidden "true"}]]]]
                   [:div.navbar-item.is-hoverable.mx-0
                    (let [switch @(rf/subscribe [:paste-switch])
                          status @(rf/subscribe [:paste-status])
@@ -227,9 +249,6 @@
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:note/last])}
                      "最近笔记"]
-                    #_[:a.navbar-item
-                       {:on-click #(rf/dispatch [:dashboard/make-clean])}
-                       "标记清洁"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :set-clean-dialog])}
                      "标记清洁.."]
