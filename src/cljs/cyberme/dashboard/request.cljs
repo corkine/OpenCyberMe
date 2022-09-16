@@ -183,11 +183,11 @@
       (let [current-plan (-> db :week-plan :current-item)
             plan-name (or (:name current-plan) "")
             plan-first-4-words (.substr plan-name 0 4)
-            logs (or (:logs current-plan) [])]
+            log-names (mapv #(get % :name "") (or (:logs current-plan) []))]
         (let [find-new!
               (filterv #(let [title (get % :title "")]
                           (and (str/starts-with? title plan-first-4-words)
-                               (not (some (fn [log] (str/includes? (get log :name "") title)) logs))))
+                               (not (some (fn [log-name] (str/includes? log-name title)) log-names))))
                        today-todo-list)]
           ;如果有多个，最推荐已完成的
           (first (sort :status find-new!)))))))

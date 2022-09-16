@@ -70,7 +70,7 @@
              :call-when-success [[:dashboard/week-plan-item-add-log-clean]]
              :origin-data       (if may-next-log-todo-item
                                   {:progress-delta "10.0"
-                                   :name may-next-log-todo-item-title
+                                   :name (str (tool/week-?) "：" may-next-log-todo-item-title)
                                    :description (str "TODO 项目完成于 " may-next-log-todo-item-date)}
                                   {:progress-delta "10.0"})
              :origin-data-is-subscribed true})))

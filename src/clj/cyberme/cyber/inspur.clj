@@ -1053,7 +1053,22 @@
 
 (comment
   (def server1-conn {:pool {} :spec
-                     {:uri "redis://admin:???@ct.mazhangjing.com:6379/"}})
+                     {:uri "redis://10.69.65.87:6379/"}})
+  (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
+  (doseq [t (range 10)]
+    (time (do (doseq [i (range 1000)]
+                (wcar* (time (car/set (str "testkey-" i) "networkId")))))))
+
+  (time (do (doseq [i (range 1000)]
+              (wcar* (time (car/set (str "testkey-" i) "networkId"))))))
+
+  (doseq [t (range 10)]
+    (time (wcar* (doseq [i (range 1000)]
+                   (car/set (str "testkey-" i) "networkId"))))))
+
+(comment
+  (def server1-conn {:pool {} :spec
+                     {:uri "redis://10.69.65.87:6379/"}})
   (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
   (in-ns 'cyberme.db.core)
   (conman/bind-connection *db* "sql/queries.sql" "sql/goods.sql" "sql/cyber.sql")
