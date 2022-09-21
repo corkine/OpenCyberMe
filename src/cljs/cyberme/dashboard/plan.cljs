@@ -13,7 +13,7 @@
     [clojure.string :as str]))
 
 (defn plan-page []
-  [:div.mt-5
+  [:div.mt-5.ml-4.mr-4
    [:div
     [:span.is-size-6.ml-1.my-1.is-clickable.mr-4
      {:on-click #(rf/dispatch [:common/navigate! :work])}
@@ -33,8 +33,13 @@
           ^{:key id}
           [:div.mt-4
            [:p.mb-2
-            [:span.tag.is-small.is-rounded.is-size-7.mr-0.is-primary.is-light
-             {:style {:font-variant "all-petite-caps"}} category]
+            [:span.tag.is-small.is-rounded.is-size-7.mr-0.is-light
+             {:style {:font-variant "all-petite-caps"}
+              :class (case category
+                       "learn" "is-info"
+                       "diet" "is-success"
+                       "fitness" "is-danger"
+                       "is-light")} category]
             [:span.ml-2.is-family-code.is-clickable.is-size-5
              {:style {:vertical-align :middle}
               :on-click (fn [_]
@@ -44,18 +49,26 @@
             [:span.is-family-code.is-size-7.is-text-grey.is-clickable
              {:style {:opacity "0.2"}} last-update]]
            (when-not (str/blank? description)
-             [:pre description])
+             [:pre
+              [:i.fa.fa-quote-right {:style {:float "right"
+                                             :font-size "5em"
+                                             :opacity "0.04"}
+                                     :aria-hidden "true"}]
+              description])
            (if (empty? logs)
              [:<>]
-             [:pre
+             [:pre {:style {:padding-bottom :10px}}
               (for [{:keys [id name update item-id description progress-delta] :as log} logs]
                 ^{:key id}
-                [:div.mt-3
-                 [:p.mb-1
-                  [:span.ml-2.is-family-code.is-clickable {:style {:vertical-align :bottom}} name]
+                [:div.mb-2 ;each log
+                 [:p.mb-1 ;each log's body and entity
+                  [:span.ml-2.is-family-code.is-clickable
+                   {:style {:vertical-align :bottom}} name]
                   [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]
                   [:span.is-family-code.is-size-7.is-text-grey.is-clickable
                    {:style {:opacity "0.2"}} update]]
                  (when description
-                   [:pre description])])])])]))
+                   [:pre {:style {:padding "0em 0 0 2em"
+                                  :opacity "0.5"}}
+                    [:span.is-text-grey description]])])])])]))
    [:div {:style {:margin-bottom "100px"}}]])
