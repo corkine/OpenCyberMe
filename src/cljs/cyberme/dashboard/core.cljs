@@ -276,7 +276,7 @@
          [:div#todo-info.mx-2.mt-3.is-unselectable.box
           [:<>
            [week/week-plan-add-dialog]
-           [week/week-plan-modify-item-dialog]
+           [week/week-plan-modify-item-dialog :dashboard/plant-week]
            #_[week/week-plan-log-add-dialog] ;强迫通过日记新建记录
            [:div.mb-5
             ;每周计划卡片，包括本周计划和每周一学

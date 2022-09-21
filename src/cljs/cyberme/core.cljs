@@ -174,24 +174,26 @@
                 [:div.navbar-brand
                  [:a.icon-text.navbar-item.has-text-white {:href "/"}
                   [:span.icon [:i.fa.fa-ravelry.mr-1]]
-                  [:span.has-text-bold.is-size-5.has-text-white "CyberMe"]]
+                  [:span.has-text-bold.is-size-5.has-text-white
+                   {:style {:font-variant "small-caps"}} "CyberMe"]]
                  [:span.navbar-burger.burger
                   {:data-target :nav-menu
                    :on-click    #(swap! expanded? not)
                    :class       (when @expanded? :is-active)}
                   [:span] [:span] [:span]]]
                 [:div#nav-menu.navbar-menu
-                 {:class (when @expanded? :is-active)}
+                 {:class (when @expanded? :is-active)
+                  :style {:font-variant "all-small-caps"}}
                  [:div.navbar-start
                   [nav-link "/" "Dashboard" :dashboard]
-                  [nav-link "/work" "Work" :work]
+                  [nav-link "/plan" "Plan" :plan]
                   [nav-link "/diary" "Diary" :diary]
-                  [nav-link "/file" "Files" :file]
+                  [nav-link "/library" "Library" :file]
                   #_[nav-link "/cook" "厨记" :cook]
                   [nav-link "/properties" "Goods" :properties]
                   #_[nav-link "/clothes" "衣物" :clothes]
                   #_[nav-link "/foods" "耗材" :foods]
-                  [nav-link "/about" "About" :about]]
+                  ]
                  [:div.navbar-end {:style {:margin-right :15px}}
                   [:div.navbar-item
                    [:p.control.has-icons-left
@@ -236,16 +238,16 @@
                    [:div.navbar-dropdown.is-boxed
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :create-new-place])}
-                     "新建位置"]
+                     "新建位置.."]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :create-new-package])}
-                     "新建打包"]
+                     "新建打包.."]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :create-new-good])}
-                     "物品入库"]
+                     "物品入库.."]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:app/show-modal :note-add-dialog])}
-                     "新建笔记"]
+                     "新建笔记.."]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:note/last])}
                      "最近笔记"]
@@ -257,7 +259,10 @@
                      "标记 Blue"]
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:dashboard/todo-sync])}
-                     "同步待办"]]]
+                     "同步待办"]
+                    [:a.navbar-item
+                     {:on-click #(rf/dispatch [:common/navigate! :about])}
+                     "关于 CyberMe"]]]
                   (let [{login-hint :user} @(rf/subscribe [:api-auth])
                         login-hint (or login-hint "登录")]
                     [:div.navbar-item.mx-0

@@ -12,6 +12,7 @@
     [cyberme.work.whole :as work-all]
     [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
+    [cyberme.dashboard.plan :as plan]
     [cyberme.file :as file]
     [cyberme.psych.exp1.main :as exp1]
     [clojure.string :as string]))
@@ -48,9 +49,7 @@
            "Oops... 暂无符合条件的选项"]]]]))
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn clothes-page []
   [:<>
@@ -70,9 +69,7 @@
            "Oops... 暂无符合条件的选项"]]]]))
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn foods-page []
   [:<>
@@ -92,9 +89,7 @@
            "Oops... 暂无符合条件的选项"]]]]))
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn goods-page []
   [:<>
@@ -105,9 +100,7 @@
      [:p.subtitle.is-family-code "正在施工"]]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn diary-page []
   [:<>
@@ -115,9 +108,7 @@
    [diary/diary-page]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn diary-edit-page []
   [:<>
@@ -125,9 +116,7 @@
    [diary/diary-edit-page]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn diary-new-page []
   [:<>
@@ -135,9 +124,7 @@
    [diary/diary-new-page]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn diary-view-page []
   [:<>
@@ -145,9 +132,16 @@
    [diary/diary-view-page]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
+
+(defn plan-page []
+  [:<>
+   [top-point]
+   [:div.container>div.content
+    [plan/plan-page]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn hcm-page []
   [:<>
@@ -156,9 +150,7 @@
     [work/main-page]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn hcm-all-page []
   [:<>
@@ -167,9 +159,7 @@
     [work-all/main-page]]
    [:footer.mt-6.mb-4
     [:p.footer-content.has-text-centered.has-text-grey
-     (str "© 2016-2022 "
-          "Marvin Studio."
-          " All Right Reserved.")]]])
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn cook-page []
   [:<>
@@ -179,9 +169,7 @@
      [:p "正在施工..."]]
     [:footer.mt-6.mb-4
      [:p.footer-content.has-text-centered.has-text-grey
-      (str "© 2016-2022 "
-           "Marvin Studio."
-           " All Right Reserved.")]]]])
+      (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]]])
 
 (defn file-page []
   [:<>

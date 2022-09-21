@@ -129,7 +129,7 @@
                  [:i.fa.fa-star]]]]]
            [week/week-plan-add-dialog]
            [week/week-plan-log-add-dialog]
-           [week/week-plan-modify-item-dialog]
+           [week/week-plan-modify-item-dialog :dashboard/plant-week]
            (when week-items
              [:div {:style {:margin "-10px 0px 20px 12px"}}
               [week/plan-widget week-items {:go-diary-add-log false :show-todo true}]])

@@ -58,6 +58,13 @@
                                                     (rf/dispatch [:place/fetch])
                                                     (rf/dispatch [:recent/fetch]))}]}))]
 
+   ["/plan"
+    (merge {:name :plan}
+           #?(:cljs {:view        #'core/plan-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
+                                             (rf/dispatch [:dashboard/week-plan-range]))}]}))]
+
    ["/work"
     (merge {:name :work}
            #?(:cljs {:view        #'core/hcm-page
@@ -180,7 +187,7 @@
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local]))}]}))]
 
-   ["/file"
+   ["/library"
     (merge {:name :file}
            #?(:cljs {:view        #'core/file-page
                      :controllers [{:parameters {:query file-share/file-key}

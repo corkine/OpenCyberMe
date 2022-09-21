@@ -98,6 +98,13 @@
             :success-callback-event [[:dashboard/plant-week]]
             :failure-notice         true})
 
+;周计划范围接口：获取最近几周的周计划（倒序排列）
+(ajax-flow {:call                   :dashboard/week-plan-range
+            :uri-fn                 #(str "/cyber/week-plan/list-items?range-week=4")
+            :data                   :dashboard/week-plan-range-data
+            :clean                  :dashboard/week-plan-range-clean
+            :failure-notice         true})
+
 ;周计划接口：删除、新建项目成功后触发更新主页，其余：列出项目，添加删除记录仅请求 HTTP
 (rf/reg-sub
   :dashboard/week-plan
@@ -131,7 +138,7 @@
             :is-post                true
             :data                   :dashboard/week-plan-modify-item-data
             :clean                  :dashboard/week-plan-modify-item-clean
-            :success-callback-event [[:dashboard/plant-week]]
+            ;;:success-callback-event [[:dashboard/plant-week]] ;;在模态框中触发
             :failure-notice         true})
 
 (ajax-flow {:call                   :dashboard/week-plan-item-add-log

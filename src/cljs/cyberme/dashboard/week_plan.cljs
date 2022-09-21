@@ -7,7 +7,7 @@
 
 (defn week-plan-modify-item-dialog
   "特定计划项目更新对话框"
-  []
+  [success-update]
   (let [item @(rf/subscribe [:week-plan-db-query :modify-item])]
     (dialog :modify-week-plan-item!
             "更新周计划项目"
@@ -21,7 +21,7 @@
              :call-when-exit    [[:dashboard/week-plan-modify-item-clean]
                                  [:week-plan-db-unset :modify-item]]
              :call-when-success [[:dashboard/week-plan-modify-item-clean]
-                                 #_[:dashboard/plant-week]]
+                                 [success-update]]
              :origin-data       (select-keys item [:name :description :id])
              :origin-data-is-subscribed true})))
 
