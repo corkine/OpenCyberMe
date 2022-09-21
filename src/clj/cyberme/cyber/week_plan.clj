@@ -13,7 +13,8 @@
   日记中可提供每天完成每项指标的百分比和子任务项。"
   (:require [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
-            [next.jdbc :as jdbc])
+            [next.jdbc :as jdbc]
+            [cyberme.tool :as tool])
   (:import (java.time LocalDate LocalDateTime)
            (java.util UUID)))
 
@@ -83,6 +84,24 @@
       (log/error "[week-plan] error: " (.getMessage e))
       {:message (str "获取本周计划失败：" (.getMessage e)) :status -1})))
 
+(defn handle-get-week-plan-range
+  "获取特定日期范围的计划，如果当周没有计划，则返回空"
+  [range]
+  (let [range (if (nil? range) 1 (+ range 1))
+        range-local-date (tool/each-monday-of range)]
+    (try
+      {:message "获取范围计划成功"
+       :data
+       {:date (mapv str range-local-date)
+        :result (reduce
+                  (fn [agg day]
+                    (assoc agg (str day) (-> (get-some-week day) :info :plan)))
+                  {} range-local-date)}
+       :status  1}
+      (catch Exception e
+        (log/error "[week-plan] error: " (.getMessage e))
+        {:message (str "获取范围计划失败：" (.getMessage e)) :status -1}))))
+
 (defn handle-delete-week-plan-all-items
   "删除本周计划和所有项目与每条项目的记录
   因为数据库行只用来记录 plan，因此直接删除数据库行即可"
@@ -142,12 +161,12 @@
         (if current-item
           (let [merged-item (merge current-item
                                    {:last-update (LocalDateTime/now)
-                                    :name (or name (:name current-item))
+                                    :name        (or name (:name current-item))
                                     :description (or description (:description current-item))})]
             (set-some-week t now {:plan (mapv #(if (= id (:id %)) merged-item %) items)})
             {:message (str "更新本周计划项目" name "成功")
              :status  1})
-          {:message (str "更新本周计划项目" name "失败，找不到 id " id) :status  -1})))
+          {:message (str "更新本周计划项目" name "失败，找不到 id " id) :status -1})))
     (catch Exception e
       (log/error "[week-plan] error: " (.getMessage e))
       {:message (str "更新本周计划项目" name "失败：" (.getMessage e)) :status -1})))
