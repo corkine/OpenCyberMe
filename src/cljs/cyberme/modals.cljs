@@ -8,6 +8,15 @@
     [reagent.core :as r]))
 
 (rf/reg-event-db
+  :app/scroll-to-result
+  (fn [db _]
+    (let [results (.getElementsByClassName js/document "modalTop")]
+      (if (and (not (nil? results)) (> (.-length results) 0))
+        (doseq [result results]
+          (js/setTimeout #(.scrollTo result 0 (.-scrollHeight result)) 100))))
+    db))
+
+(rf/reg-event-db
   :app/show-modal
   (fn [db [_ modal-id]]
     (assoc-in db [:app/active-modals modal-id] true)))
@@ -37,7 +46,7 @@
                       [:p.modal-card-title {:style {:margin-bottom :0px}} title]
                       [:button.delete
                        {:on-click #(rf/dispatch [:app/hide-modal id])}]]
-     [:section.modal-card-body body]
+     [:section.modalTop.modal-card-body body]
      [:footer.modal-card-foot footer]]])
   ([id title body footer fields errors close-fn]
    [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
@@ -55,7 +64,7 @@
                                     (reset! errors {})
                                     (when-not (nil? close-fn) (close-fn))
                                     (rf/dispatch [:app/hide-modal id]))}]]
-     [:section.modal-card-body body]
+     [:section.modalTop.modal-card-body body]
      [:footer.modal-card-foot footer]]])
   ([id title body footer close-fn]
    [:div.modal {:class (when @(rf/subscribe [:app/modal-showing? id])
@@ -70,7 +79,7 @@
                        {:on-click (fn [_]
                                     (when-not (nil? close-fn) (close-fn))
                                     (rf/dispatch [:app/hide-modal id]))}]]
-     [:section.modal-card-body body]
+     [:section.modalTop.modal-card-body body]
      [:footer.modal-card-foot footer]]]))
 
 (defn modal-button

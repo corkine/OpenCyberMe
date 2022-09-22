@@ -24,12 +24,12 @@
    [wp/week-plan-modify-item-dialog :dashboard/week-plan-range]
    (let [{{:keys [date result]} :data}
          @(rf/subscribe [:dashboard/week-plan-range-data])]
-     (for [some-week date] ;;所有周的数据
+     (for [some-week date]                                  ;;所有周的数据
        ^{:key some-week}
        [:div.mt-5
         [:p.is-size-4.is-family-code.ml-1.mb-1 some-week]
         (for [{:keys [id logs name category progress description last-update] :as item}
-              (get result (keyword some-week))] ;;每周的每个计划
+              (get result (keyword some-week))]             ;;每周的每个计划
           ^{:key id}
           [:div.mt-4
            [:p.mb-2
@@ -41,34 +41,42 @@
                        "fitness" "is-danger"
                        "is-light")} category]
             [:span.ml-2.is-family-code.is-clickable.is-size-5
-             {:style {:vertical-align :middle}
+             {:style    {:vertical-align :middle}
+              :title    (str "点击修改目标\n更新于：" last-update)
               :on-click (fn [_]
-                          (rf/dispatch [:week-plan-db-set :modify-item item])
+                          (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
                           (rf/dispatch [:app/show-modal :modify-week-plan-item!]))} name]
-            [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str progress "%")]
-            [:span.is-family-code.is-size-7.is-text-grey.is-clickable
-             {:style {:opacity "0.2"}} last-update]]
-           (when-not (str/blank? description)
-             [:pre
-              [:i.fa.fa-quote-right {:style {:float "right"
-                                             :font-size "5em"
-                                             :opacity "0.04"}
-                                     :aria-hidden "true"}]
-              description])
-           (if (empty? logs)
-             [:<>]
-             [:pre {:style {:padding-bottom :10px}}
-              (for [{:keys [id name update item-id description progress-delta] :as log} logs]
-                ^{:key id}
-                [:div.mb-2 ;each log
-                 [:p.mb-1 ;each log's body and entity
-                  [:span.ml-2.is-family-code.is-clickable
-                   {:style {:vertical-align :bottom}} name]
-                  [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]
-                  [:span.is-family-code.is-size-7.is-text-grey.is-clickable
-                   {:style {:opacity "0.2"}} update]]
-                 (when description
-                   [:pre {:style {:padding "0em 0 0 2em"
-                                  :opacity "0.5"}}
-                    [:span.is-text-grey description]])])])])]))
+            [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str progress "%")]]
+           [:div.columns
+            (when-not (str/blank? description)
+              [:div.column.is-clickable
+               {:on-click (fn [_]
+                            (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
+                            (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
+               [:pre {:style {:height "100%"}}
+                [:i.fa.fa-quote-right {:style       {:float     "right"
+                                                     :font-size "5em"
+                                                     :opacity   "0.04"}
+                                       :aria-hidden "true"}]
+                description]])
+            (if (empty? logs)
+              [:<>]
+              [:div.column
+               [:pre {:style {:padding-bottom :10px :height "100%"}}
+                #_[:i.fa.fa-file-o {:style       {:float     "right"
+                                                  :font-size "5em"
+                                                  :opacity   "0.04"}
+                                    :aria-hidden "true"}]
+                (for [{:keys [id name update item-id description progress-delta] :as log} logs]
+                  ^{:key id}
+                  [:div.mb-2                                ;each log
+                   [:p.mb-1                                 ;each log's body and entity
+                    [:span.ml-2.is-family-code.is-clickable
+                     {:style {:vertical-align :bottom}
+                      :title (str "更新于：" update)} name]
+                    [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]]
+                   (when description
+                     [:pre {:style {:padding "0em 0 0 2em"
+                                    :opacity "0.5"}}
+                      [:span.is-text-grey description]])])]])]])]))
    [:div {:style {:margin-bottom "100px"}}]])

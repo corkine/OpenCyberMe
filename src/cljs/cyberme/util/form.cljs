@@ -21,7 +21,8 @@
   ; origin-data 不支持外部变更后传入
   ; origin-data-is-subscribed 原始数据是否可变，如果可变则损失重绘 dialog 的中间数据保证此数据能在变化时更新"
   [id title bodies footer-text validate-submit
-   {:keys [subscribe-ajax call-when-exit call-when-success origin-data origin-data-is-subscribed]}]
+   {:keys [subscribe-ajax call-when-exit call-when-success
+           origin-data origin-data-is-subscribed message-pre?]}]
   (r/with-let
     [fields (r/atom (or origin-data {}))
      errors (r/atom {})]
@@ -34,14 +35,14 @@
                              (str hint)]]
                            [(cond (= type :textarea) :textarea.textarea
                                   (= type :select) :div.select
-                                  :else :input.input) ;type
+                                  :else :input.input)       ;type
                             (merge (if (= type :select)
                                      {:id id}
                                      {:id        id
                                       :type      (if type type :text)
                                       :value     (str @v)
                                       :on-change #(reset! v (.. % -target -value))})
-                                   (if attr attr {})) ;attr
+                                   (if attr attr {}))       ;attr
                             (when-not (nil? selects)
                               [:select
                                {:id        id
@@ -66,7 +67,7 @@
               [(if (= (:status server-back) 1)
                  :div.notification.is-success.mt-4
                  :div.notification.is-danger.mt-4)
-               [:blockquote (:message server-back)]]))
+               [(if message-pre? :blockquote :p) (:message server-back)]]))
           (let [is-success-call (and (not (nil? server-back))
                                      (= (:status server-back) 1))]
             [:button.button.is-primary.is-fullwidth
@@ -74,6 +75,10 @@
                           (fn [_]
                             (reset! fields (or origin-data {}))
                             (reset! errors {})
+                            (let [modals (.getElementsByClassName js/document "modalTop")]
+                              (if (and (not (nil? modals)) (> (.-length modals) 0))
+                                (doseq [modal modals]
+                                  (.scrollTo modal 0 0))))
                             (rf/dispatch [:app/hide-modal id])
                             (doseq [event call-when-success]
                               (rf/dispatch event)))

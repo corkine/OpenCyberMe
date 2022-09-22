@@ -138,7 +138,7 @@
             :is-post                true
             :data                   :dashboard/week-plan-modify-item-data
             :clean                  :dashboard/week-plan-modify-item-clean
-            ;;:success-callback-event [[:dashboard/plant-week]] ;;在模态框中触发
+            :success-callback-event [[:app/scroll-to-result]] ;在 dialog 按下确定后再刷新数据展示
             :failure-notice         true})
 
 (ajax-flow {:call                   :dashboard/week-plan-item-add-log

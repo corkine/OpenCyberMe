@@ -3,7 +3,8 @@
             [cyberme.validation :as va]
             [goog.string :as gstring]
             [re-frame.core :as rf]
-            [cyberme.util.tool :as tool]))
+            [cyberme.util.tool :as tool]
+            [clojure.string :as str]))
 
 (defn week-plan-modify-item-dialog
   "特定计划项目更新对话框"
@@ -12,17 +13,20 @@
     (dialog :modify-week-plan-item!
             "更新周计划项目"
             [[:name "名称*" "计划名称"]
-             [:description "详述" "计划详述" {:type :textarea :attr {:rows 3}}]]
+             [:description "详述" "计划详述"
+              {:type :textarea :attr
+               {:rows (max 3
+                           (count (str/split (or (-> item :description) "") "\n")))}}]]
             "确定"
             #(if-let [err (va/validate! @%1 [[:name va/required]])]
                (reset! %2 err)
-               (rf/dispatch [:dashboard/week-plan-modify-item @%1]))
-            {:subscribe-ajax    [:dashboard/week-plan-modify-item-data]
-             :call-when-exit    [[:dashboard/week-plan-modify-item-clean]
-                                 [:week-plan-db-unset :modify-item]]
-             :call-when-success [[:dashboard/week-plan-modify-item-clean]
-                                 [success-update]]
-             :origin-data       (select-keys item [:name :description :id])
+               (rf/dispatch [:dashboard/week-plan-modify-item (assoc @%1 :date (:date item))]))
+            {:subscribe-ajax            [:dashboard/week-plan-modify-item-data]
+             :call-when-exit            [[:dashboard/week-plan-modify-item-clean]
+                                         [:week-plan-db-unset :modify-item]]
+             :call-when-success         [[:dashboard/week-plan-modify-item-clean]
+                                         [success-update]]
+             :origin-data               (select-keys item [:name :description :id])
              :origin-data-is-subscribed true})))
 
 (defn week-plan-add-dialog
@@ -65,14 +69,14 @@
                (rf/dispatch [:dashboard/week-plan-item-add-log
                              (merge {:item-id (-> @(rf/subscribe [:week-plan-db-query :current-item])
                                                   :id)} @%1)]))
-            {:subscribe-ajax    [:dashboard/week-plan-item-add-log-data]
-             :call-when-exit    [[:dashboard/week-plan-item-add-log-clean]]
-             :call-when-success [[:dashboard/week-plan-item-add-log-clean]]
-             :origin-data       (if may-next-log-todo-item
-                                  {:progress-delta "10.0"
-                                   :name (str (tool/week-?) "：" may-next-log-todo-item-title)
-                                   :description (str "TODO 项目完成于 " may-next-log-todo-item-date)}
-                                  {:progress-delta "10.0"})
+            {:subscribe-ajax            [:dashboard/week-plan-item-add-log-data]
+             :call-when-exit            [[:dashboard/week-plan-item-add-log-clean]]
+             :call-when-success         [[:dashboard/week-plan-item-add-log-clean]]
+             :origin-data               (if may-next-log-todo-item
+                                          {:progress-delta "10.0"
+                                           :name           (str (tool/week-?) "：" may-next-log-todo-item-title)
+                                           :description    (str "TODO 项目完成于 " may-next-log-todo-item-date)}
+                                          {:progress-delta "10.0"})
              :origin-data-is-subscribed true})))
 
 (defn plan-widget
@@ -103,7 +107,7 @@
               {:style    {:vertical-align "-10%"}
                :title    (gstring/format "点击新建日志\n完成百分比 %d%%\n包含 %s 日志" progress (count logs))
                :on-click #(do
-                            (when go-diary-add-log           ;如果今天有日记，则在日记编辑页面弹窗，反之新建日记弹窗
+                            (when go-diary-add-log          ;如果今天有日记，则在日记编辑页面弹窗，反之新建日记弹窗
                               (if @(rf/subscribe [:week-plan/today-diary-exist?])
                                 (rf/dispatch [:common/navigate! :diary-edit-by-date {:date (tool/today-str)}])
                                 (rf/dispatch [:common/navigate! :diary-new])))
@@ -114,7 +118,7 @@
                             )}
               (gstring/format "%d%%" progress)]
              [:span.is-clickable
-              {:title "点击修改此项目"
+              {:title    "点击修改此项目"
                :on-click (fn [_]
                            (rf/dispatch [:week-plan-db-set :modify-item item])
                            (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
@@ -140,7 +144,7 @@
       (if @(rf/subscribe [:week-plan-db-query :todo])
         [:div.is-clickable
          {:on-click #(rf/dispatch [:week-plan-db-set :todo nil])
-          :style {:margin-top "-0.5em"}}
+          :style    {:margin-top "-0.5em"}}
          (let [todo @(rf/subscribe [:dashboard/recent-data])
                items (-> todo :data :todo)]
            (for [[day day-items] (vec items)]
@@ -152,6 +156,6 @@
                 [:p.my-1 [:span list] " / " [:span title]])]))]
         [:div.is-clickable.is-size-6
          {:on-click #(rf/dispatch [:week-plan-db-set :todo true])
-          :title (str "点击显示最近待办事项")
-          :style {:text-align "right"
-                  :margin-right "1.3em"}} [:i.fa.fa-info]]))]])
+          :title    (str "点击显示最近待办事项")
+          :style    {:text-align   "right"
+                     :margin-right "1.3em"}} [:i.fa.fa-info]]))]])

@@ -151,11 +151,11 @@
 
 (defn handle-modify-week-plan-item
   "更新某一计划项目，只允许更新 name、description，需要有 id"
-  [{:keys [name description id]}]
+  [{:keys [name description id date]}]
   (try
     (jdbc/with-transaction
       [t db/*db*]
-      (let [now (LocalDate/now)
+      (let [now (if date (LocalDate/parse date) (LocalDate/now))
             items (-> (get-some-week t now) :info :plan)
             current-item (first (filterv #(= id (:id %)) items))]
         (if current-item

@@ -657,7 +657,7 @@
                            (hr/response (week/handle-add-week-plan-item body)))}}]
    ["/modify-item"
     {:post {:summary     "更新本周计划项目"
-            :description "更新本周计划项目，需要传入 id，只能更新 name 和description"
+            :description "更新本周计划项目，需要传入 id，只能更新 name 和description, 可传入 date（可能为空）"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                           :body any?}
             :handler     (fn [{{body :body} :parameters}]
