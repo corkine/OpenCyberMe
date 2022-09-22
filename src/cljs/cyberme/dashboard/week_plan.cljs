@@ -20,7 +20,9 @@
             "确定"
             #(if-let [err (va/validate! @%1 [[:name va/required]])]
                (reset! %2 err)
-               (rf/dispatch [:dashboard/week-plan-modify-item (assoc @%1 :date (:date item))]))
+               (do
+                 (rf/dispatch [:week-plan-db-set :modify-item @%1])
+                 (rf/dispatch [:dashboard/week-plan-modify-item (assoc @%1 :date (:date item))])))
             {:subscribe-ajax            [:dashboard/week-plan-modify-item-data]
              :call-when-exit            [[:dashboard/week-plan-modify-item-clean]
                                          [:week-plan-db-unset :modify-item]]
@@ -42,7 +44,8 @@
           "确定"
           #(if-let [err (va/validate! @%1 [[:name va/required] [:category va/required]])]
              (reset! %2 err)
-             (rf/dispatch [:dashboard/week-plan-add-item @%1]))
+             (do
+               (rf/dispatch [:dashboard/week-plan-add-item @%1])))
           {:subscribe-ajax    [:dashboard/week-plan-add-item-data]
            :call-when-exit    [[:dashboard/week-plan-add-item-clean]]
            :call-when-success [[:dashboard/week-plan-add-item-clean]
@@ -66,9 +69,10 @@
             "确定"
             #(if-let [err (va/validate! @%1 [[:name va/required] [:progress-delta va/number-str]])]
                (reset! %2 err)
-               (rf/dispatch [:dashboard/week-plan-item-add-log
-                             (merge {:item-id (-> @(rf/subscribe [:week-plan-db-query :current-item])
-                                                  :id)} @%1)]))
+               (do
+                 (rf/dispatch [:dashboard/week-plan-item-add-log
+                               (merge {:item-id (-> @(rf/subscribe [:week-plan-db-query :current-item])
+                                                    :id)} @%1)])))
             {:subscribe-ajax            [:dashboard/week-plan-item-add-log-data]
              :call-when-exit            [[:dashboard/week-plan-item-add-log-clean]]
              :call-when-success         [[:dashboard/week-plan-item-add-log-clean]]

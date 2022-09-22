@@ -21,8 +21,8 @@
   ; origin-data 不支持外部变更后传入
   ; origin-data-is-subscribed 原始数据是否可变，如果可变则损失重绘 dialog 的中间数据保证此数据能在变化时更新"
   [id title bodies footer-text validate-submit
-   {:keys [subscribe-ajax call-when-exit call-when-success
-           origin-data origin-data-is-subscribed message-pre?]}]
+   {:keys [subscribe-ajax call-when-exit call-when-success message-pre?
+           origin-data origin-data-is-subscribed]}]
   (r/with-let
     [fields (r/atom (or origin-data {}))
      errors (r/atom {})]
