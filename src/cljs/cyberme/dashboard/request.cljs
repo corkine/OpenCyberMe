@@ -123,7 +123,7 @@
             :is-post                true
             :data                   :dashboard/week-plan-add-item-data
             :clean                  :dashboard/week-plan-add-item-clean
-            :success-callback-event [[:dashboard/plant-week]]
+            :success-callback-event [[:app/scroll-to-result]]
             :failure-notice         true})
 
 (ajax-flow {:call           :dashboard/week-plan-list-item
@@ -138,7 +138,7 @@
             :is-post                true
             :data                   :dashboard/week-plan-modify-item-data
             :clean                  :dashboard/week-plan-modify-item-clean
-            :success-callback-event [[:app/scroll-to-result]] ;在 dialog 按下确定后再刷新数据展示
+            :success-callback-event [[:app/scroll-to-result]]
             :failure-notice         true})
 
 (ajax-flow {:call                   :dashboard/week-plan-item-add-log
@@ -146,7 +146,7 @@
             :is-post                true
             :data                   :dashboard/week-plan-item-add-log-data
             :clean                  :dashboard/week-plan-item-add-log-clean
-            :success-callback-event [[:dashboard/plant-week]]
+            :success-callback-event [[:app/scroll-to-result]]
             :failure-notice         true})
 
 (ajax-flow {:call                   :dashboard/week-plan-item-delete-log

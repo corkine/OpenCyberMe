@@ -49,7 +49,7 @@
           {:subscribe-ajax    [:dashboard/week-plan-add-item-data]
            :call-when-exit    [[:dashboard/week-plan-add-item-clean]]
            :call-when-success [[:dashboard/week-plan-add-item-clean]
-                               #_[:dashboard/plant-week]]
+                               [:dashboard/plant-week]]
            :origin-data       {:category "learn" :progress "0.0"}}))
 
 (defn week-plan-log-add-dialog
@@ -75,7 +75,8 @@
                                                     :id)} @%1)])))
             {:subscribe-ajax            [:dashboard/week-plan-item-add-log-data]
              :call-when-exit            [[:dashboard/week-plan-item-add-log-clean]]
-             :call-when-success         [[:dashboard/week-plan-item-add-log-clean]]
+             :call-when-success         [[:dashboard/week-plan-item-add-log-clean]
+                                         [:dashboard/plant-week]]
              :origin-data               (if may-next-log-todo-item
                                           {:progress-delta "10.0"
                                            :name           (str (tool/week-?) "：" may-next-log-todo-item-title)
