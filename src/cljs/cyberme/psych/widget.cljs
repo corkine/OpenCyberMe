@@ -6,6 +6,17 @@
 
 (defonce is-debug (atom false))
 
+(defonce config (atom {}))
+
+(defn set-config!
+  ([k v]
+   (swap! config assoc k v))
+  ([m]
+   (swap! config merge m)))
+
+(defn get-config [k]
+  (get @config k))
+
 (defn go-next [] (rf/dispatch [:go-step 1]))
 
 (defn go-back [] (rf/dispatch [:go-step -1]))
@@ -349,22 +360,25 @@
                           {:text-align :center})}
          (into [:tr [:th ""]] (mapv (fn [item] [:th item]) answers))]
         [:tbody
-         (for [index (range 1 (+ (count questions) 1))]
-           ^{:key index}
-           [:<>
-            (into
-              [:tr [:td
-                    {:style (if content-style content-style {})}
-                    (get questions (- index 1) "空")]]
-              (mapv
-                (fn [each]
-                  [:td {:style {:text-align :center}}
-                   [:label.radio
-                    {:on-click #(swap! answer assoc index each)
-                     :style    (if word-no-break {:word-break :keep-all} {})}
-                    [:input {:type "radio" :name (str "q" index)}]
-                    (str " " (if number-each-answer (+ (-indexOf answers each) 1) each))]])
-                answers))])]]]
+         (doall
+           (for [index (range 1 (+ (count questions) 1))]
+             ^{:key index}
+             [:<>
+              (into
+                [:tr [:td
+                      {:style (if content-style content-style {})}
+                      (get questions (- index 1) "空")]]
+                (mapv
+                  (fn [each]
+                    [:td {:style {:text-align :center}}
+                     [:label.radio
+                      {:style    (if word-no-break {:word-break :keep-all} {})}
+                      [:input {:type "radio"
+                               :name (str "q" index)
+                               :checked  (= (get @answer index -1) each)
+                               :on-change #(swap! answer assoc index each)}]
+                      (str " " (if number-each-answer (+ (-indexOf answers each) 1) each))]])
+                  answers))]))]]]
       [:div.is-flex.is-justify-content-center
        [:button.button.is-info.is-large.is-fullwidth
         {:style    {:margin-top :100px :margin-bottom :100px
@@ -374,8 +388,8 @@
                      (if (< (count @answer) (count questions))
                        (js/alert "请完成所有题目后再提交！")
                        (do
-                         (rf/dispatch [:save-answer [id @answer]])
                          (reset! answer {})
+                         (rf/dispatch [:save-answer [id @answer]])
                          (rf/dispatch [:go-step 1]))))}
         "完成问卷"]]])])
 
@@ -543,7 +557,8 @@
                    :style {:align-self :center :max-width :25em}}])
           [:button.button.is-info.is-large
            {:style    {:align-self :center :max-width :25em}
-            :on-click go-next} "下一题"]]])]]))
+            :on-click #(do (reset! answer nil)
+                           (go-next))} "下一题"]]])]]))
 
 (defn problem-cond4-guo
   "展示题目，被试做出选择根据实验条件给与提示"
@@ -639,12 +654,18 @@
                      :style {:align-self :center :max-width :25em}}]
               [:button.button.is-info.is-large
                {:style    {:align-self :center :max-width :25em}
-                :on-click go-next} "下一题"]])
+                :on-click (do (reset! answer nil)
+                              (reset! select-style -1)
+                              (reset! selected-style #{-1})
+                              (go-next))} "下一题"]])
            (if-not (= -1 @select-style)
              [:div {:style {:display "flex" :flex-direction "column" :margin-top "20px"}}
               [:button.button.is-info.is-large
                {:style    {:align-self :center :max-width :25em}
-                :on-click go-next} "下一题"]]))])]]))
+                :on-click (do (reset! answer nil)
+                              (reset! select-style -1)
+                              (reset! selected-style #{-1})
+                              (go-next))} "下一题"]]))])]]))
 
 (rf/reg-event-db
   :go-to

@@ -177,7 +177,8 @@
                                                     (reset! cyberme.psych.widget/is-debug true))
                                                   (rf/dispatch [:clean-all-answer])
                                                   (when-let [params (parse-params)]
-                                                    (println params)
+                                                    #_(println params)
+                                                    (cyberme.psych.widget/set-config! params)
                                                     (rf/dispatch [:save-answer ["标记数据" params]]))
                                                   (rf/dispatch [:user/fetch-from-local]))}]}))]
 
