@@ -83,7 +83,12 @@
     (if @is-debug
       [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
       [:p.title title])
-    [:p.subtitle.is-6.mt-1 {:style {:margin :auto :width :30em}} sub-title]
+    (if @is-debug
+      [:p.subtitle.is-6.mt-1 {:style                   {:margin :auto :width :50em}
+                              :on-click                #(rf/dispatch [:go-step -1])
+                              :dangerouslySetInnerHTML {:__html sub-title}}]
+      [:p.subtitle.is-6.mt-1 {:style                   {:margin :auto :width :50em}
+                              :dangerouslySetInnerHTML {:__html sub-title}}])
     (if btn-title
       [:button.button.is-info.mt-5
        {:on-click btn-action} btn-title])]))
@@ -265,16 +270,69 @@
                                    (reset! is-second true))} "重做此题"]
                   :else [:div])]])]])))
 
-(def fake-data
-  [{:type   :hint
-    :widget [hint "欢迎参加本次实验" "请保证环境安静，无分心物打扰，点击“开始”按钮开始此项实验" "开始实验"
-             #(rf/dispatch [:go-step 1])]}
+(def data
+  [
+   ;被试信息收集
    {:type   :collect
     :widget [collect]}
+   ;前测知识 - 指导语
    {:type   :hint
-    :widget [hint "请完成前测问卷" "请点击“开始作答”并完成问卷1" "开始作答"]}
-   {:type   :questionnaire
-    :widget [questionnaire-1 4 "前测问卷"]}
+    :widget [hint "欢迎参加心理学实验！"
+             "同学你好，欢迎进入《二次根式》学习系统。<br><br>
+              该系统的目的在于通过反馈学习来提高你对《二次根式》的掌握程度。<br><br>
+              首先，为了测试你当前的知识水平，我们准备了10道题目。请认真作答。"
+             "开始作答"
+             #(rf/dispatch [:go-step 1])]}
+   ;前测知识 - 10 道题目 TODO
+   ;https://static2.mazhangjing.com/cyber/202209/69f036b7_图片.png
+   ;反馈学习 - 练习指导语 KR+正确解答步骤 一次反馈
+   {:type   :hint
+    :widget [hint ""
+             "接下来，正式进入反馈学习阶段。<br><br>
+             这一阶段会有10道题目，每答完一道，会有相应的反馈。<br><br>
+             若答错：会给与正确解答步骤。<br><br>
+             若答对：只显示“回答正确”。<br><br>
+             我们准备了一道练习题，帮助你熟悉学习系统。"
+             "开始练习"
+             #(rf/dispatch [:go-step 1])]}
+   ;反馈学习 - 练习指导语 错误线索+正确解答步骤 一次反馈
+   {:type   :hint
+    :widget [hint ""
+             "接下来，正式进入反馈学习阶段。<br><br>
+             这一阶段会有10道题目，每答完一道，会有相应的反馈。<br><br>
+             若答错：会给与错误线索和正确解答步骤。<br><br>
+             若答对：只显示“回答正确”。<br><br>
+             我们准备了一道练习题，帮助你熟悉学习系统。"
+             "开始练习"
+             #(rf/dispatch [:go-step 1])]}
+   ;反馈学习 - 练习指导语 KR+正确解答步骤 二次反馈
+   {:type   :hint
+    :widget [hint ""
+             "接下来，正式进入反馈学习阶段。<br><br>
+             这一阶段会有10道题目，每答完一道，会有相应的反馈。<br><br>
+             若答错：系统会告知正确与否并要求你再答一次，之后给予第二次反馈。<br><br>
+             若答对：只显示“回答正确”。<br><br>
+             我们准备了一道练习题，帮助你熟悉学习系统。"
+             "开始练习"
+             #(rf/dispatch [:go-step 1])]}
+   ;反馈学习 - 练习指导语 错误线索+正确解答步骤 二次反馈
+   {:type   :hint
+    :widget [hint ""
+             "接下来，正式进入反馈学习阶段。<br><br>
+             这一阶段会有10道题目，每答完一道，会有相应的反馈。<br><br>
+             若答错：系统会提供关于你可能错误的线索并要求你再答一次，之后给予第二次反馈。<br><br>
+             若答对：只显示“回答正确”。<br><br>
+             我们准备了一道练习题，帮助你熟悉学习系统。"
+             "开始练习"
+             #(rf/dispatch [:go-step 1])]}
+   ;反馈学习 - 练习 TODO
+   ;反馈学习 - 正式指导语
+   {:type   :hint
+    :widget [hint ""
+             "练习部分结束，进入正式学习阶段。"
+             "开始学习"
+             #(rf/dispatch [:go-step 1])]}
+   ;反馈学习 - 正式 TODO
    {:type   :problem
     :widget [problem #_{:body         "求解 2^32 的值。"
                         :answers      [100 200 300 400]
@@ -292,12 +350,70 @@
               :show-twice              true
               :show-twice-first-hint   true
               :show-twice-next-explain true}]}
+   ;问卷和测验 - 指导语
    {:type   :hint
-    :widget [hint "请完成后测问卷" "请点击“开始作答”并完成问卷2" "开始作答"]}
+    :widget [hint ""
+             "接下来进入问卷和知识测验阶段。"
+             "开始作答"
+             #(rf/dispatch [:go-step 1])]}
+   ;问卷正文
    {:type   :questionnaire
     :widget [questionnaire-1 4 "后测问卷"]}
+   ;后测正文 TODO
+   ;数据上传
    {:type   :upload
     :widget [upload "上传数据" "正在上传数据，请勿关闭此页面！"]}])
+
+(defn simple-question
+  [id image right-answer]
+  [:div {:style {:margin-top :10em
+                 :background "rgb(249, 249, 249)"}}
+   (if @is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
+                  [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
+                  [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
+   (r/with-let
+     [answer (r/atom nil)]
+     [:div {:style {:text-align "center"}}
+      [:img {:src image}]
+      [:p.mt-4
+       [:label.radio.mr-4 {:on-click #(reset! answer :A) :style {:font-size :2em}}
+        [:input {:type "radio" :name (str "q" 1)
+                 :checked (= :A @answer)
+                 :style {:width :2em :height :2em}}] " A"]
+       [:label.radio.mr-4
+        {:on-click #(reset! answer :B) :style {:font-size :2em}}
+        [:input {:type "radio" :name (str "q" 1)
+                 :checked (= :B @answer)
+                 :style {:width :2em :height :2em}}] " B"]
+       [:label.radio.mr-4
+        {:on-click #(reset! answer :C) :style {:font-size :2em}}
+        [:input {:type "radio" :name (str "q" 1)
+                 :checked (= :C @answer)
+                 :style {:width :2em :height :2em}}] " C"]
+       [:label.radio.mr-4
+        {:on-click #(reset! answer :D) :style {:font-size :2em}}
+        [:input {:type "radio" :name (str "q" 1)
+                 :checked (= :D @answer)
+                 :style {:width :2em :height :2em}}] " D"]]
+      [:button.button.is-info.is-medium
+       {:style {:min-width :10em :margin-top :5em}
+        :on-click (fn [_]
+                    (if (nil? @answer)
+                      (js/alert "请选择选项后再继续！")
+                      (do (rf/dispatch [:save-answer [id {:image image
+                                                          :answer @answer
+                                                          :right-answer right-answer}]])
+                          (reset! answer nil)
+                          (rf/dispatch [:go-step 1]))))}
+       "下一题"]])])
+
+(def fake-data
+  [{:type   :collect
+    :widget [simple-question (str "前测知识" 1)
+             "https://static2.mazhangjing.com/cyber/202209/69f036b7_图片.png" :A]}
+   {:type   :collect
+    :widget [simple-question (str "前测知识" 2)
+             "https://static2.mazhangjing.com/cyber/202209/0ccd2cea_图片.png" :B]}])
 
 (defn root []
   [:div {:style {:position :absolute :top :0px :left :0px :right :0px :bottom :0px :background :#f9f9f9}}
