@@ -174,7 +174,7 @@
                      :controllers [{:parameters {:query [:debug]}
                                     :start      (fn [{{debug :debug} :query}]
                                                   (if (= "true" debug)
-                                                    (reset! cyberme.psych.exp1.main/is-debug true))
+                                                    (reset! cyberme.psych.widget/is-debug true))
                                                   (rf/dispatch [:clean-all-answer])
                                                   (when-let [params (parse-params)]
                                                     (println params)

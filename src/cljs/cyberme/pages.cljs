@@ -14,7 +14,7 @@
     [cyberme.dashboard.core :as dashboard]
     [cyberme.dashboard.plan :as plan]
     [cyberme.file :as file]
-    [cyberme.psych.exp1.main :as exp1]
+    [cyberme.psych.main :as exp]
     [clojure.string :as string]))
 
 (defn top-point []
@@ -284,4 +284,4 @@
 (defn psy-exp-page []
   [:<>
    [top-point]
-   [exp1/root]])
+   [exp/root]])
