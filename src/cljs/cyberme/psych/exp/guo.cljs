@@ -107,7 +107,7 @@
                :right-answer right-answer
                :step2-each   [step2cond1 step2cond2 step2cond3]}]}))
 
-(defn data-1 []
+(defn data []
   (let [skip-front (= "true" (w/get-config :skip-front))
         exp-cond (case (w/get-config :exp-cond) "1" 1 "2" 2 "3" 3 "4" 4 1)]
     (filterv
@@ -168,15 +168,3 @@
          ;上传数据页面
          {:type   :upload
           :widget [w/upload "上传数据" "正在上传数据，请勿关闭此页面！"]}]))))
-
-(defn data []
-  [;后测情绪量表
-   (d/emotion-questions-guo-2)
-   ;后测控制感量表
-   (d/control-questions)
-   ;后测自主感量表
-   (d/liberty-questions)
-   ;后测动机量表
-   (d/motivation-questions-guo)
-   ;认知负荷量表
-   (d/control-questions)])
