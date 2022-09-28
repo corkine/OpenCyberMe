@@ -341,9 +341,13 @@
                           (go-next))))}
        "下一题"]])])
 
-(defn questionnaire [{:keys [id leading answers questions
-                             number-each-answer word-no-break
-                             content-style]}]
+(defn questionnaire
+  "返回的数据以 id 为 key，value 为 k-v 列表，其中 k 为每个题目编号（从 1 开始），v 为答案。
+  如果 answers 为数字，则返回答案 v 为每个题目的 answer 数字，
+  如果 answers 非数字，则返回答案 v 为每个题目的 answers 位置（从 1 开始），"
+  [{:keys [id leading answers questions
+           number-each-answer word-no-break
+           content-style]}]
   [:div {:style {:margin-top :10em
                  :background "white"}}
    (if @is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
@@ -351,50 +355,60 @@
                   [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
    (r/with-let
      [answer (r/atom {})]
-     [:div.is-flex.is-justify-content-center.is-flex-direction-column
-      [:div {:style {:max-width :75em :align-self :center}}
-       (when leading [:p.mb-2 leading])
-       [:table.table.is-hoverable
-        [:thead {:style (if word-no-break
-                          {:text-align :center :word-break :keep-all}
-                          {:text-align :center})}
-         (into [:tr [:th ""]] (mapv (fn [item] [:th item]) answers))]
-        [:tbody
-         (doall
-           (for [index (range 1 (+ (count questions) 1))]
-             ^{:key index}
-             [:<>
-              (into
-                [:tr [:td
-                      {:style (if content-style content-style {})}
-                      (get questions (- index 1) "空")]]
-                (mapv
-                  (fn [each]
-                    [:td {:style {:text-align :center}}
-                     [:label.radio
-                      {:style    (if word-no-break {:word-break :keep-all} {})}
-                      [:input {:type "radio"
-                               :name (str "q" index)
-                               :checked  (= (get @answer index -1) each)
-                               :on-change #(swap! answer assoc index each)}]
-                      (str " " (if number-each-answer (+ (-indexOf answers each) 1) each))]])
-                  answers))]))]]]
-      [:div.is-flex.is-justify-content-center
-       [:button.button.is-info.is-large.is-fullwidth
-        {:style    {:margin-top :100px :margin-bottom :100px
-                    :max-width  :30em}
-         :on-click (fn []
-                     (println @answer)
-                     (if (< (count @answer) (count questions))
-                       (js/alert "请完成所有题目后再提交！")
-                       (do
-                         (reset! answer {})
-                         (rf/dispatch [:save-answer [id @answer]])
-                         (rf/dispatch [:go-step 1]))))}
-        "完成问卷"]]])])
+     (let [questions (if @is-debug (vec (take 2 questions)) questions)]
+       [:div.is-flex.is-justify-content-center.is-flex-direction-column
+        [:div {:style {:max-width :75em :align-self :center}}
+         (when leading [:p.mb-2 leading])
+         [:table.table.is-hoverable
+          [:thead {:style (if word-no-break
+                            {:text-align :center :word-break :keep-all}
+                            {:text-align :center})}
+           (into [:tr [:th ""]] (mapv (fn [item] [:th item]) answers))]
+          [:tbody
+           (doall
+             (for [index (range 1 (+ (count questions) 1))]
+               ^{:key index}
+               [:<>
+                (into
+                  [:tr [:td
+                        {:style (if content-style content-style {})}
+                        (get questions (- index 1) "空")]]
+                  (mapv
+                    (fn [each]
+                      [:td {:style {:text-align :center}}
+                       [:label.radio
+                        {:style (if word-no-break {:word-break :keep-all} {})}
+                        [:input {:type      "radio"
+                                 :name      (str "q" index)
+                                 :checked   (= (get @answer index -1) each)
+                                 :on-change #(swap! answer assoc index each)}]
+                        (str " " (if number-each-answer (+ (-indexOf answers each) 1) each))]])
+                    answers))]))]]]
+        [:div.is-flex.is-justify-content-center
+         [:button.button.is-info.is-large.is-fullwidth
+          {:style    {:margin-top :100px :margin-bottom :100px
+                      :max-width  :30em}
+           :on-click (fn []
+                       (let []
+                         (if (< (count @answer) (count questions))
+                           (js/alert "请完成所有题目后再提交！")
+                           (let [num-answer
+                                 (into {}
+                                       (mapv (fn [[k v]] (if-not (number? v)
+                                                           [k (+ (-indexOf answers v) 1)]
+                                                           [k v]))
+                                             @answer))]
+                             (println @answer num-answer)
+                             (rf/dispatch [:save-answer [id num-answer]])
+                             (reset! answer {})
+                             (rf/dispatch [:go-step 1])))))}
+          "完成问卷"]]]))])
 
 (defn cong-questionnaire
-  "认知负荷问卷"
+  "认知负荷问卷
+  返回的数据以 id 为 key，value 为 k-v 列表，其中 k 为每个题目编号（从 1 开始），v 为答案。
+  如果 answers 为数字，则返回答案 v 为每个题目的 answer 数字，
+  如果 answers 非数字，则返回答案 v 为每个题目的 answers 位置（从 1 开始）"
   [{:keys [id leading answers questions]}]
   [:div {:style {:margin-top :10em
                  :background "white"}}
@@ -446,17 +460,25 @@
         {:style    {:margin-top :100px :margin-bottom :100px
                     :max-width  :30em}
          :on-click (fn []
-                     (println @answer)
                      (if (< (count @answer) (count questions))
                        (js/alert "请完成所有题目后再提交！")
-                       (do
-                         (rf/dispatch [:save-answer [id @answer]])
+                       (let [num-answer
+                             (into {}
+                                   (mapv (fn [[k v]] (if-not (number? v)
+                                                       [k (+ (-indexOf answers v) 1)]
+                                                       [k v]))
+                                         @answer))]
+                         (println @answer num-answer)
+                         (rf/dispatch [:save-answer [id num-answer]])
                          (reset! answer {})
                          (rf/dispatch [:go-step 1]))))}
         "完成问卷"]]])])
 
 (defn interest-questionnaire
-  "兴趣问卷"
+  "兴趣问卷
+  返回的数据以 id 为 key，value 为 k-v 列表，其中 k 为每个题目编号（从 1 开始），v 为答案。
+  如果 answers 为数字，则返回答案 v 为每个题目的 answer 数字，
+  如果 answers 非数字，则返回答案 v 为每个题目的 answers 位置（从 1 开始），"
   [{:keys [id leading answers questions]}]
   [:div {:style {:margin-top :10em
                  :background "white"}}
@@ -494,18 +516,23 @@
         {:style    {:margin-top :100px :margin-bottom :100px
                     :max-width  :30em}
          :on-click (fn []
-                     (println @answer)
                      (if (< (count @answer) (count questions))
                        (js/alert "请完成所有题目后再提交！")
-                       (do
-                         (rf/dispatch [:save-answer [id @answer]])
+                       (let [num-answer
+                             (into {}
+                                   (mapv (fn [[k v]] (if-not (number? v)
+                                                       [k (+ (-indexOf answers v) 1)]
+                                                       [k v]))
+                                         @answer))]
+                         (println @answer num-answer)
+                         (rf/dispatch [:save-answer [id num-answer]])
                          (reset! answer {})
                          (rf/dispatch [:go-step 1]))))}
         "完成问卷"]]])])
 
 (defn problem-guo
   "展示题目，被试做出选择根据实验条件给与提示"
-  [{:keys [step-1 step-2 right-answer exp-cond is-demo demo-step2-hint demo-step3-hint]}]
+  [{:keys [id step-1 step-2 right-answer exp-cond is-demo demo-step2-hint demo-step3-hint]}]
   (r/with-let
     [answer (r/atom nil)]
     [:div {:style {:margin "10% auto"}}
@@ -557,12 +584,19 @@
                    :style {:align-self :center :max-width :25em}}])
           [:button.button.is-info.is-large
            {:style    {:align-self :center :max-width :25em}
-            :on-click #(do (reset! answer nil)
-                           (go-next))} "下一题"]]])]]))
+            :on-click #(do
+                         (when-not is-demo
+                           (rf/dispatch [:save-answer
+                                         [id {:right-answer right-answer
+                                              :user-answer  @answer
+                                              :exp-cond     exp-cond
+                                              :record-time  (.getTime (js/Date.))}]]))
+                         (reset! answer nil)
+                         (go-next))} "下一题"]]])]]))
 
 (defn problem-cond4-guo
   "展示题目，被试做出选择根据实验条件给与提示"
-  [{:keys [step-1 step2-each right-answer
+  [{:keys [id step-1 step2-each right-answer
            is-demo demo-step2-hint-left demo-step2-hint-right demo-step3-hint]}]
   (r/with-let
     [answer (r/atom nil)
@@ -654,18 +688,24 @@
                      :style {:align-self :center :max-width :25em}}]
               [:button.button.is-info.is-large
                {:style    {:align-self :center :max-width :25em}
-                :on-click (do (reset! answer nil)
-                              (reset! select-style -1)
-                              (reset! selected-style #{-1})
-                              (go-next))} "下一题"]])
+                :on-click #(do (reset! answer nil)
+                               (reset! select-style -1)
+                               (reset! selected-style #{-1})
+                               (go-next))} "下一题"]])
            (if-not (= -1 @select-style)
              [:div {:style {:display "flex" :flex-direction "column" :margin-top "20px"}}
               [:button.button.is-info.is-large
                {:style    {:align-self :center :max-width :25em}
-                :on-click (do (reset! answer nil)
-                              (reset! select-style -1)
-                              (reset! selected-style #{-1})
-                              (go-next))} "下一题"]]))])]]))
+                :on-click #(do (rf/dispatch
+                                 [:save-answer [id {:right-answer right-answer
+                                                    :user-answer  @answer
+                                                    :select-cond  (+ @select-style 1)
+                                                    :exp-cond     4
+                                                    :record-time  (.getTime (js/Date.))}]])
+                               (reset! answer nil)
+                               (reset! select-style -1)
+                               (reset! selected-style #{-1})
+                               (go-next))} "下一题"]]))])]]))
 
 (rf/reg-event-db
   :go-to

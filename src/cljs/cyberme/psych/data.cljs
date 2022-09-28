@@ -10,16 +10,18 @@
       {:type   :knowledge
        :widget [w/simple-question (str "前测知识" id)
                 (second (re-find #"!\[\]\((.*?)\)" url)) right]})
-    [[1 "![](https://static2.mazhangjing.com/cyber/202209/016fdea5_图片.png)" :A]
-     [2 "![](https://static2.mazhangjing.com/cyber/202209/0824dc8b_图片.png)" :D]
-     [3 "![](https://static2.mazhangjing.com/cyber/202209/3495fa4c_图片.png)" :A]
-     [4 "![](https://static2.mazhangjing.com/cyber/202209/a3e19dd2_图片.png)" :B]
-     [5 "![](https://static2.mazhangjing.com/cyber/202209/cc853f27_图片.png)" :C]
-     [6 "![](https://static2.mazhangjing.com/cyber/202209/f9debc7b_图片.png)" :D]
-     [7 "![](https://static2.mazhangjing.com/cyber/202209/e7e3b888_图片.png)" :B]
-     [8 "![](https://static2.mazhangjing.com/cyber/202209/5357057f_图片.png)" :D]
-     [9 "![](https://static2.mazhangjing.com/cyber/202209/24ec77c6_图片.png)" :C]
-     [10 "![](https://static2.mazhangjing.com/cyber/202209/017ba4b1_图片.png)" :A]]))
+    (let [data
+          [[1 "![](https://static2.mazhangjing.com/cyber/202209/016fdea5_图片.png)" :A]
+           [2 "![](https://static2.mazhangjing.com/cyber/202209/0824dc8b_图片.png)" :D]
+           [3 "![](https://static2.mazhangjing.com/cyber/202209/3495fa4c_图片.png)" :A]
+           [4 "![](https://static2.mazhangjing.com/cyber/202209/a3e19dd2_图片.png)" :B]
+           [5 "![](https://static2.mazhangjing.com/cyber/202209/cc853f27_图片.png)" :C]
+           [6 "![](https://static2.mazhangjing.com/cyber/202209/f9debc7b_图片.png)" :D]
+           [7 "![](https://static2.mazhangjing.com/cyber/202209/e7e3b888_图片.png)" :B]
+           [8 "![](https://static2.mazhangjing.com/cyber/202209/5357057f_图片.png)" :D]
+           [9 "![](https://static2.mazhangjing.com/cyber/202209/24ec77c6_图片.png)" :C]
+           [10 "![](https://static2.mazhangjing.com/cyber/202209/017ba4b1_图片.png)" :A]]]
+      (if @w/is-debug (vec (take 2 data)) data))))
 
 (defn back-questions []
   (mapv
@@ -27,16 +29,18 @@
       {:type   :knowledge
        :widget [w/simple-question (str "后测知识" id)
                 (second (re-find #"!\[\]\((.*?)\)" url)) right]})
-    [[1 "![](https://static2.mazhangjing.com/cyber/202209/47601869_图片.png)" :A]
-     [2 "![](https://static2.mazhangjing.com/cyber/202209/bb60e394_图片.png)" :B]
-     [3 "![](https://static2.mazhangjing.com/cyber/202209/836c5026_图片.png)" :A]
-     [4 "![](https://static2.mazhangjing.com/cyber/202209/58ec2289_图片.png)" :D]
-     [5 "![](https://static2.mazhangjing.com/cyber/202209/e039b34e_图片.png)" :D]
-     [6 "![](https://static2.mazhangjing.com/cyber/202209/398ceff0_图片.png)" :C]
-     [7 "![](https://static2.mazhangjing.com/cyber/202209/47ee7600_图片.png)" :A]
-     [8 "![](https://static2.mazhangjing.com/cyber/202209/577e3809_图片.png)" :B]
-     [9 "![](https://static2.mazhangjing.com/cyber/202209/b88099a3_图片.png)" :A]
-     [10 "![](https://static2.mazhangjing.com/cyber/202209/ea10e3e6_图片.png)" :D]]))
+    (let [data
+          [[1 "![](https://static2.mazhangjing.com/cyber/202209/47601869_图片.png)" :A]
+           [2 "![](https://static2.mazhangjing.com/cyber/202209/bb60e394_图片.png)" :B]
+           [3 "![](https://static2.mazhangjing.com/cyber/202209/836c5026_图片.png)" :A]
+           [4 "![](https://static2.mazhangjing.com/cyber/202209/58ec2289_图片.png)" :D]
+           [5 "![](https://static2.mazhangjing.com/cyber/202209/e039b34e_图片.png)" :D]
+           [6 "![](https://static2.mazhangjing.com/cyber/202209/398ceff0_图片.png)" :C]
+           [7 "![](https://static2.mazhangjing.com/cyber/202209/47ee7600_图片.png)" :A]
+           [8 "![](https://static2.mazhangjing.com/cyber/202209/577e3809_图片.png)" :B]
+           [9 "![](https://static2.mazhangjing.com/cyber/202209/b88099a3_图片.png)" :A]
+           [10 "![](https://static2.mazhangjing.com/cyber/202209/ea10e3e6_图片.png)" :D]]]
+      (if @w/is-debug (vec (take 2 data)) data))))
 
 (defn emotion-questions []
   {:type   :question
