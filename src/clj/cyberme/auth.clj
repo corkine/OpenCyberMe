@@ -116,6 +116,7 @@
 (defn is-allowed [{uri :uri}]
   (condp #(s/starts-with? %2 %1) uri
     "/cyber/dashboard/psych-data-upload" true
+    "/cyber/dashboard/psych-data-download" true
     false))
 
 (defn is-task-authed [req]

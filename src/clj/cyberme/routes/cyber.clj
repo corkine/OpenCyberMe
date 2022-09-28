@@ -182,11 +182,11 @@
                           (hr/response (todo/handle-recent query)))}}]
 
    ["/work-today"
-    {:get {:summary "获取当日的工作事项"
+    {:get {:summary     "获取当日的工作事项"
            :description "获取当日的工作事项"
            :parameters  {:query (s/keys :req-un []
                                         :opt-un [:global/user :global/secret])}
-           :handler (fn [_] (hr/response (todo/handle-work-today)))}}]])
+           :handler     (fn [_] (hr/response (todo/handle-work-today)))}}]])
 
 (def check-route
   ["/check"
@@ -546,12 +546,21 @@
             :description "上传实验数据，数据可能有重复。"
             :parameters  {:body any?}
             :handler     (fn [{{data :body} :parameters}]
-                           (hr/response (psych/add-log data)))}}]])
+                           (hr/response (psych/add-log data)))}}]
+
+   ["/psych-data-download/:exp-id"
+    {:get {:summary     "实验数据下载"
+           :description "下载实验数据，数据去重。"
+           :parameters  {:query (s/keys :opt-un [:global/user :global/secret :psych/day])
+                         :path {:exp-id string?}}
+           :handler     (fn [{{query :query path :path} :parameters}]
+                          (hr/response (psych/recent-log (merge path query))))}}]])
 
 (s/def :diary/id int?)
 (s/def :diary/date string?)
 (s/def :diary/from int?)
 (s/def :diary/to int?)
+(s/def :psych/day int?)
 
 (def diary-route
   [""
@@ -569,7 +578,7 @@
             from-year, to-year, from-month, to-month, year, month(过滤查询)
             origin, search, tag(搜索原始关键字和搜索关键字)"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                          :body any?}
+                          :body  any?}
             :handler     (fn [{{body :body} :parameters}]
                            (hr/response (diary/handle-diaries-query body)))}}]
    ["/diary-new"
@@ -583,12 +592,12 @@
    ["/diary"
     {:tags #{"我的日记"}}
     ["/by-date/:date"
-     {:get  {:summary     "获取某一日记"
-             :description "日记包括 title content info create_at update_at id 信息"
-             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                           :path  (s/keys :req-un [:diary/date])}
-             :handler     (fn [{{path :path} :parameters}]
-                            (hr/response (diary/handle-diary-by-day path)))}}]
+     {:get {:summary     "获取某一日记"
+            :description "日记包括 title content info create_at update_at id 信息"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :path  (s/keys :req-un [:diary/date])}
+            :handler     (fn [{{path :path} :parameters}]
+                           (hr/response (diary/handle-diary-by-day path)))}}]
     ["/by-id/:id"
      {:get  {:summary     "获取某一日记"
              :description "日记包括 title content info create_at update_at id 信息"
@@ -637,10 +646,10 @@
    {:tags #{"每周计划"}}
    ["/list-item"
     {:get {:summary     "列出本周计划项目"
-            :description "列出本周计划项目"
-            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
-            :handler     (fn [_]
-                           (hr/response (week/handle-get-week-plan)))}}]
+           :description "列出本周计划项目"
+           :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
+           :handler     (fn [_]
+                          (hr/response (week/handle-get-week-plan)))}}]
    ["/list-items"
     {:get {:summary     "列出指定时间范围的所有计划项目"
            :description "列出指定时间范围的所有计划项目，从本周起，向前 range-week 周, 数据格式 {:date :result}"
@@ -652,34 +661,34 @@
             :description "添加本周计划项目，需要传入至少 name, category,
             可选 description, progress, id，其中 category 为 learn/work/fitness/diet"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                          :body any?}
+                          :body  any?}
             :handler     (fn [{{body :body} :parameters}]
                            (hr/response (week/handle-add-week-plan-item body)))}}]
    ["/modify-item"
     {:post {:summary     "更新本周计划项目"
             :description "更新本周计划项目，需要传入 id，只能更新 name 和description, 可传入 date（可能为空）"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                          :body any?}
+                          :body  any?}
             :handler     (fn [{{body :body} :parameters}]
                            (hr/response (week/handle-modify-week-plan-item body)))}}]
    ["/delete-item/:item-id"
     {:post {:summary     "删除本周计划项目"
             :description "删除此项目和项目的每个记录，最后一条会同时删除记录行/本周计划"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                          :path {:item-id string?}}
+                          :path  {:item-id string?}}
             :handler     (fn [{{{:keys [item-id]} :path} :parameters}]
                            (hr/response (week/handle-delete-week-plan-item item-id)))}}]
    ["/update-item/:item-id/add-log"
     {:post {:summary     "更新本周计划项目：添加记录"
-           :description "更新本周计划项目：添加记录。
+            :description "更新本周计划项目：添加记录。
            其中 body 必须传入 progress-delta 项，可以有 name，description，id，update"
-           :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
-                         :path {:item-id string?}
-                         :body any?}
-           :handler     (fn [{{{:keys [item-id]} :path
-                               body :body} :parameters}]
-                          (hr/response (week/handle-add-week-plan-item-log
-                                         item-id body)))}}]
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :path  {:item-id string?}
+                          :body  any?}
+            :handler     (fn [{{{:keys [item-id]} :path
+                                body              :body} :parameters}]
+                           (hr/response (week/handle-add-week-plan-item-log
+                                          item-id body)))}}]
    ["/update-item/:item-id/remove-log/:log-id"
     {:post {:summary     "更新本周计划项目：删除记录"
             :description "更新本周计划项目：删除记录"
@@ -694,60 +703,60 @@
    {:swagger {:tags ["藏书服务"]}}
    ["/updating-with-calibre-db"
     {:post {:summary    "上传 Calibre 数据库"
-            :parameters {:multipart {:file multipart/temp-file-part
+            :parameters {:multipart {:file     multipart/temp-file-part
                                      :truncate boolean?}}
             :handler    (fn [{{{:keys [file truncate]} :multipart} :parameters}]
                           (let [{:keys [filename tempfile]} file]
                             (hr/response (book/handle-upload-file filename tempfile truncate))))}}]
    ["/search-author/:search"
-    {:get  {:summary     "搜索作者"
-            :description "根据作者进行书籍搜索"
-            :parameters  {:path {:search string?}}
-            :handler     (fn [{{{search :search} :path} :parameters}]
-                           (hr/response (book/handle-search :author search true)))}}]
+    {:get {:summary     "搜索作者"
+           :description "根据作者进行书籍搜索"
+           :parameters  {:path {:search string?}}
+           :handler     (fn [{{{search :search} :path} :parameters}]
+                          (hr/response (book/handle-search :author search true)))}}]
    ["/search-title/:search"
-    {:get  {:summary     "搜索书籍"
-            :description "根据书籍名称进行书籍搜索"
-            :parameters  {:path {:search string?}}
-            :handler     (fn [{{{search :search} :path} :parameters}]
-                           (hr/response (book/handle-search :title search true)))}}]
+    {:get {:summary     "搜索书籍"
+           :description "根据书籍名称进行书籍搜索"
+           :parameters  {:path {:search string?}}
+           :handler     (fn [{{{search :search} :path} :parameters}]
+                          (hr/response (book/handle-search :title search true)))}}]
    ["/search"
-    {:get  {:summary     "搜索书籍(综合)"
-            :description "根据书籍名称或作者进行书籍搜索"
-            ;see file_share.cljc
-            :parameters  {:query {:q string? :sort string?}}
-            :handler     (fn [{{{search :q sort :sort} :query} :parameters}]
-                           (hr/response (book/handle-search :unify search sort)))}}]])
+    {:get {:summary     "搜索书籍(综合)"
+           :description "根据书籍名称或作者进行书籍搜索"
+           ;see file_share.cljc
+           :parameters  {:query {:q string? :sort string?}}
+           :handler     (fn [{{{search :q sort :sort} :query} :parameters}]
+                          (hr/response (book/handle-search :unify search sort)))}}]])
 
 (def disks-route
   ["/disks"
    {:swagger {:tags ["文件服务"]}}
    ["/updating-disk-metadata"
     {:post {:summary    "上传磁盘文件元数据"
-            :parameters {:body {:truncate boolean?
-                                :files any?
+            :parameters {:body {:truncate    boolean?
+                                :files       any?
                                 :upload-info any?}}
             :handler    (fn [{{{:keys [files upload-info truncate]} :body} :parameters}]
                           (hr/response (disk/handle-upload files upload-info truncate)))}}]
    ["/search"
-    {:get  {:summary     "搜索文件(综合)"
-            :description "根据路径或名称进行文件搜索
+    {:get {:summary     "搜索文件(综合)"
+           :description "根据路径或名称进行文件搜索
             参数：q 查询关键词，sort 排序方法，kind 查找方式，size 过滤文件大小
             range-x 查找范围，range-y 查找磁盘 take 获取 drop 跳过"
-            ;see file_share.cljc
-            :parameters  {:query any?}
-            :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (disk/handle-search query)))}}]])
+           ;see file_share.cljc
+           :parameters  {:query any?}
+           :handler     (fn [{{query :query} :parameters}]
+                          (hr/response (disk/handle-search query)))}}]])
 
 (def short-route
   ["/short"
    {:swagger {:tags ["短链接服务"]}}
    ["/search/:id"
-    {:get  {:summary     "搜索短链接"
-            :description "查找短链接"
-            :parameters  {:path {:id string?}}
-            :handler     (fn [{{{id :id} :path} :parameters}]
-                           (hr/response (disk/handle-short-search id)))}}]])
+    {:get {:summary     "搜索短链接"
+           :description "查找短链接"
+           :parameters  {:path {:id string?}}
+           :handler     (fn [{{{id :id} :path} :parameters}]
+                          (hr/response (disk/handle-short-search id)))}}]])
 
 (defn cyber-routes []
   (conj

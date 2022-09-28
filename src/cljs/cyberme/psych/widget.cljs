@@ -6,6 +6,8 @@
 
 (defonce is-debug (atom false))
 
+(defonce exp-id (atom nil))
+
 (defonce config (atom {}))
 
 (defn set-config!

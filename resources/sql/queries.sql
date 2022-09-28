@@ -6,7 +6,10 @@ limit 100;
 -- :name logs-between :? :*
 select *
 from logs
-where record_ts <= :end && logs.record_ts >= :start
+where record_ts <= :end and record_ts >= :start
+/*~ (if (:api params) */
+and logs.api ~* :api
+/*~*/
 order by record_ts desc;
 -- :name api-logs :? :*
 select *

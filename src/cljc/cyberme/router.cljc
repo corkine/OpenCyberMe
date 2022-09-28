@@ -170,16 +170,25 @@
 
    ["/psych-exp"
     (merge {:name :psych-exp}
-           #?(:cljs {:view        #'core/psy-exp-page
-                     :controllers [{:parameters {:query [:debug]}
-                                    :start      (fn [{{debug :debug} :query}]
+           #?(:cljs {:view #'core/psy-exp-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local]))}]}))]
+
+   ["/psych-exp/id/:exp-id"
+    (merge {:name :psych-exp-details}
+           #?(:cljs {:view        #'core/psy-exp-detail-page
+                     :controllers [{:parameters {:path [:exp-id] :query [:debug]}
+                                    :start      (fn [{{debug :debug}   :query
+                                                      {exp-id :exp-id} :path}]
                                                   (if (= "true" debug)
                                                     (reset! cyberme.psych.widget/is-debug true))
+                                                  (reset! cyberme.psych.widget/exp-id exp-id)
                                                   (rf/dispatch [:clean-all-answer])
                                                   (when-let [params (parse-params)]
                                                     #_(println params)
-                                                    (cyberme.psych.widget/set-config! params)
-                                                    (rf/dispatch [:save-answer ["标记数据" params]]))
+                                                    (let [merged-params (merge {:exp-id exp-id} params)]
+                                                      (cyberme.psych.widget/set-config! merged-params)
+                                                      (rf/dispatch [:save-answer ["标记数据" merged-params]])))
                                                   (rf/dispatch [:user/fetch-from-local]))}]}))]
 
    ["/cook"

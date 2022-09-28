@@ -284,4 +284,15 @@
 (defn psy-exp-page []
   [:<>
    [top-point]
+   [:div.hero.is-info.is-fullheight
+    [:div.hero-body {:style {:flex-direction :column
+                                            :align-content :center
+                                            :justify-content :center}}
+     [:span.title.mr-5.ml-5.mb-6.is-family-code "CyberMe Psychology System"]
+     [:span.subtitle.mb-3.has-text-weight-bold "高效 · 专业 · 易用"]
+     [:span.subtitle.mb-3.is-size-6.is-capitalized "实验设计联系：corkine@outlook.com"]]]])
+
+(defn psy-exp-detail-page []
+  [:<>
+   [top-point]
    [exp/root]])
