@@ -320,7 +320,8 @@
           :widget [w/hint ""
                    "练习部分结束，进入正式学习阶段。"
                    "开始学习"
-                   w/go-next]}
+                   #(do (w/go-next)
+                        (rf/dispatch [:save-answer ["开始时间" (.getTime (js/Date.))]]))]}
          ;反馈学习 - 正式
          (mapv #(problem exp-cond %) (problem-data))
          ;问卷和测验 - 指导语

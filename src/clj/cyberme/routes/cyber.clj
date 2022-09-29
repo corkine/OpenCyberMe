@@ -551,16 +551,22 @@
    ["/psych-data-download/:exp-id"
     {:get {:summary     "实验数据下载"
            :description "下载实验数据，数据去重。"
-           :parameters  {:query (s/keys :opt-un [:global/user :global/secret :psych/day])
+           :parameters  {:query (s/keys :opt-un [:global/user :global/secret :psych/day
+                                                 :psych/plain-text])
                          :path {:exp-id string?}}
            :handler     (fn [{{query :query path :path} :parameters}]
-                          (hr/response (psych/recent-log (merge path query))))}}]])
+                          (if-not (:plain-text query)
+                            (hr/response (psych/recent-log (merge path query)))
+                            (hr/content-type
+                              (hr/response (psych/recent-log-plain (merge path query)))
+                              "text/plain")))}}]])
 
 (s/def :diary/id int?)
 (s/def :diary/date string?)
 (s/def :diary/from int?)
 (s/def :diary/to int?)
 (s/def :psych/day int?)
+(s/def :psych/plain-text boolean?)
 
 (def diary-route
   [""
