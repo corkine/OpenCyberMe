@@ -53,7 +53,8 @@
                {:on-click (fn [_]
                             (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
                             (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
-               [:pre {:style {:height "100%"}}
+               [:pre {:style {:height "100%"
+                              :white-space "pre-wrap" :word-wrap "break-word"}}
                 [:i.fa.fa-quote-right {:style       {:float     "right"
                                                      :font-size "5em"
                                                      :opacity   "0.04"}
@@ -62,7 +63,8 @@
             (if (empty? logs)
               [:<>]
               [:div.column
-               [:pre {:style {:padding-bottom :10px :height "100%"}}
+               [:pre {:style {:padding-bottom :10px :height "100%"
+                              :white-space "pre-wrap" :word-wrap "break-word"}}
                 #_[:i.fa.fa-file-o {:style       {:float     "right"
                                                   :font-size "5em"
                                                   :opacity   "0.04"}
