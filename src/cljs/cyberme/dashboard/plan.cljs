@@ -79,6 +79,7 @@
                     [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]]
                    (when description
                      [:pre {:style {:padding "0em 0 0 2em"
-                                    :opacity "0.5"}}
+                                    :opacity "0.5"
+                                    :white-space "pre-wrap" :word-wrap "break-word"}}
                       [:span.is-text-grey description]])])]])]])]))
    [:div {:style {:margin-bottom "100px"}}]])
