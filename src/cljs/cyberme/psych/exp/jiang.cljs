@@ -21,6 +21,7 @@
     (let [in-cond-12 (or (= exp-cond 1) (= exp-cond 2))
           have-answer? (not (nil? @answer))
           answer-right? (= right-answer @answer)
+          first-answer-right? (= right-answer @first-answer)
           is-second? @is-second
           second-wrong? (and is-second? have-answer? (not answer-right?))
           second-right? (and is-second? have-answer? answer-right?)
@@ -43,28 +44,28 @@
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :A @answer)
-                   :disabled freeze-choose?
+                   :disabled  freeze-choose?
                    :on-change #(do (reset! answer :A)
                                    (when-not is-second? (reset! first-answer :A)))
                    :style     {:width :2em :height :2em}}] " A"]
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :B @answer)
-                   :disabled freeze-choose?
+                   :disabled  freeze-choose?
                    :on-change #(do (reset! answer :B)
                                    (when-not is-second? (reset! first-answer :B)))
                    :style     {:width :2em :height :2em}}] " B"]
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :C @answer)
-                   :disabled freeze-choose?
+                   :disabled  freeze-choose?
                    :on-change #(do (reset! answer :C)
                                    (when-not is-second? (reset! first-answer :C)))
                    :style     {:width :2em :height :2em}}] " C"]
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :D @answer)
-                   :disabled freeze-choose?
+                   :disabled  freeze-choose?
                    :on-change #(do (reset! answer :D)
                                    (when-not is-second? (reset! first-answer :D)))
                    :style     {:width :2em :height :2em}}] " D"]]
@@ -79,25 +80,51 @@
                           :max-width           "40em"
                           :margin              "auto"}} "↑↑↑ 请依次点击 A、B、C、D 四个按钮，感受
              不同作答选项时的效果。 ↑↑↑"])
-           (if answer-right?
-             [:div.mt-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
-             [:div.mt-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
+           (if first-answer-right?
+             [:div.my-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
+             [:div.my-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
            (when (or (not answer-right?) second-right?)
              (case exp-cond
                1 [:div
                   [:p {:style {:font-size "1.3em"}} "以下是你可能出错的原因，请尝试纠正并再次作答。"]
-                  [:div {:style {:border "2px solid" :display "inline-block"}}
-                   [:img {:src   (let [ans @first-answer]
-                                   (cond (= :A ans) feedback-a (= :B ans) feedback-b
-                                         (= :C ans) feedback-c (= :D ans) feedback-d))
-                          :style {:display "block" :max-width :50em :margin "0 auto"}}]
+                  [:img {:src   (let [ans @first-answer]
+                                  (cond (= :A ans) feedback-a (= :B ans) feedback-b
+                                        (= :C ans) feedback-c (= :D ans) feedback-d))
+                         :style {:display "block" :max-width :50em
+                                 :margin "0 auto" :border "2px solid"}}]
+                  [:div
+                   (if is-second?
+                     [:button.button.is-info.is-large
+                      {:style    {:display :block
+                                  :margin "20px auto 0 auto"
+                                  :align-self :center
+                                  :max-width :25em}
+                       :on-click #(js/alert "请选择答案！")} "再答一次"])
                    (when show-details?
-                     [:img {:src   explain
-                            :style {:display "block" :max-width :50em :margin "40px auto 0 auto"}}])]]
-               2 [:div (if show-details? {:style {:border "2px solid" :display "inline-block"}} {})
-                  (when show-details?
+                     [:div.mt-5 {:style {:border "2px solid" :display "inline-block"}}
+                      (if answer-right?
+                        [:div.my-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
+                        [:div.my-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
+                      [:img {:src   explain
+                             :style {:display "block" :max-width :50em
+                                     :margin  "0 auto 0 auto"}}]])]]
+               2 [:div
+                  (if is-second?
+                    [:button.button.is-info.is-large
+                     {:style    {:display :block
+                                 :margin "20px auto 0 auto"
+                                 :align-self :center
+                                 :max-width :25em}
+                      :on-click #(js/alert "请选择答案！")} "再答一次"])
+                  (if show-details?
+                   [:div.mt-5 {:style {:border "2px solid" :display "inline-block"}}
+                    (if answer-right?
+                      [:div.my-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
+                      [:div.my-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
                     [:img {:src   explain
-                           :style {:margin-top "0px" :max-width :50em :align-self "center"}}])]
+                           :style {:display "block" :max-width :50em
+                                   :margin  "0 auto 0 auto"}}]]
+                   [:<> ])]
                3 [:div
                   {:style {:border "2px solid" :display "inline-block" :padding "10px"}}
                   [:p {:style {:margin-top :10px :font-size "1.3em" :font-weight :bold}} "错误线索："]
@@ -107,11 +134,13 @@
                          :style {:display "block" :max-width :50em :margin "0 auto"}}]
                   [:p {:style {:margin-top :40px :font-size "1.3em" :font-weight :bold}} "正确解答步骤："]
                   [:img {:src   explain
-                         :style {:display "block" :max-width :50em :margin "0px auto 0 auto"}}]]
+                         :style {:display "block" :max-width :50em
+                                 :margin  "0px auto 0 auto"}}]]
                4 [:div {:style {:border "2px solid" :display "inline-block"}}
-                  [:p {:style {:margin-top :10px :font-size "1.3em" :font-weight :bold}} "正确解答步骤："]
+                  [:p {:style {:margin-top  :10px :font-size "1.3em"
+                               :font-weight :bold}} "正确解答步骤："]
                   [:img {:src   explain
-                         :style {:margin-top "0px" :max-width :50em :align-self "center"}}]]))
+                         :style {:margin-top "0px" :max-width :50em}}]]))
            [:div {:style {:display "flex" :flex-direction "column" :margin-top "50px"}}
             ;当为实验条件 1 和 2 时，且被试回答过一次后，且回答错误时展示再答一次按钮
             ;此按钮当被试第二次回答后消失
@@ -129,11 +158,11 @@
                 :on-click #(do
                              (when-not is-demo
                                (rf/dispatch [:save-answer
-                                             [id {:right-answer right-answer
-                                                  :user-answer  @answer
+                                             [id {:right-answer      right-answer
+                                                  :user-answer       @answer
                                                   :user-first-answer @first-answer
-                                                  :exp-cond     exp-cond
-                                                  :record-time  (.getTime (js/Date.))}]]))
+                                                  :exp-cond          exp-cond
+                                                  :record-time       (.getTime (js/Date.))}]]))
                              (reset! answer nil)
                              (reset! is-second false)
                              (reset! first-answer nil)
