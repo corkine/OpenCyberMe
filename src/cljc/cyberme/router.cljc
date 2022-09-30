@@ -191,6 +191,24 @@
                                                       (rf/dispatch [:save-answer ["标记数据" merged-params]])))
                                                   (rf/dispatch [:user/fetch-from-local]))}]}))]
 
+   ["/psych-exp/gist/:gist-id"
+    (merge {:name :psych-exp-gist}
+           #?(:cljs {:view        #'core/psy-exp-detail-page
+                     :controllers [{:parameters {:path [:gist-id] :query [:debug]}
+                                    :start      (fn [{{debug :debug}   :query
+                                                      {gist-id :gist-id} :path}]
+                                                  (let [exp-id (str "gist-" gist-id)]
+                                                    (if (= "true" debug)
+                                                      (reset! cyberme.psych.widget/is-debug true))
+                                                    (reset! cyberme.psych.widget/exp-id exp-id)
+                                                    (rf/dispatch [:clean-all-answer])
+                                                    (when-let [params (parse-params)]
+                                                      #_(println params)
+                                                      (let [merged-params (merge {:exp-id exp-id} params)]
+                                                        (cyberme.psych.widget/set-config! merged-params)
+                                                        (rf/dispatch [:save-answer ["标记数据" merged-params]])))
+                                                    (rf/dispatch [:user/fetch-from-local])))}]}))]
+
    ["/cook"
     (merge {:name :cook}
            #?(:cljs {:view        #'core/cook-page
