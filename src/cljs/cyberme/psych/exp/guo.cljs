@@ -15,6 +15,10 @@
 ;条件 4 左右提示
 (def demo-hint-step2-left "https://static2.mazhangjing.com/cyber/202209/c3c8f495_图片.png")
 (def demo-hint-step2-right "https://static2.mazhangjing.com/cyber/202209/b6d237ab_图片.png")
+;条件 4 左下提示
+(def demo-cond1-step2-hint "https://static2.mazhangjing.com/cyber/202209/6fd81157_图片.png")
+(def demo-cond2-step2-hint "https://static2.mazhangjing.com/cyber/202209/0039021c_图片.png")
+(def demo-cond3-step2-hint "https://static2.mazhangjing.com/cyber/202209/b9b39eb8_图片.png")
 ;完成按钮提示
 (def demo-hint-step3 "https://static2.mazhangjing.com/cyber/202209/67593e8f_图片.png")
 
@@ -82,6 +86,7 @@
               {:step-1                demo-step1
                :right-answer          :B
                :step2-each            [demo-cond1-step2 demo-cond2-step2 demo-cond3-step2]
+               :step2-each-hint       [demo-cond1-step2-hint demo-cond2-step2-hint demo-cond3-step2-hint]
                :is-demo               true
                :demo-step2-hint-left  demo-hint-step2-left
                :demo-step2-hint-right demo-hint-step2-right

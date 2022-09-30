@@ -27,7 +27,7 @@
                   (hint "条件4练习")
                   (j/problem-demo 4)
                   (hint "条件1")
-                  (j/problem 4 data)
+                  (j/problem 1 data)
                   (hint "条件2")
                   (j/problem 2 data)
                   (hint "条件3")

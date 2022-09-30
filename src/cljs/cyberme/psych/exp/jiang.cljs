@@ -99,6 +99,7 @@
                                   :margin "20px auto 0 auto"
                                   :align-self :center
                                   :max-width :25em}
+                       :disabled "disabled"
                        :on-click #(js/alert "请选择答案！")} "再答一次"])
                    (when show-details?
                      [:div.mt-5 {:style {:border "2px solid" :display "inline-block"}}
@@ -115,6 +116,7 @@
                                  :margin "20px auto 0 auto"
                                  :align-self :center
                                  :max-width :25em}
+                      :disabled "disabled"
                       :on-click #(js/alert "请选择答案！")} "再答一次"])
                   (if show-details?
                    [:div.mt-5 {:style {:border "2px solid" :display "inline-block"}}

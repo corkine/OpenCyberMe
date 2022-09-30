@@ -598,7 +598,7 @@
 
 (defn problem-cond4-guo
   "展示题目，被试做出选择根据实验条件给与提示"
-  [{:keys [id step-1 step2-each right-answer
+  [{:keys [id step-1 step2-each step2-each-hint right-answer
            is-demo demo-step2-hint-left demo-step2-hint-right demo-step3-hint]}]
   (r/with-let
     [answer (r/atom nil)
@@ -634,8 +634,14 @@
            [:div.mt-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
            [:div.mt-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
          [:div.is-flex.is-justify-content-space-around
-          [:img {:src   demo-step2-hint-left
-                 :style {:margin-top "0px" :max-width :25em :align-self "start"}}]
+          (if is-demo
+            [:div {:style {:width "25em"}}
+             [:img {:src   demo-step2-hint-left
+                    :style {:margin-top "0px" :max-width :25em}}]
+             [:img {:src   (get step2-each-hint @select-style)
+                    :style {:margin-top "10px" :max-width :25em}}]]
+            [:img {:src   demo-step2-hint-left
+                   :style {:margin-top "0px" :max-width :25em :align-self "start" }}])
           [:div
            [:p {:style {:font-size :1.5em :margin "15px 0 10px 0"}} "请选择"]
            [:div.mb-3
