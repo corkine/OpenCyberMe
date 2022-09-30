@@ -38,7 +38,8 @@
         (= gist-id "guo-demo")
         (let [data (first (g/step23))]
           (vec (flatten
-                 [(hint "条件1练习")
+                 [
+                  (hint "条件1练习")
                   (g/problem-demo 1)
                   (hint "条件2练习")
                   (g/problem-demo 2)

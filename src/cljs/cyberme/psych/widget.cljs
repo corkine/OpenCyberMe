@@ -536,31 +536,43 @@
   "展示题目，被试做出选择根据实验条件给与提示"
   [{:keys [id step-1 step-2 right-answer exp-cond is-demo demo-step2-hint demo-step3-hint]}]
   (r/with-let
-    [answer (r/atom nil)]
+    [select (r/atom nil)
+     answer (r/atom nil)]
     [:div {:style {:margin "10% auto"}}
      [:div {:style {:text-align "center"}}
       [:img {:src step-1 :style {:max-width :50em}}]
       [:p.mt-4
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :A @answer)
-                 :on-change #(reset! answer :A)
+                 :checked   (= :A @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :A)
                  :style     {:width :2em :height :2em}}] " A"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :B @answer)
-                 :on-change #(reset! answer :B)
+                 :checked   (= :B @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :B)
                  :style     {:width :2em :height :2em}}] " B"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :C @answer)
-                 :on-change #(reset! answer :C)
+                 :checked   (= :C @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :C)
                  :style     {:width :2em :height :2em}}] " C"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :D @answer)
-                 :on-change #(reset! answer :D)
+                 :checked   (= :D @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :D)
                  :style     {:width :2em :height :2em}}] " D"]]
+      [:button.button.is-info.is-large.mt-5.mb-2
+       {:style    {:align-self :center :max-width :25em}
+        :disabled (when @answer "disabled")
+        :on-click #(do
+                     (if (nil? @select)
+                       (js/alert "请选择选项！")
+                       (reset! answer @select)))} "提交答案"]
       (when (not (nil? @answer))
         [:div
          (if (= @answer right-answer)
@@ -593,6 +605,7 @@
                                               :user-answer  @answer
                                               :exp-cond     exp-cond
                                               :record-time  (.getTime (js/Date.))}]]))
+                         (reset! select nil)
                          (reset! answer nil)
                          (go-next))} "下一题"]]])]]))
 
@@ -602,6 +615,7 @@
            is-demo demo-step2-hint-left demo-step2-hint-right demo-step3-hint]}]
   (r/with-let
     [answer (r/atom nil)
+     select (r/atom nil)
      select-style (r/atom -1)
      selected-style (r/atom #{-1})]
     [:div {:style {:margin "10% auto"}}
@@ -610,24 +624,35 @@
       [:p.mt-4
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :A @answer)
-                 :on-change #(reset! answer :A)
+                 :checked   (= :A @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :A)
                  :style     {:width :2em :height :2em}}] " A"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :B @answer)
-                 :on-change #(reset! answer :B)
+                 :checked   (= :B @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :B)
                  :style     {:width :2em :height :2em}}] " B"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :C @answer)
-                 :on-change #(reset! answer :C)
+                 :checked   (= :C @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :C)
                  :style     {:width :2em :height :2em}}] " C"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
-                 :checked   (= :D @answer)
-                 :on-change #(reset! answer :D)
+                 :checked   (= :D @select)
+                 :disabled (when @answer "disabled")
+                 :on-change #(reset! select :D)
                  :style     {:width :2em :height :2em}}] " D"]]
+      [:button.button.is-info.is-large.mt-5.mb-2
+       {:style    {:align-self :center :max-width :25em}
+        :disabled (when @answer "disabled")
+        :on-click #(do
+                     (if (nil? @select)
+                       (js/alert "请选择选项！")
+                       (reset! answer @select)))} "提交答案"]
       (when (not (nil? @answer))
         [:div
          (if (= @answer right-answer)
@@ -710,6 +735,7 @@
                                                     :select-cond  (+ @select-style 1)
                                                     :exp-cond     4
                                                     :record-time  (.getTime (js/Date.))}]])
+                               (reset! select nil)
                                (reset! answer nil)
                                (reset! select-style -1)
                                (reset! selected-style #{-1})
