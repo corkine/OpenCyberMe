@@ -23,6 +23,7 @@
           answer-right? (= right-answer @answer)
           is-second? @is-second
           second-wrong? (and is-second? have-answer? (not answer-right?))
+          second-right? (and is-second? have-answer? answer-right?)
           after-first-click? (or is-second? have-answer?)
           freeze-choose? (if is-demo false have-answer?)
           show-details? (and is-second? have-answer?)
@@ -81,29 +82,34 @@
            (if answer-right?
              [:div.mt-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
              [:div.mt-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
-           (when-not answer-right?
+           (when (or (not answer-right?) second-right?)
              (case exp-cond
-               1 [:div.is-flex.is-justify-content-center.is-flex-direction-column
+               1 [:div
                   [:p {:style {:font-size "1.3em"}} "以下是你可能出错的原因，请尝试纠正并再次作答。"]
-                  [:img {:src   (let [ans @first-answer]
-                                  (cond (= :A ans) feedback-a (= :B ans) feedback-b
-                                        (= :C ans) feedback-c (= :D ans) feedback-d))
-                         :style {:margin-top "0px" :max-width :50em :align-self "center"}}]
-                  (when show-details?
-                    [:img {:src   explain
-                           :style {:margin-top "15px" :max-width :50em :align-self "center"}}])]
-               2 [:div
+                  [:div {:style {:border "2px solid" :display "inline-block"}}
+                   [:img {:src   (let [ans @first-answer]
+                                   (cond (= :A ans) feedback-a (= :B ans) feedback-b
+                                         (= :C ans) feedback-c (= :D ans) feedback-d))
+                          :style {:display "block" :max-width :50em :margin "0 auto"}}]
+                   (when show-details?
+                     [:img {:src   explain
+                            :style {:display "block" :max-width :50em :margin "40px auto 0 auto"}}])]]
+               2 [:div (if show-details? {:style {:border "2px solid" :display "inline-block"}} {})
                   (when show-details?
                     [:img {:src   explain
                            :style {:margin-top "0px" :max-width :50em :align-self "center"}}])]
-               3 [:div.is-flex.is-justify-content-center.is-flex-direction-column
+               3 [:div
+                  {:style {:border "2px solid" :display "inline-block" :padding "10px"}}
+                  [:p {:style {:margin-top :10px :font-size "1.3em" :font-weight :bold}} "错误线索："]
                   [:img {:src   (let [ans @answer]
                                   (cond (= :A ans) feedback-a (= :B ans) feedback-b
                                         (= :C ans) feedback-c (= :D ans) feedback-d))
-                         :style {:margin-top "0px" :max-width :50em :align-self "center"}}]
+                         :style {:display "block" :max-width :50em :margin "0 auto"}}]
+                  [:p {:style {:margin-top :40px :font-size "1.3em" :font-weight :bold}} "正确解答步骤："]
                   [:img {:src   explain
-                         :style {:margin-top "15px" :max-width :50em :align-self "center"}}]]
-               4 [:div
+                         :style {:display "block" :max-width :50em :margin "0px auto 0 auto"}}]]
+               4 [:div {:style {:border "2px solid" :display "inline-block"}}
+                  [:p {:style {:margin-top :10px :font-size "1.3em" :font-weight :bold}} "正确解答步骤："]
                   [:img {:src   explain
                          :style {:margin-top "0px" :max-width :50em :align-self "center"}}]]))
            [:div {:style {:display "flex" :flex-direction "column" :margin-top "50px"}}

@@ -7,33 +7,57 @@
             [reagent.core :as r]
             [clojure.string :as str]))
 
+(defn hint
+  ([title msg]
+   {:type   :hint
+    :widget [w/hint title msg "开始" w/go-next]})
+  ([msg] (hint "" msg)))
+
 (defn gist-dispatch [gist-id]
   (cond (= gist-id "jiang-demo")
         (let [data (first (j/problem-data))]
           (vec (flatten
-                 [(j/problem-demo 1)
-                  (j/problem-demo 2)
-                  (j/problem-demo 3)
-                  (j/problem-demo 4)
-                  (j/problem 1 data)
+                 [
+                 ; (hint "条件1练习")
+                 ; (j/problem-demo 1)
+                 ; (hint "条件2练习")
+                 ; (j/problem-demo 2)
+                 ; (hint "条件3练习")
+                 ; (j/problem-demo 3)
+                 ; (hint "条件4练习")
+                 ; (j/problem-demo 4)
+                 ; (hint "条件1")
                   (j/problem 2 data)
-                  (j/problem 3 data)
-                  (j/problem 4 data)])))
+                 ; (hint "条件2")
+                 ; (j/problem 2 data)
+                 ; (hint "条件3")
+                 ; (j/problem 3 data)
+                 ; (hint "条件4")
+                 ; (j/problem 4 data)
+                 ])))
         (= gist-id "guo-demo")
         (let [data (first (g/step23))]
           (vec (flatten
-                 [(g/problem-demo 1)
+                 [(hint "条件1练习")
+                  (g/problem-demo 1)
+                  (hint "条件2练习")
                   (g/problem-demo 2)
+                  (hint "条件3练习")
                   (g/problem-demo 3)
+                  (hint "条件4练习")
                   (g/problem-demo 4)
+                  (hint "条件1")
                   (g/problem 1 data)
+                  (hint "条件2")
                   (g/problem 2 data)
+                  (hint "条件3")
                   (g/problem 3 data)
+                  (hint "条件4")
                   (g/problem 4 data)])))
         :else
         [{:type   :hint
           :widget [w/hint "CyberMe Psychology System"
-                   "欢迎使用实验系统 Gist，请选择要预览的 Gist。"]}]))
+                   "欢迎使用实验系统，请选择要进行的实验。"]}]))
 
 (defn data []
   (let [exp-id (or @w/exp-id "")
