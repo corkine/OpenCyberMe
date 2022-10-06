@@ -43,6 +43,33 @@
       [:button.button.is-info.mt-5
        {:on-click btn-action} btn-title])]))
 
+(defn hint-jiang
+  ([title sub-title]
+   (hint title sub-title nil nil))
+  ([title sub-title btn-title]
+   (hint title sub-title btn-title #(rf/dispatch [:go-step 1])))
+  ([title sub-title btn-title btn-action]
+   [:div {:style {:margin-top :20% :text-align :center}}
+    (if @is-debug
+      [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
+      [:p.title title])
+    (if @is-debug
+      [:p {:style                   {:margin    "auto"
+                                     :width     "50em"
+                                     :line-height "3rem"
+                                     :font-size "1.5rem"}
+           :on-click                #(rf/dispatch [:go-step -1])
+           :dangerouslySetInnerHTML {:__html sub-title}}]
+      [:p {:style                   {:margin    "auto"
+                                     :width     "50em"
+                                     :line-height "3rem"
+                                     :font-size "1.5rem"}
+           :dangerouslySetInnerHTML {:__html sub-title}}])
+    (if btn-title
+      [:button.button.is-info
+       {:style    {:margin-top "5rem"}
+        :on-click btn-action} btn-title])]))
+
 (defn upload []
   (r/create-class
     {:component-did-mount
@@ -112,9 +139,6 @@
          [:option "初中一年级"]
          [:option "初中二年级"]
          [:option "初中三年级"]
-         [:option "高中一年级"]
-         [:option "高中二年级"]
-         [:option "高中三年级"]
          [:option "其他"]]]]]
      [:div.field.is-horizontal
       [:div.field-label.is-normal
@@ -144,17 +168,22 @@
           {:style    {:margin-top :50px :margin-bottom :30px}
            :on-click (fn []
                        (println @answer)
-                       (let [is-ok (and @name
-                                        @age
-                                        @gender
-                                        @grade
-                                        @school)]
-                         (if is-ok
-                           (do
-                             (rf/dispatch [:save-answer ["被试收集" @answer]])
-                             (reset! answer {})
-                             (rf/dispatch [:go-step 1]))
-                           (js/alert "请完成表单！"))))}
+                       (cond (nil? (re-matches #"\d\d" (or @age "")))
+                             (js/alert "请输入正确的年龄，两位数字")
+                             (nil? (re-matches #"\d+" (or @school "")))
+                             (js/alert "请输入正确的学号，纯数字")
+                             :else
+                             (let [is-ok (and @name
+                                              @age
+                                              @gender
+                                              @grade
+                                              @school)]
+                               (if is-ok
+                                 (do
+                                   (rf/dispatch [:save-answer ["被试收集" @answer]])
+                                   (reset! answer {})
+                                   (rf/dispatch [:go-step 1]))
+                                 (js/alert "请完成表单！")))))}
           "确定"]]]]]]))
 
 (defn collect []
@@ -545,25 +574,25 @@
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :A @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :A)
                  :style     {:width :2em :height :2em}}] " A"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :B @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :B)
                  :style     {:width :2em :height :2em}}] " B"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :C @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :C)
                  :style     {:width :2em :height :2em}}] " C"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :D @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :D)
                  :style     {:width :2em :height :2em}}] " D"]]
       [:button.button.is-info.is-large.mt-5.mb-2
@@ -625,25 +654,25 @@
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :A @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :A)
                  :style     {:width :2em :height :2em}}] " A"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :B @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :B)
                  :style     {:width :2em :height :2em}}] " B"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :C @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :C)
                  :style     {:width :2em :height :2em}}] " C"]
        [:label.radio.mr-4 {:style {:font-size :2em}}
         [:input {:type      "radio" :name (str "q" 1)
                  :checked   (= :D @select)
-                 :disabled (when @answer "disabled")
+                 :disabled  (when @answer "disabled")
                  :on-change #(reset! select :D)
                  :style     {:width :2em :height :2em}}] " D"]]
       [:button.button.is-info.is-large.mt-5.mb-2
@@ -666,7 +695,7 @@
              [:img {:src   (get step2-each-hint @select-style)
                     :style {:margin-top "10px" :max-width :25em}}]]
             [:img {:src   demo-step2-hint-left
-                   :style {:margin-top "0px" :max-width :25em :align-self "start" }}])
+                   :style {:margin-top "0px" :max-width :25em :align-self "start"}}])
           [:div
            [:p {:style {:font-size :1.5em :margin "15px 0 10px 0"}} "请选择"]
            [:div.mb-3
