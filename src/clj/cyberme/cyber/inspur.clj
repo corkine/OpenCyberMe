@@ -121,7 +121,9 @@
                     :headers {"Cookie" (str "token=\"" token "\"")}}))
 
 (defn notice-expired-async []
-  (future (slack/notify "HCM Token 过期！" "SERVER")))
+  (if (let [now (.getHour (LocalTime/now))] (and (>= now 0) (<= now 5)))
+    (log/error "[HCM] HCM Token 过期，可能是系统正在维护")
+    (future (slack/notify "HCM Token 过期！" "SERVER"))))
 
 (defn get-hcm-info
   "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}"
