@@ -56,16 +56,16 @@
         [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
         [:p.title title]))
     (if @is-debug
-      [:p {:style                   {:margin    "auto"
-                                     :width     "50em"
+      [:p {:style                   {:margin      "auto"
+                                     :width       "50em"
                                      :line-height "3rem"
-                                     :font-size "1.5rem"}
+                                     :font-size   "1.5rem"}
            :on-click                #(rf/dispatch [:go-step -1])
            :dangerouslySetInnerHTML {:__html sub-title}}]
-      [:p {:style                   {:margin    "auto"
-                                     :width     "50em"
+      [:p {:style                   {:margin      "auto"
+                                     :width       "50em"
                                      :line-height "3rem"
-                                     :font-size "1.5rem"}
+                                     :font-size   "1.5rem"}
            :dangerouslySetInnerHTML {:__html sub-title}}])
     (if btn-title
       [:button.button.is-info
@@ -98,6 +98,27 @@
              {:on-click #(if data
                            (rf/dispatch [:psy-exp-data-upload (merge data {:upload_at (t/time-now)})]))}
              "重新上传数据"])]))}))
+
+(defn top-info [item-list current-index]
+  [:div {:style {:position :fixed :top 0 :left 0 :right 0}}
+   (let [each-width (/ 100 (count item-list))]
+     [:<>
+      (for [item item-list]
+        ^{:key item}
+        [:span {:style {:display "inline-block" :background-color
+                        (if (= current-index (.indexOf item-list item))
+                          "#1563cb" "#8eafd7") :color "white"
+                        :padding "5px 0 5px 20px" :width (str each-width "%")}}
+         item])])])
+
+(defn image [src]
+  [:<>
+   [:div [:img {:src src :style
+                {:display :block
+                 :margin  "5% auto 0 auto"}}]
+    [:button.button.is-info.mt-3
+     {:on-click #(go-next)
+      :style {:display "block" :margin "auto"}} "确定"]]])
 
 (defn collect-guo []
   (r/with-let

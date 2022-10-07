@@ -112,6 +112,12 @@
                :right-answer right-answer
                :step2-each   [step2cond1 step2cond2 step2cond3]}]}))
 
+(defn wrap-header [origin index]
+  {:type :wrapped
+   :widget [:<> [w/top-info ["1.学习前调查" "2.基础水平测验" "3.正式反馈学习"
+                             "4.学习后调查" "5.学习后测验"] (- index 1)]
+            (-> origin :widget)]})
+
 (defn data []
   (let [skip-front (= "true" (w/get-config :skip-front))
         exp-cond (case (w/get-config :exp-cond) "1" 1 "2" 2 "3" 3 "4" 4 1)]
@@ -119,57 +125,61 @@
       (comp not nil?)
       (flatten
         [;被试信息收集
-         {:type :collect :widget [w/collect-guo]}
+         {:type :intro
+          :widget
+          [w/image "https://static2.mazhangjing.com/cyber/202210/48432fdb_图片.png"]}
+         (wrap-header {:type :collect :widget [w/collect-guo]} 1)
          (when-not skip-front                               ;允许跳过前测量表和前测知识
            [;兴趣量表
-            (d/interest-questions)
+            (wrap-header (d/interest-questions) 1)
             ;元认知量表
-            (d/meta-cong-questions)
+            (wrap-header (d/meta-cong-questions) 1)
             ;前测知识指导语
-            {:type   :hint
-             :widget [w/hint ""
-                      "接下来我们要完成10道《二次根式》的选择题，以了解你在《二次根式》方面的基础水平如何。"
-                      "开始作答"
-                      w/go-next]}
+            {:type :intro
+             :widget
+             [w/image "https://static2.mazhangjing.com/cyber/202210/b0d840ac_图片.png"]}
             ;前测十道题
-            (d/front-questions)])
+            (mapv #(wrap-header % 2) (d/front-questions))])
+         ;情绪前测、练习和正文指导语
+         {:type :intro
+          :widget
+          [w/image "https://static2.mazhangjing.com/cyber/202210/7fafd7da_图片.png"]}
          ;前测情绪列表
-         (d/emotion-questions-guo)
-         ;练习指导语
-         {:type   :hint
-          :widget [w/hint ""
-                   "这是一个练习题目，不记录正误，帮助你了解作答的流程。" "开始练习" w/go-next]}
+         (wrap-header (d/emotion-questions-guo) 3)
          ;练习展示
-         (problem-demo exp-cond)
+         (wrap-header {:type   :hint
+                       :widget [w/hint-jiang ""
+                                "这是一个练习题目，不记录正误，帮助你了解作答的流程。" "开始练习" w/go-next]}
+                      3)
+         (wrap-header (problem-demo exp-cond) 3)
          ;正文指导语
-         {:type   :hint
-          :widget [w/hint "" "下面开始正式反馈学习。" "开始学习"
-                   #(do (w/go-next)
-                        (rf/dispatch [:save-answer ["开始时间" (.getTime (js/Date.))]]))]}
+         (wrap-header {:type   :hint
+                       :widget [w/hint-jiang "" "下面开始正式反馈学习。" "开始学习"
+                                #(do (w/go-next)
+                                     (rf/dispatch [:save-answer ["开始时间" (.getTime (js/Date.))]]))]}
+                      3)
          ;学习展示
-         (mapv #(problem exp-cond %) (step23))
+         (mapv #(wrap-header % 3) (mapv #(problem exp-cond %) (step23)))
          ;后测指导语
-         {:type   :hint
-          :widget [w/hint ""
-                   "恭喜你，学习完毕！接下来我们再完成一些问卷。" "开始作答" w/go-next]}
+         {:type :intro
+          :widget
+          [w/image "https://static2.mazhangjing.com/cyber/202210/5a80c004_图片.png"]}
          ;后测情绪量表
-         (d/emotion-questions-guo-2)
+         (wrap-header (d/emotion-questions-guo-2) 4)
          ;后测控制感量表
-         (d/control-questions)
+         (wrap-header (d/control-questions) 4)
          ;后测自主感量表
-         (d/liberty-questions)
+         (wrap-header (d/liberty-questions) 4)
          ;后测动机量表
-         (d/motivation-questions-guo)
+         (wrap-header (d/motivation-questions-guo) 4)
          ;认知负荷量表
-         (d/control-questions)
+         (wrap-header (d/control-questions) 4)
          ;迁移表现指导语
-         {:type   :hint
-          :widget [w/hint ""
-                   "最后我们再做10道选择题，测试一下你在刚刚的学习中进步了多少。"
-                   "开始作答"
-                   w/go-next]}
+         {:type :intro
+          :widget
+          [w/image "https://static2.mazhangjing.com/cyber/202210/399cb8e4_图片.png"]}
          ;后测十道题
-         (d/back-questions)
+         (mapv #(wrap-header % 5) (d/back-questions))
          ;上传数据页面
          {:type   :upload
-          :widget [w/upload "上传数据" "正在上传数据，请勿关闭此页面！"]}]))))
+          :widget [w/upload "学习和实验结束！" "感谢你的认真学习~"]}]))))
