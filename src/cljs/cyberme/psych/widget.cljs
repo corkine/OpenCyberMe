@@ -2,7 +2,8 @@
   (:require [reagent.core :as r]
             [re-frame.core :as rf]
             [cljs-time.core :as t]
-            [cyberme.util.request :refer [ajax-flow] :as req]))
+            [cyberme.util.request :refer [ajax-flow] :as req]
+            [clojure.string :as str]))
 
 (defonce is-debug (atom false))
 
@@ -49,10 +50,11 @@
   ([title sub-title btn-title]
    (hint title sub-title btn-title #(rf/dispatch [:go-step 1])))
   ([title sub-title btn-title btn-action]
-   [:div {:style {:margin-top :20% :text-align :center}}
-    (if @is-debug
-      [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
-      [:p.title title])
+   [:div {:style {:margin-top :15% :text-align :center}}
+    (when (not (or (nil? title) (str/blank? title)))
+      (if @is-debug
+        [:p.title {:on-click #(rf/dispatch [:go-step -1])} title]
+        [:p.title title]))
     (if @is-debug
       [:p {:style                   {:margin    "auto"
                                      :width     "50em"

@@ -13,6 +13,7 @@
     实验条件 3 简单提示 feedback + 详尽提示 explain
     实验条件 4 正确、错误说明 + 详尽提示 explain"
   [{:keys [id subject-url right-answer exp-cond is-demo
+           demo-hint demo-choose
            feedback-a feedback-b feedback-c feedback-d explain]}]
   (r/with-let
     [answer (r/atom nil)
@@ -27,6 +28,8 @@
           second-right? (and is-second? have-answer? answer-right?)
           after-first-click? (or is-second? have-answer?)
           freeze-choose? (if is-demo false have-answer?)
+          freeze-fn? (fn [now] (if is-demo (if (or (= demo-choose now)
+                                                   is-second?) false true) have-answer?))
           show-details? (and is-second? have-answer?)
           need-try-again? (and in-cond-12
                                have-answer?
@@ -37,49 +40,51 @@
                                (and have-answer? second-wrong?)))
                       (and (not in-cond-12)
                            have-answer?))]
-      [:div {:style {:margin "10% auto"}}
+      [:div {:style (if (and is-second? have-answer?)
+                      {:margin "1% auto"}
+                      {:margin "10% auto"})}
        [:div {:style {:text-align "center"}}
         [:img {:src subject-url :style {:max-width :50em}}]
         [:p.mt-4
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :A @answer)
-                   :disabled  freeze-choose?
+                   :disabled  (freeze-fn? "A")
                    :on-change #(do (reset! answer :A)
                                    (when-not is-second? (reset! first-answer :A)))
                    :style     {:width :2em :height :2em}}] " A"]
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :B @answer)
-                   :disabled  freeze-choose?
+                   :disabled  (freeze-fn? "B")
                    :on-change #(do (reset! answer :B)
                                    (when-not is-second? (reset! first-answer :B)))
                    :style     {:width :2em :height :2em}}] " B"]
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :C @answer)
-                   :disabled  freeze-choose?
+                   :disabled  (freeze-fn? "C")
                    :on-change #(do (reset! answer :C)
                                    (when-not is-second? (reset! first-answer :C)))
                    :style     {:width :2em :height :2em}}] " C"]
          [:label.radio.mr-4 {:style {:font-size :2em}}
           [:input {:type      "radio" :name (str "q" 1)
                    :checked   (= :D @answer)
-                   :disabled  freeze-choose?
+                   :disabled  (freeze-fn? "D")
                    :on-change #(do (reset! answer :D)
                                    (when-not is-second? (reset! first-answer :D)))
                    :style     {:width :2em :height :2em}}] " D"]]
+        (when is-demo
+          [:p {:style {:font-size           "1.3em"
+                       :background-color    "#ffffa1"
+                       :padding             "15px"
+                       :border              "2px black"
+                       :border-bottom-style "dashed"
+                       :max-width           "40em"
+                       :margin              "10px auto 0 auto"}}
+           demo-hint])
         (when after-first-click?
           [:div.mt-4
-           (if is-demo
-             [:p {:style {:font-size           "1.3em"
-                          :background-color    "#ffffa1"
-                          :padding             "15px"
-                          :border              "2px black"
-                          :border-bottom-style "dashed"
-                          :max-width           "40em"
-                          :margin              "auto"}} "↑↑↑ 请依次点击 A、B、C、D 四个按钮，感受
-             不同作答选项时的效果。 ↑↑↑"])
            (if first-answer-right?
              [:div.my-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
              [:div.my-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
@@ -91,14 +96,14 @@
                                   (cond (= :A ans) feedback-a (= :B ans) feedback-b
                                         (= :C ans) feedback-c (= :D ans) feedback-d))
                          :style {:display "block" :max-width :50em
-                                 :margin "0 auto" :border "2px solid"}}]
+                                 :margin  "0 auto" :border "2px solid"}}]
                   [:div
                    (if is-second?
                      [:button.button.is-info.is-large
-                      {:style    {:display :block
-                                  :margin "20px auto 0 auto"
+                      {:style    {:display    :block
+                                  :margin     "20px auto 0 auto"
                                   :align-self :center
-                                  :max-width :25em}
+                                  :max-width  :25em}
                        :disabled "disabled"
                        :on-click #(js/alert "请选择答案！")} "再答一次"])
                    (when show-details?
@@ -112,21 +117,21 @@
                2 [:div
                   (if is-second?
                     [:button.button.is-info.is-large
-                     {:style    {:display :block
-                                 :margin "20px auto 0 auto"
+                     {:style    {:display    :block
+                                 :margin     "20px auto 0 auto"
                                  :align-self :center
-                                 :max-width :25em}
+                                 :max-width  :25em}
                       :disabled "disabled"
                       :on-click #(js/alert "请选择答案！")} "再答一次"])
                   (if show-details?
-                   [:div.mt-5 {:style {:border "2px solid" :display "inline-block"}}
-                    (if answer-right?
-                      [:div.my-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
-                      [:div.my-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
-                    [:img {:src   explain
-                           :style {:display "block" :max-width :50em
-                                   :margin  "0 auto 0 auto"}}]]
-                   [:<> ])]
+                    [:div.mt-5 {:style {:border "2px solid" :display "inline-block"}}
+                     (if answer-right?
+                       [:div.my-3.has-text-success {:style {:font-size "1.3em"}} "回答正确"]
+                       [:div.my-3.has-text-danger {:style {:font-size "1.3em"}} "回答错误"])
+                     [:img {:src   explain
+                            :style {:display "block" :max-width :50em
+                                    :margin  "0 auto 0 auto"}}]]
+                    [:<>])]
                3 [:div
                   {:style {:border "2px solid" :display "inline-block" :padding "10px"}}
                   [:p {:style {:margin-top :10px :font-size "1.3em" :font-weight :bold}} "错误线索："]
@@ -155,7 +160,7 @@
                              (reset! is-second true))} "再答一次"])
             ;当被试在任意条件下回答完毕且正确，或处于实验 1 和 2 条件时第二次回答错误
             (when can-go?
-              [:button.button.is-info.is-large
+              [:button.button.is-info.is-large.mt-5
                {:style    {:align-self :center :max-width :25em}
                 :on-click #(do
                              (when-not is-demo
@@ -211,7 +216,7 @@
           "https://static2.mazhangjing.com/cyber/202209/6adeb132_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/f4633427_图片.png"
           :A
-          "https://static2.mazhangjing.com/cyber/202209/f22f967e_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/5b5ae9d4_图片.png"]
          [:q6
           "https://static2.mazhangjing.com/cyber/202209/2b0dae53_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/1ed5d881_图片.png"
@@ -262,6 +267,47 @@
               :exp-cond     exp-cond
               :subject-url  "https://static2.mazhangjing.com/cyber/202209/bc23d80a_图片.png"
               :right-answer :C
+              :demo-hint    "↑↑↑ 请选择 A，感受作答此选项时的效果。 ↑↑↑"
+              :demo-choose  "A"
+              :feedback-a   "https://static2.mazhangjing.com/cyber/202209/fb4bd730_图片.png"
+              :feedback-b   "https://static2.mazhangjing.com/cyber/202209/3804e62d_图片.png"
+              :feedback-d   "https://static2.mazhangjing.com/cyber/202209/dc4d565f_图片.png"
+              :explain      "https://static2.mazhangjing.com/cyber/202209/ff7f7af9_图片.png"}]}
+   {:type   :problem-demo
+    :widget [problem-jiang
+             {:id           "demo"
+              :is-demo      true
+              :exp-cond     exp-cond
+              :subject-url  "https://static2.mazhangjing.com/cyber/202209/bc23d80a_图片.png"
+              :right-answer :C
+              :demo-hint    "↑↑↑ 请选择 B，感受作答此选项时的效果。 ↑↑↑"
+              :demo-choose  "B"
+              :feedback-a   "https://static2.mazhangjing.com/cyber/202209/fb4bd730_图片.png"
+              :feedback-b   "https://static2.mazhangjing.com/cyber/202209/3804e62d_图片.png"
+              :feedback-d   "https://static2.mazhangjing.com/cyber/202209/dc4d565f_图片.png"
+              :explain      "https://static2.mazhangjing.com/cyber/202209/ff7f7af9_图片.png"}]}
+   {:type   :problem-demo
+    :widget [problem-jiang
+             {:id           "demo"
+              :is-demo      true
+              :exp-cond     exp-cond
+              :subject-url  "https://static2.mazhangjing.com/cyber/202209/bc23d80a_图片.png"
+              :right-answer :C
+              :demo-hint    "↑↑↑ 请选择 C，感受作答此选项时的效果。 ↑↑↑"
+              :demo-choose  "C"
+              :feedback-a   "https://static2.mazhangjing.com/cyber/202209/fb4bd730_图片.png"
+              :feedback-b   "https://static2.mazhangjing.com/cyber/202209/3804e62d_图片.png"
+              :feedback-d   "https://static2.mazhangjing.com/cyber/202209/dc4d565f_图片.png"
+              :explain      "https://static2.mazhangjing.com/cyber/202209/ff7f7af9_图片.png"}]}
+   {:type   :problem-demo
+    :widget [problem-jiang
+             {:id           "demo"
+              :is-demo      true
+              :exp-cond     exp-cond
+              :subject-url  "https://static2.mazhangjing.com/cyber/202209/bc23d80a_图片.png"
+              :right-answer :C
+              :demo-hint    "↑↑↑ 请选择 D，感受作答此选项时的效果。 ↑↑↑"
+              :demo-choose  "D"
               :feedback-a   "https://static2.mazhangjing.com/cyber/202209/fb4bd730_图片.png"
               :feedback-b   "https://static2.mazhangjing.com/cyber/202209/3804e62d_图片.png"
               :feedback-d   "https://static2.mazhangjing.com/cyber/202209/dc4d565f_图片.png"
@@ -295,7 +341,7 @@
           :widget [w/hint-jiang "欢迎参加心理学实验！"
                    "同学你好，欢迎进入《二次根式》学习系统。<br>
                     该系统的目的在于通过反馈学习来提高你对《二次根式》的掌握程度。<br>
-                    首先，为了测试你当前的知识水平，我们准备了10道题目。请认真作答。"
+                    <b>首先，为了测试你当前的知识水平，我们准备了10道题目。请认真作答。</b>"
                    "开始作答"
                    w/go-next]}
          ;前测知识 - 10 道题目
@@ -314,7 +360,7 @@
                          这一阶段会有10道题目，每答完一道，会有相应的反馈。<br>
                          若答错：会给与正确解答步骤。<br>
                          若答对：只显示“回答正确”。<br>
-                         我们准备了一道练习题，帮助你熟悉学习系统。"
+                         <b>我们准备了一道练习题，帮助你熟悉学习系统。</b>"
                          "开始练习"
                          w/go-next]}
                (= exp-cond 3)
@@ -325,7 +371,7 @@
                          这一阶段会有10道题目，每答完一道，会有相应的反馈。<br>
                          若答错：会给与错误线索和正确解答步骤。<br>
                          若答对：只显示“回答正确”。<br>
-                         我们准备了一道练习题，帮助你熟悉学习系统。"
+                         <b>我们准备了一道练习题，帮助你熟悉学习系统。</b>"
                          "开始练习"
                          w/go-next]}
                (= exp-cond 2)
@@ -336,7 +382,7 @@
                          这一阶段会有10道题目，每答完一道，会有相应的反馈。<br>
                          若答错：系统会告知正确与否并要求你再答一次，之后给予第二次反馈。<br>
                          若答对：只显示“回答正确”。<br>
-                         我们准备了一道练习题，帮助你熟悉学习系统。"
+                         <b>我们准备了一道练习题，帮助你熟悉学习系统。</b>"
                          "开始练习"
                          w/go-next]}
                (= exp-cond 1)
@@ -347,7 +393,7 @@
                          这一阶段会有10道题目，每答完一道，会有相应的反馈。<br>
                          若答错：系统会提供关于你可能错误的线索并要求你再答一次，之后给予第二次反馈。<br>
                          若答对：只显示“回答正确”。<br>
-                         我们准备了一道练习题，帮助你熟悉学习系统。"
+                         <b>我们准备了一道练习题，帮助你熟悉学习系统。</b>"
                          "开始练习"
                          w/go-next]})
          ;练习开始
@@ -361,16 +407,23 @@
                         (rf/dispatch [:save-answer ["开始时间" (.getTime (js/Date.))]]))]}
          ;反馈学习 - 正式
          (mapv #(problem exp-cond %) (problem-data))
-         ;问卷和测验 - 指导语
+         ;问卷 - 指导语
          {:type   :hint
           :widget [w/hint-jiang ""
-                   "接下来进入问卷和知识测验阶段。"
+                   "接下来进入问卷测验阶段。"
                    "开始作答"
                    w/go-next]}
          ;问卷正文 - 动机、情绪、认知负荷
          (d/motivation-questions)
          (d/emotion-questions)
          (d/cong-questions)
+         ;测验 - 指导语
+         {:type   :hint
+          :widget [w/hint-jiang ""
+                   "接下来进入后测阶段。<br>
+                   在此阶段你需要完成 10 道相似的题目，以检验反馈学习的效果。"
+                   "开始作答"
+                   w/go-next]}
          ;后测正文
          (d/back-questions)
          ;数据上传
