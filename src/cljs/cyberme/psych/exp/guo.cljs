@@ -173,7 +173,7 @@
          ;后测动机量表
          (wrap-header (d/motivation-questions-guo) 4)
          ;认知负荷量表
-         (wrap-header (d/control-questions) 4)
+         (wrap-header (d/cong-questions) 4)
          ;迁移表现指导语
          {:type :intro
           :widget
