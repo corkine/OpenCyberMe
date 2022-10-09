@@ -5,7 +5,9 @@
             [cyberme.cyber.inspur :as inspur]
             [cyberme.tool :as tool]
             [cuerdas.core :as str])
-  (:import (java.time LocalDateTime)))
+  (:import (java.time LocalDateTime ZoneId Instant)
+           (java.text SimpleDateFormat)
+           (java.time.format DateTimeFormatter)))
 
 (defn add-log
   [data]
@@ -76,10 +78,15 @@
         ;被试信息表打印
         (.append user-tab user-uuid)
         (.append user-tab ", ")
+        (.append user-tab (.format (DateTimeFormatter/ofPattern "yyyyMMddHHmm")
+                                   (LocalDateTime/ofInstant (Instant/ofEpochMilli start-time) (ZoneId/systemDefault))))
+        (.append user-tab ", ")
         (.append user-tab (print-map mark-data " "))
         (.append user-tab (print-map (select-keys user-data [:age :name :grade :gender :school-id]) " "))
         (.append user-tab "\n")
         ;前测知识、问卷和后测知识打印
+        (.append knowledge-tab user-uuid)
+        (.append knowledge-tab ", ")
         (doseq [fk front-knowledge-keys]
           (.append knowledge-tab (print-map (get data-map fk) false #{:image} " "))
           (.append knowledge-tab ", "))
@@ -93,6 +100,8 @@
           (.append knowledge-tab ", "))
         (.append knowledge-tab "\n")
         ;问卷打印
+        (.append questionare-tab user-uuid)
+        (.append questionare-tab ", ")
         (doseq [qk question-keys]
           (.append questionare-tab (print-map (get data-map qk) true #{} ", "))
           #_(.append questionare-tab ", "))
@@ -112,15 +121,17 @@
       {:message "获取数据成功"
        :data    (let [origin (db/logs-between {:api   "psych-exp-01"
                                                :start (.minusDays now (or day 2))
-                                               :end   now})]
-                  (vals (into {}
-                              (filterv (fn [[k v]]
-                                         (and (not (nil? k))
-                                              (not (nil? exp-id))
-                                              (= exp-id (get-in v [:标记数据 :exp-id]))))
-                                       (mapv (fn [row]
-                                               [(get-in row [:info :被试收集 :uuid])
-                                                (get row :info)]) origin)))))
+                                               :end   now})
+                      unsorted-data
+                      (vals (into {}
+                                  (filterv (fn [[k v]]
+                                             (and (not (nil? k))
+                                                  (not (nil? exp-id))
+                                                  (= exp-id (get-in v [:标记数据 :exp-id]))))
+                                           (mapv (fn [row]
+                                                   [(get-in row [:info :被试收集 :uuid])
+                                                    (get row :info)]) origin))))]
+                  (reverse (sort-by :开始时间 unsorted-data)))
        :status  1}
       (catch Exception e
         (log/error "log fetch error: " (str e))
