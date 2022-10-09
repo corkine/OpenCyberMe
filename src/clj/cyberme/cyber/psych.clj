@@ -130,8 +130,12 @@
                                                   (= exp-id (get-in v [:标记数据 :exp-id]))))
                                            (mapv (fn [row]
                                                    [(get-in row [:info :被试收集 :uuid])
-                                                    (get row :info)]) origin))))]
-                  (reverse (sort-by :开始时间 unsorted-data)))
+                                                    (get row :info)]) origin))))
+                      sorted-data
+                      (sort-by :开始时间 unsorted-data)]
+                  #_(reverse sorted-data)
+                  ;for preview
+                  (into (vec (take 3 sorted-data)) (take-last 2 sorted-data)))
        :status  1}
       (catch Exception e
         (log/error "log fetch error: " (str e))
