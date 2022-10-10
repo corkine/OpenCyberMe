@@ -31,7 +31,9 @@
    (if (or (nil? m) (empty? m))
      ""
      (let [sb (StringBuffer.)]
-       (doseq [entity (vec m)]
+       (doseq [entity (sort (fn [[k1 _] [k2 _]]
+                              (try (< (Integer/parseInt (name k1)) (Integer/parseInt (name k2)))
+                                   (catch Exception _ (compare k1 k2)))) m)]
          (when-not (contains? replace-key-set (first entity))
            (.append sb
                     (if just-value?
@@ -60,7 +62,10 @@
         user-tab (StringBuffer.)
         knowledge-tab (StringBuffer.)
         questionare-tab (StringBuffer.)
-        data-map-vec (vec data-map-vec)]
+        data-map-vec (vec data-map-vec)
+        key-comp (fn [a b] (let [ca (count (name a)) cb (count (name b))]
+                             (if (not= ca cb) (< ca cb) (compare a b))))
+        ]
     (let [q-header (filterv #(str/includes? (str %) "问卷") (sort (keys (first data-map-vec))))]
       (.append questionare-tab (print-vec q-header ", " true))
       (.append questionare-tab "\n"))
@@ -72,10 +77,10 @@
             start-time (or (-> data-map :开始时间) 1664412480000)
             last-time (atom start-time)
             user-uuid (-> data-map :被试收集 :uuid)
-            front-knowledge-keys (sort (k? "前测知识"))
-            back-knowledge-keys (sort (k? "后测知识"))
+            front-knowledge-keys (sort key-comp (k? "前测知识"))
+            back-knowledge-keys (sort key-comp (k? "后测知识"))
             question-keys (sort (k? "问卷"))
-            experiment-keys (sort (k? "q"))]
+            experiment-keys (sort key-comp (k? "q"))]
         ;被试信息表打印
         (.append user-tab user-uuid)
         (.append user-tab ", ")
