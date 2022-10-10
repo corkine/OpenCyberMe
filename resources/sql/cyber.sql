@@ -432,3 +432,72 @@ truncate files;
 -- :name drop-disk-files :! :1
 delete from files
 where info->>'disk' = :disk;
+
+-------------------- moneySaver ----------------------
+-- :name find-saver :? :*
+select *
+from moneysavergoals
+where 1 = 1
+/*~ (if (:search params) */
+and name ilike ('%' || :search || '%')
+/*~*/
+/*~ (if (:from params) */
+and create_at >= :from
+/*~*/
+/*~ (if (:to params) */
+and create_at <= :to
+/*~*/
+order by create_at desc
+/*~ (if (:take params) */
+limit :take
+/*~*/
+/*~ (if (:drop params) */
+offset :drop;
+/*~*/
+
+-- :name create-saver :! :1
+insert into moneysavergoals
+(name, info) values (:name, :info);
+
+-- :name update-saver :! :1
+update moneysavergoals
+set info = :info, update_at = current_timestamp
+/*~ (if (:name params) */
+, name = :name
+/*~*/
+where id = :id;
+
+-- :name drop-saver :! :1
+delete from moneysavergoals
+where id = :id;
+
+-- :name find-saver-logs :? :*
+select *
+from moneysaverlogs
+where goal_id = :goal_id
+/*~ (if (:from params) */
+and create_at >= :from
+/*~*/
+/*~ (if (:to params) */
+and create_at <= :to
+/*~*/
+order by create_at desc
+/*~ (if (:take params) */
+limit :take
+/*~*/
+/*~ (if (:drop params) */
+offset :drop;
+/*~*/
+
+-- :name create-saver-log :! :1
+insert into moneysaverlogs
+(goal_id, info) values (:goal_id, :info);
+
+-- :name update-saver-log :! :1
+update moneysaverlogs
+set info = :info
+where id = :id;
+
+-- :name drop-saver-log :! :1
+delete from moneysaverlogs
+where id = :id;
