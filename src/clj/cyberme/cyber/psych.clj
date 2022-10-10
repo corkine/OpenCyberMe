@@ -61,7 +61,7 @@
         knowledge-tab (StringBuffer.)
         questionare-tab (StringBuffer.)
         data-map-vec (vec data-map-vec)]
-    (let [q-header (filterv #(str/includes? (str %) "问卷") (keys (first data-map-vec)))]
+    (let [q-header (filterv #(str/includes? (str %) "问卷") (sort (keys (first data-map-vec))))]
       (.append questionare-tab (print-vec q-header ", " true))
       (.append questionare-tab "\n"))
     (doseq [data-map data-map-vec]
@@ -70,6 +70,7 @@
             mark-data (-> data-map :标记数据)
             user-data (-> data-map :被试收集)
             start-time (or (-> data-map :开始时间) 1664412480000)
+            last-time (atom start-time)
             user-uuid (-> data-map :被试收集 :uuid)
             front-knowledge-keys (sort (k? "前测知识"))
             back-knowledge-keys (sort (k? "后测知识"))
@@ -95,7 +96,11 @@
           (.append knowledge-tab ", "))
         (doseq [ek experiment-keys]
           (.append knowledge-tab (print-map
-                                   (update-in (get data-map ek) [:record-time] #(- % start-time))
+                                   (update-in (get data-map ek) [:record-time]
+                                              (fn [t]
+                                                (let [diff (- t @last-time)]
+                                                  (reset! last-time t)
+                                                  diff)))
                                    " "))
           (.append knowledge-tab ", "))
         (.append knowledge-tab "\n")
@@ -104,7 +109,7 @@
         (.append questionare-tab ", ")
         (doseq [qk question-keys]
           (.append questionare-tab (print-map (get data-map qk) true #{} ", "))
-          #_(.append questionare-tab ", "))
+          (.append questionare-tab ", "))
         (.append questionare-tab "\n")))
     (.append sb (.toString user-tab))
     (.append sb "\n\n")
