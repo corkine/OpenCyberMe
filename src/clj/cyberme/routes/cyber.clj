@@ -765,17 +765,17 @@
            :handler     (fn [{{{id :id} :path} :parameters}]
                           (hr/response (disk/handle-short-search id)))}}]])
 
-(def money-saver-route
-  ["/money-saver"
-   {:tags #{"MoneySaver"}}
+(def goal-route
+  ["/goal"
+   {:tags #{"Collector"}}
    ["/goals"
-    {:get  {:summary     "获取所有的 MoneySaver Goals"
-            :description "获取所有的 MoneySaver Goals"
+    {:get  {:summary     "获取所有的 Collector Goals"
+            :description "获取所有的 Collector Goals"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
             :handler     (fn [{{query :query} :parameters}]
                            (hr/response (ms/all-goals)))}
-     :post {:summary     "创建/更新/删除 MoneySaver Goal"
-            :description "创建/更新/删除 MoneySaver Goal，delete? 存在则删除，id 存在则更新，反之创建"
+     :post {:summary     "创建/更新/删除 Collector Goal"
+            :description "创建/更新/删除 Collector Goal，delete? 存在则删除，id 存在则更新，反之创建"
             :parameters  {:body any?}
             :handler     (fn [{{data :body} :parameters}]
                            (hr/response
@@ -786,11 +786,11 @@
                                    :else
                                    (ms/create-goal data))))}}]
    ["/goals/:goal-id/logs"
-    {:get  {:summary     "获取某一条 MoneySaver Goal 的 Logs"
-            :description "获取某一条 MoneySaver Goal 的 Logs"
+    {:get  {:summary     "获取某一条 Collector Goal 的 Logs"
+            :description "获取某一条 Collector Goal 的 Logs"
             :handler     todo}
-     :post {:summary     "创建/更新/删除某一条 MoneySaver Goal 的 Log"
-            :description "创建/更新/删除某一条 MoneySaver Goal 的 Log，delete? 存在则删除，id 存在则更新，反之创建"
+     :post {:summary     "创建/更新/删除某一条 Collector Goal 的 Log"
+            :description "创建/更新/删除某一条 Collector Goal 的 Log，delete? 存在则删除，id 存在则更新，反之创建"
             :parameters  {:body any? :path {:goal-id int?}}
             :handler     (fn [{{data :body path :path} :parameters}]
                            (hr/response
@@ -822,4 +822,4 @@
     books-route
     disks-route
     short-route
-    money-saver-route))
+    goal-route))

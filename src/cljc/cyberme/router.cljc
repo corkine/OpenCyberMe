@@ -162,6 +162,13 @@
                                              (rf/dispatch [:fetch-usage])
                                              (rf/dispatch [:fetch-wishlist]))}]}))]
 
+   ["/goal"
+    (merge {:name :goal}
+           #?(:cljs {:view        #'core/goal-page
+                     :controllers [{:start (fn [_]
+                                             (rf/dispatch [:user/fetch-from-local])
+                                             (rf/dispatch [:goal/goals]))}]}))]
+
    ["/demo"
     (merge {:name :demo}
            #?(:cljs {:view        #'core/demo-page

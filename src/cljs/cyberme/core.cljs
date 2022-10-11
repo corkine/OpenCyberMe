@@ -189,6 +189,7 @@
                   [nav-link "/plan" "Plan" :plan]
                   [nav-link "/diary" "Diary" :diary]
                   [nav-link "/library" "Library" :file]
+                  [nav-link "/goal" "Goal" :goal]
                   #_[nav-link "/cook" "厨记" :cook]
                   [nav-link "/properties" "Goods" :properties]
                   #_[nav-link "/clothes" "衣物" :clothes]

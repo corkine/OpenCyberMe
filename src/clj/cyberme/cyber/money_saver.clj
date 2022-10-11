@@ -31,7 +31,7 @@
                       (let [logs (db/find-saver-logs t {:goal_id goal-id})]
                         (assoc goal :logs logs))
                       goal)) all-goals)]
-        all-goals-with-logs))
+        (resp-> all-goals-with-logs "获取成功")))
     (catch Exception e
       (error-> "获取全部 Goals 失败" e))))
 
@@ -49,7 +49,7 @@
 
 (defn drop-goal-log [log-id]
   (try
-    (resp-> (db/drop-saver-log {:id log-id}) "删除 Log 失败")
+    (resp-> (db/drop-saver-log {:id log-id}) "删除 Log 成功")
     (catch Exception e
       (error-> "删除 Goal Log 失败" e))))
 

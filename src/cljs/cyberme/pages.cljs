@@ -13,6 +13,7 @@
     [cyberme.diary.core :as diary]
     [cyberme.dashboard.core :as dashboard]
     [cyberme.dashboard.plan :as plan]
+    [cyberme.goal :as goal]
     [cyberme.file :as file]
     [cyberme.psych.main :as exp]
     [clojure.string :as string]))
@@ -296,3 +297,12 @@
   [:<>
    [top-point]
    [exp/root]])
+
+(defn goal-page []
+  [:<>
+   [top-point]
+   [:div.container>div.content
+    [goal/goal-main]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
