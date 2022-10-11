@@ -14,6 +14,10 @@
     [cyberme.dashboard.week-plan :as wp]
     [clojure.string :as str]))
 
+(defonce goal-id (atom 0))
+
+(defonce editing-goal (atom nil))
+
 (def GOAL-TYPE ["money" "fitness" "diet"])
 
 (ajax-flow {:call           :goal/goals
@@ -48,14 +52,14 @@
             :clean          :goal/logs-edit-clean
             :failure-notice true})
 
-(ajax-flow {:call           :goal/logs-delete
-            :uri-fn         #(str "/cyber/goal/goals/" (:goal-id %) "/logs")
-            :is-post        true
-            :data           :goal/logs-delete-data
-            :clean          :goal/logs-delete-clean
+(ajax-flow {:call                   :goal/logs-delete
+            :uri-fn                 #(str "/cyber/goal/goals/" (:goal-id %) "/logs")
+            :is-post                true
+            :data                   :goal/logs-delete-data
+            :clean                  :goal/logs-delete-clean
             :success-callback-event [[:goal/logs-delete-clean]
                                      [:goal/goals]]
-            :failure-notice true})
+            :failure-notice         true})
 
 (defn delete-log [goal-id id]
   (rf/dispatch [:goal/logs-delete
@@ -85,7 +89,42 @@
                                [:goal/goals]]
            :origin-data       {:category (first GOAL-TYPE) :progress "0.0"}}))
 
-(defonce goal-id (atom 0))
+(defn edit-goal
+  "修改目标"
+  []
+  (dialog :edit-goal-goal!
+          "修改目标"
+          [[:name "名称*" "目标名称"]
+           [:category "类别*" "目标类别" {:type :select :selects GOAL-TYPE}]
+           [:description "详述" "计划详述" {:type :textarea :attr {:rows 2}}]
+           [:progress "进度" "当前的计划进度"]]
+          "确定"
+          #(if-let [err (va/validate! @%1 [[:name va/required] [:category va/required]])]
+             (reset! %2 err)
+             (let [{:keys [name category description progress id]} @%1]
+               (reset! editing-goal
+                       {:id   id :name name
+                        :info {:category    category
+                               :description description
+                               :progress    progress}})
+               (rf/dispatch [:goal/goals-edit
+                             {:name name
+                              :id   id
+                              :info {:category    category
+                                     :description description
+                                     :progress    progress}}])))
+          {:subscribe-ajax            [:goal/goals-edit-data]
+           :call-when-exit            [[:goal/goals-edit-clean]]
+           :call-when-success         [[:goal/goals-edit-clean]
+                                       [:goal/goals]]
+           :origin-data-is-subscribed true
+           :origin-data               (if-let [{:keys [id name info]} @editing-goal]
+                                        {:id          id :name name
+                                         :category    (or (:category info) (first GOAL-TYPE))
+                                         :description (:description info)
+                                         :progress    (:progress info)}
+                                        {:category (first GOAL-TYPE)
+                                         :progress "0.0"})}))
 
 (defn add-goal-log
   "添加目标日志"
@@ -100,8 +139,8 @@
              (reset! %2 err)
              (let [{:keys [name description earn]} @%1]
                (rf/dispatch [:goal/logs-edit
-                             {:goal-id @goal-id
-                              :name name
+                             {:goal-id     @goal-id
+                              :name        name
                               :earn        (try
                                              (js/parseFloat (or earn "0"))
                                              (catch js/Error _ 0.0))
@@ -119,7 +158,7 @@
     [:span.ml-3.is-clickable.is-size-7
      {:on-click
       #(rf/dispatch [:app/show-modal :add-goal-goal!])} "[新建]"]]
-   [add-goal] [add-goal-log]
+   [add-goal] [add-goal-log] [edit-goal]
    (let [{data :data} @(rf/subscribe [:goal/goals-data])]
      (for [{:keys [id name info create_at update_at logs] :as goal} data] ;;所有 Goals
        ^{:key id}
@@ -130,7 +169,10 @@
           {:style {:vertical-align "text-bottom" :margin-right "5px"}}
           (str/upper-case (or (:category info) "GOAL"))]
          [:span.is-size-4 name]
-         [:span.ml-2.is-size-7 "[修改]"]
+         [:span.ml-2.is-size-7
+          {:on-click #(do (reset! editing-goal goal)
+                          (rf/dispatch [:app/show-modal :edit-goal-goal!]))}
+          "[修改]"]
          [:span.is-size-7
           {:on-click #(do (reset! goal-id id)
                           (rf/dispatch [:app/show-modal :add-goal-goal-log!]))}
@@ -153,7 +195,7 @@
                 [:<>
                  [:div
                   [:div.tag.is-small.is-size-7.mr-2.is-info.is-light.is-clickable.show-delete-2
-                   {:style {:vertical-align "baseline" :margin-right "5px"}
+                   {:style    {:vertical-align "baseline" :margin-right "5px"}
                     :on-click (fn [_]
                                 (rf/dispatch [:global/notice
                                               {:message     (str "确定要删除日志 " name " 吗？")

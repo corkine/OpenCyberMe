@@ -438,22 +438,22 @@ where info->>'disk' = :disk;
 select *
 from moneysavergoals
 where 1 = 1
-/*~ (if (:search params) */
+/*~ (when (:search params) */
 and name ilike ('%' || :search || '%')
-/*~*/
-/*~ (if (:from params) */
+/*~ ) ~*/
+/*~ (when (:from params) */
 and create_at >= :from
-/*~*/
-/*~ (if (:to params) */
+/*~ ) ~*/
+/*~ (when (:to params) */
 and create_at <= :to
-/*~*/
+/*~ ) ~*/
 order by create_at desc
-/*~ (if (:take params) */
+/*~ (when (:take params) */
 limit :take
-/*~*/
-/*~ (if (:drop params) */
+/*~ ) ~*/
+/*~ (when (:drop params) */
 offset :drop;
-/*~*/
+/*~ ) ~*/
 
 -- :name create-saver :! :1
 insert into moneysavergoals
@@ -461,10 +461,7 @@ insert into moneysavergoals
 
 -- :name update-saver :! :1
 update moneysavergoals
-set info = :info, update_at = current_timestamp
-/*~ (if (:name params) */
-, name = :name
-/*~*/
+set info = :info, update_at = current_timestamp, name = :name
 where id = :id;
 
 -- :name drop-saver :! :1
@@ -477,17 +474,17 @@ from moneysaverlogs
 where goal_id = :goal_id
 /*~ (if (:from params) */
 and create_at >= :from
-/*~*/
+/*~ ) ~*/
 /*~ (if (:to params) */
 and create_at <= :to
-/*~*/
+/*~ ) ~*/
 order by create_at desc
 /*~ (if (:take params) */
 limit :take
-/*~*/
+/*~ ) ~*/
 /*~ (if (:drop params) */
 offset :drop;
-/*~*/
+/*~ ) ~*/
 
 -- :name create-saver-log :! :1
 insert into moneysaverlogs
