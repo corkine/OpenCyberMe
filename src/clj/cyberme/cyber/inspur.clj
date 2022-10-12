@@ -860,22 +860,25 @@
                      "已完成")
       true)))
 
-(defn handle-serve-hint-summary-widget [{:keys [kpi token focus id]}]
+(defn handle-serve-hint-summary-widget [{:keys [kpi token id]}]
   (let [{:keys [OffWork NeedMorningCheck WorkHour]} (handle-serve-hint {:token token})
         summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
-        todo (todo/handle-today {:focus focus :showCompleted true})
+        todo (todo/handle-today {:focus false :showCompleted true})
         w (weather/get-weather-cache (or (keyword id) :na-tie))]
     #_(assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
                 :Todo todo
                 :Weather w)
-    {:weatherInfo (or (:weather w) "没有天气信息")
+    {:weatherInfo (or (:weather w) "")
      :workStatus (cond NeedMorningCheck "🔴"
                        OffWork "🟢"
                        :else "🟡")
-     :cardCheck (if WorkHour [WorkHour] [])
-     :todo (or (mapv :title (:tasks todo)) [])
-     :needDiaryReport (have-finish-daily-report-today?)
-     :needPlantWater true}))
+     :cardCheck (if WorkHour [(str WorkHour)] [])
+     :todo (or (mapv (fn [item]
+                       {:title (:title item)
+                        :isFinished (= "completed" (:status item))}) (:tasks todo)) [])
+     :needDiaryReport (not (have-finish-daily-report-today?))
+     :needPlantWater true
+     :updateAt (int (/ (System/currentTimeMillis) 1000))}))
 
 (defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话"
