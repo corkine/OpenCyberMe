@@ -841,6 +841,42 @@
                 :Todo todo
                 :Weather w)))
 
+;struct Dashboard: Codable {
+; var workStatus:String
+; var cardCheck:[String]
+; var weatherInfo: String
+; var todo:[String]
+; var updateAt: Int64
+; var needWeekLearn: Bool
+; var needPlantWater: Bool
+; }
+
+(defn have-finish-daily-report-today?
+  "查找 day 数据库获取当日日报信息，如果非工作日，则直接返回不查找数据库"
+  []
+  (let [is-workday? (do-need-work (LocalDateTime/now))]
+    (if is-workday?
+      (str/includes? (or (-> (db/today) :info :day-work) "")
+                     "已完成")
+      true)))
+
+(defn handle-serve-hint-summary-widget [{:keys [kpi token focus id]}]
+  (let [{:keys [OffWork NeedMorningCheck WorkHour]} (handle-serve-hint {:token token})
+        summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
+        todo (todo/handle-today {:focus focus :showCompleted true})
+        w (weather/get-weather-cache (or (keyword id) :na-tie))]
+    #_(assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
+                :Todo todo
+                :Weather w)
+    {:weatherInfo (or (:weather w) "没有天气信息")
+     :workStatus (cond NeedMorningCheck "🔴"
+                       OffWork "🟢"
+                       :else "🟡")
+     :cardCheck (if WorkHour [WorkHour] [])
+     :todo (or (mapv :title (:tasks todo)) [])
+     :needDiaryReport (have-finish-daily-report-today?)
+     :needPlantWater true}))
+
 (defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话"
   [{:keys [user secret token useCache]

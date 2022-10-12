@@ -259,6 +259,15 @@
        :data    "无需日报"
        :status  1})))
 
+(defn have-finish-daily-report-today?
+  "查找 day 数据库获取当日日报信息，如果非工作日，则直接返回不查找数据库"
+  []
+  (let [is-workday? (inspur/do-need-work (LocalDateTime/now))]
+    (if is-workday?
+      (str/includes? (or (-> (db/today) :info :day-work) "")
+                     "已完成")
+      true)))
+
 (defn handle-day-work-update [data]
   (let [res (db/set-someday-info {:day (LocalDate/now) :info {:day-work data}})]
     {:message (str "更新成功: " res)

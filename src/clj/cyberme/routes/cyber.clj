@@ -513,6 +513,15 @@
                                                  :todo/day])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (inspur/handle-dashboard query)))}}]
+
+   ["/ioswidget"
+    {:get {:summary "iOS 小组件信息"
+           :description "iOS 小组件信息，包括天气、TODO、打卡等"
+           :parameters  {:query (s/keys :opt-un [:global/user :global/secret
+                                                 :todo/day])}
+           :handler (fn [{{query :query} :parameters}]
+                      (hr/response (inspur/handle-serve-hint-summary-widget query)))}}]
+
    ["/day-work"
     {:get  {:summary     "获取当日日报"
             :description "获取当日日报情况，如果是非工作日，则拦截数据库读写并返回“无需日报”信息。"

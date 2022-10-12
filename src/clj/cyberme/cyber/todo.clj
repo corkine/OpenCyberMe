@@ -222,7 +222,7 @@
           today (LocalDate/now)
           today-todo (filterv #(and (:time %)
                                     (.isEqual today (:time %))
-                                    (= (:status %) "notStarted")
+                                    (if showCompleted true (= (:status %) "notStarted"))
                                     (= (:importance %) "high")) all)]
       {:starCount (count today-todo)
        :tasks     today-todo})
