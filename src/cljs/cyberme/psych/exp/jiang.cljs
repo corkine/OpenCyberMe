@@ -251,8 +251,9 @@
           "https://static2.mazhangjing.com/cyber/202209/98d4aded_图片.png"]
          [:q10
           "https://static2.mazhangjing.com/cyber/202209/64024208_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/7190ab09_图片.png"
           ""
+          "https://static2.mazhangjing.com/cyber/202210/3b3435f2_图片.png"
+          #_"https://static2.mazhangjing.com/cyber/202209/7190ab09_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/bafcd4d3_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/bafcd4d3_图片.png"
           :A
