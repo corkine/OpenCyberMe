@@ -239,7 +239,7 @@
           "https://static2.mazhangjing.com/cyber/202209/3741358c_图片.png"
           ""
           "https://static2.mazhangjing.com/cyber/202209/cfcae2f5_图片.png"
-          :D
+          :C
           "https://static2.mazhangjing.com/cyber/202209/b60483e0_图片.png"]
          [:q9
           "https://static2.mazhangjing.com/cyber/202209/d657a93e_图片.png"
@@ -255,7 +255,7 @@
           ""
           "https://static2.mazhangjing.com/cyber/202209/bafcd4d3_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/bafcd4d3_图片.png"
-          :B
+          :A
           "https://static2.mazhangjing.com/cyber/202209/0d984652_图片.png"]]]
     (if @w/is-debug (vec (take 2 data)) data)))
 
