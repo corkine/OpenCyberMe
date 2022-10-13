@@ -861,24 +861,35 @@
       true)))
 
 (defn handle-serve-hint-summary-widget [{:keys [kpi token id]}]
-  (let [{:keys [OffWork NeedMorningCheck WorkHour]} (handle-serve-hint {:token token})
-        summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
+  (let [{:keys [OffWork NeedMorningCheck WorkHour SignIn]} (handle-serve-hint {:token token})
+        ;summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
         todo (todo/handle-today {:focus false :showCompleted true})
         w (weather/get-weather-cache (or (keyword id) :na-tie))]
     #_(assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
                 :Todo todo
                 :Weather w)
-    {:weatherInfo (or (:weather w) "")
-     :workStatus (cond NeedMorningCheck "🔴"
-                       OffWork "🟢"
-                       :else "🟡")
-     :cardCheck (if WorkHour [(str WorkHour)] [])
-     :todo (or (mapv (fn [item]
-                       {:title (:title item)
-                        :isFinished (= "completed" (:status item))}) (:tasks todo)) [])
+    (log/info "[iOSWidget] request widget info now...")
+    {:weatherInfo     (or (:weather w) "")
+     :workStatus      (cond NeedMorningCheck "🔴"
+                            OffWork "🟢"
+                            :else "🟡")
+     :cardCheck       (let [alter (if WorkHour [(str WorkHour)] [])]
+                        (if-let [signin SignIn]
+                          (try
+                            (mapv (fn [{:keys [^LocalDateTime time]}]
+                                    (if (instance? LocalDateTime time)
+                                      (.format (DateTimeFormatter/ofPattern "hh:mm") time)
+                                      (throw (RuntimeException. "未预期的结果")))) signin)
+                            (catch Exception e
+                              (log/error "error to parse time from SignIn" e)
+                              alter))
+                          alter))
+     :todo            (or (mapv (fn [item]
+                                  {:title      (:title item)
+                                   :isFinished (= "completed" (:status item))}) (:tasks todo)) [])
      :needDiaryReport (not (have-finish-daily-report-today?))
-     :needPlantWater true
-     :updateAt (int (/ (System/currentTimeMillis) 1000))}))
+     :needPlantWater  true
+     :updateAt        (int (/ (System/currentTimeMillis) 1000))}))
 
 (defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话"
