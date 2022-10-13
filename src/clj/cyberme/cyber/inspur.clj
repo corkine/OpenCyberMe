@@ -874,9 +874,18 @@
                               (log/error "error to parse time from SignIn" e)
                               alter))
                           alter))
-     :todo            (or (mapv (fn [item]
-                                  {:title      (:title item)
-                                   :isFinished (= "completed" (:status item))}) (:tasks todo)) [])
+     :todo            (or (sort (fn [a b]
+                                  (let [a-isFinished (:isFinished a)
+                                        b-isFinished (:isFinished b)
+                                        a-time (:create_at a)
+                                        b-time (:create_at b)]
+                                    (if (= a-isFinished b-isFinished)
+                                      (* -1 (compare a-time b-time))
+                                      (compare a-isFinished b-isFinished))))
+                                (mapv (fn [item]
+                                        {:title      (:title item)
+                                         :isFinished (= "completed" (:status item))
+                                         :create_at (:create_at item)}) (:tasks todo))) [])
      :needDiaryReport (not (have-finish-daily-report-today?))
      :needPlantWater  true
      :updateAt        (int (/ (System/currentTimeMillis) 1000))}))
