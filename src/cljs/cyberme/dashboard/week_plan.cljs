@@ -58,21 +58,32 @@
   []
   (let [may-next-log-todo-item @(rf/subscribe [:week-plan/may-next-finish-item-log])
         may-next-log-todo-item-title (:title may-next-log-todo-item)
-        may-next-log-todo-item-date (:time may-next-log-todo-item)]
+        may-next-log-todo-item-date (:time may-next-log-todo-item)
+        goals @(rf/subscribe [:goal/goals-brief])
+        goal-name-ids (mapv (fn [{:keys [id name]}] [id name]) goals)
+        goal-names (or (mapv second goal-name-ids) [])]
     (dialog :add-week-plan-log!
             "添加项目日志"
-            [[:name "名称*" "日志名称"]
-             [:progress-delta "进度*" "当前计划项目的进度"]
-             [:description "详述" "日志详述" {:type :textarea :attr {:rows 3}}]
-             [:update "更新日期" "日志日期"]
-             #_[:id "编号" "当前的日志编号"]]
+            (into
+              [[:name "名称*" "日志名称"]
+               [:progress-delta "进度*" "当前计划项目的进度"]
+               [:description "详述" "日志详述" {:type :textarea :attr {:rows 3}}]
+               [:update "更新日期" "日志日期"]
+               #_[:id "编号" "当前的日志编号"]]
+              (when-not (empty? goals)
+                [[:goal-name "目标日志" "将此每周计划日志添加到目标"
+                  {:type :select :selects (into ["-"] goal-names)}]]))
             "确定"
             #(if-let [err (va/validate! @%1 [[:name va/required] [:progress-delta va/number-str]])]
                (reset! %2 err)
-               (do
+               (let [data @%1
+                     goal-name-index (.indexOf goal-names (:goal-name data))
+                     goal-id (first (get goal-name-ids goal-name-index))
+                     current-item @(rf/subscribe [:week-plan-db-query :current-item])
+                     current-item-id (-> current-item :id)
+                     new-data {:item-id current-item-id :goal-id goal-id}]
                  (rf/dispatch [:dashboard/week-plan-item-add-log
-                               (merge {:item-id (-> @(rf/subscribe [:week-plan-db-query :current-item])
-                                                    :id)} @%1)])))
+                               (merge new-data data)])))
             {:subscribe-ajax            [:dashboard/week-plan-item-add-log-data]
              :call-when-exit            [[:dashboard/week-plan-item-add-log-clean]]
              :call-when-success         [[:dashboard/week-plan-item-add-log-clean]

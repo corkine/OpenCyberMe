@@ -14,6 +14,7 @@
   (:require [clojure.tools.logging :as log]
             [cyberme.db.core :as db]
             [next.jdbc :as jdbc]
+            [cyberme.cyber.goal :as goal]
             [cyberme.tool :as tool])
   (:import (java.time LocalDate LocalDateTime)
            (java.util UUID)))
@@ -200,8 +201,10 @@
   :last-update}
   至少需要一个 progress-delta 项目，最好有一个 name 字段，可选 description、id
   会构造 log {:id :name :description :progress-from :progress-to :update}
-  会更新本周计划的 progress, logs, last-update 字段"
-  [item-id {:keys [id name progress-delta]
+  会更新本周计划的 progress, logs, last-update 字段
+
+  如果有 goal-id，则将其添加到 Goal 的 log"
+  [item-id {:keys [id name progress-delta goal-id]
             :or   {id             (.toString (UUID/randomUUID))
                    name           "无标题项目"
                    progress-delta "0.0"}
@@ -241,8 +244,15 @@
                                         current-item item))
                                     items)]
                 (set-some-week t now {:plan all-items})
-                {:message (str "更新本周计划的项目：添加新记录成功。")
-                 :status  1}))))))
+                (if-let [goal-id goal-id]
+                  (let [goal-body {:name name
+                                   :description (str "由周计划 #" (:name current-item) " 的日志 " name " 创建")
+                                   :earn progress-delta}
+                        _ (goal/create-goal-log goal-id goal-body)]
+                    {:message (str "更新本周计划的项目：添加新记录并关联目标日志成功。")
+                     :status  1})
+                  {:message (str "更新本周计划的项目：添加新记录成功。")
+                   :status  1})))))))
     (catch Exception e
       (log/error "[week-plan] error: " (.getMessage e))
       {:message (str "更新本周计划的项目：添加新记录失败：" (.getMessage e))

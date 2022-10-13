@@ -30,7 +30,7 @@
     [cyberme.cyber.psych :as psych]
     [cyberme.cyber.book :as book]
     [cyberme.cyber.disk :as disk]
-    [cyberme.cyber.money-saver :as ms])
+    [cyberme.cyber.goal :as goal])
   (:import (java.time LocalDate)))
 
 (s/def :global/user string?)
@@ -793,18 +793,18 @@
             :description "获取所有的 Collector Goals"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])}
             :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (ms/all-goals)))}
+                           (hr/response (goal/all-goals)))}
      :post {:summary     "创建/更新/删除 Collector Goal"
             :description "创建/更新/删除 Collector Goal，delete? 存在则删除，id 存在则更新，反之创建"
             :parameters  {:body any?}
             :handler     (fn [{{data :body} :parameters}]
                            (hr/response
                              (cond (and (:delete? data) (:id data))
-                                   (ms/drop-goal (:id data))
+                                   (goal/drop-goal (:id data))
                                    (:id data)
-                                   (ms/update-goal (:id data) data)
+                                   (goal/update-goal (:id data) data)
                                    :else
-                                   (ms/create-goal data))))}}]
+                                   (goal/create-goal data))))}}]
    ["/goals/:goal-id/logs"
     {:get  {:summary     "获取某一条 Collector Goal 的 Logs"
             :description "获取某一条 Collector Goal 的 Logs"
@@ -815,11 +815,11 @@
             :handler     (fn [{{data :body path :path} :parameters}]
                            (hr/response
                              (cond (and (:delete? data) (:id data))
-                                   (ms/drop-goal-log (:id data))
+                                   (goal/drop-goal-log (:id data))
                                    (:id data)
-                                   (ms/update-goal-log (:id data) (merge path data))
+                                   (goal/update-goal-log (:id data) (merge path data))
                                    :else
-                                   (ms/create-goal-log (:goal-id path) data))))}}]])
+                                   (goal/create-goal-log (:goal-id path) data))))}}]])
 
 (defn cyber-routes []
   (conj

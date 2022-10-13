@@ -42,6 +42,20 @@
                                      [:goal/goals]]
             :failure-notice         true})
 
+(rf/reg-event-db
+  :goal/ensure-recent-goals!
+  (fn [db _]
+    (if-let [memory-data (:goal/goals-data db)]
+      db
+      (do (rf/dispatch [:goal/goals]) db))))
+
+(rf/reg-sub
+  :goal/goals-brief
+  (fn [db _]
+    (if-let [data (:data (:goal/goals-data db))]
+      data
+      [])))
+
 (defn delete-goal [id]
   (rf/dispatch [:goal/goals-delete {:delete? true :id id}]))
 

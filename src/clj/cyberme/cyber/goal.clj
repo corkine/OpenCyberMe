@@ -1,4 +1,4 @@
-(ns cyberme.cyber.money-saver
+(ns cyberme.cyber.goal
   (:require [cyberme.db.core :as db]
             [clojure.tools.logging :as log]
             [clojure.set :as set]
