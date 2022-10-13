@@ -165,29 +165,37 @@
        [:div.mt-5
         [:p.is-family-code.mb-1.is-clickable
          {:title (str "创建日期：" create_at "\n" "更新日期：" update_at)}
-         [:span.tag.is-small.is-size-7.mr-2.is-info.is-light.is-clickable
-          {:style {:vertical-align "text-bottom" :margin-right "5px"}}
-          (str/upper-case (or (:category info) "GOAL"))]
-         [:span.is-size-4 name]
-         [:span.ml-2.is-size-7
+         [:span.tag.is-small.is-size-7.mr-2.is-light.is-clickable.is-rounded
+          {:style {:margin-right "5px"
+                   :vertical-align "20%"
+                   :font-variant "all-petite-caps"}
+           :class (case (:category info)
+                    "learn" "is-info"
+                    "money" "is-info"
+                    "diet" "is-success"
+                    "fitness" "is-danger"
+                    "is-light")}
+          (or (:category info) "GOAL")]
+         [:span.is-size-5  name]
+         [:span.ml-1.is-size-7
           {:on-click #(do (reset! editing-goal goal)
                           (rf/dispatch [:app/show-modal :edit-goal-goal!]))}
-          "[修改]"]
+          " [修改]"]
          [:span.is-size-7
           {:on-click #(do (reset! goal-id id)
                           (rf/dispatch [:app/show-modal :add-goal-goal-log!]))}
-          "[+日志]"]
+          " [+日志]"]
          [:span.has-text-danger.is-size-7
           {:on-click
            (fn [_]
              (rf/dispatch [:global/notice
                            {:message     (str "确定要删除" name "吗？")
                             :callback-fn #(delete-goal id)}]))}
-          "[删除]"]]
+          " [删除]"]]
         (if-let [desp (:description info)]
           [:p.is-size-7.is-family-code.is-clickable.has-text-grey.ml-1 desp])
         (when (not-empty logs)
-          [:pre.mt-2 {:style {:padding "10px 0 10px 9px" :border-radius "10px"}}
+          [:pre.mt-2 {:style {:padding "10px 0 10px 9px" :border-radius "0"}}
            (for [{:keys [id goal_id info create_at] :as log} logs] ;;Goal 的每个 Log
              ^{:key id}
              [:<>
@@ -201,6 +209,7 @@
                                               {:message     (str "确定要删除日志 " name " 吗？")
                                                :callback-fn #(delete-log goal_id id)}]))}
                    (or earn "+0")]
-                  (when name [:span.is-size-7 name])]
+                  (when name [:span.is-size-7.is-clickable
+                              {:title (str "创建于：" create_at)} name])]
                  (when description [:p.is-size-7.mt-2.ml-2.has-text-grey description])])])])]))
    [:div {:style {:margin-bottom "100px"}}]])

@@ -283,3 +283,14 @@
       (log/error "[week-plan] error: " (.getMessage e))
       {:message (str "删除本周计划项目记录失败：" (.getMessage e)) :status -1})))
 
+(defn handle-update-week-plan-item-log
+  "更新本周计划的项目：更新新记录"
+  [item-id data]
+  (try
+    (if (nil? (:id data)) (throw (RuntimeException. (str "更新的记录没有 id 字段！"))))
+    (handle-remove-week-plan-item-log item-id (:id data))
+    (handle-add-week-plan-item-log item-id data)
+    (catch Exception e
+      (log/error "[week-plan] error: " (.getMessage e))
+      {:message (str "更新本周计划的项目：更新新记录失败：" (.getMessage e))
+       :status  -1})))

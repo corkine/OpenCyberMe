@@ -277,7 +277,7 @@
           [:<>
            [week/week-plan-add-dialog]
            [week/week-plan-modify-item-dialog :dashboard/plant-week]
-           #_[week/week-plan-log-add-dialog] ;强迫通过日记新建记录
+           #_[week/week-plan-log-add-dialog] ;强迫通过日记新建和修改记录
            [:div.mb-5
             ;每周计划卡片，包括本周计划和每周一学
             [:p

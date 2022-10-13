@@ -705,6 +705,17 @@
                                 body              :body} :parameters}]
                            (hr/response (week/handle-add-week-plan-item-log
                                           item-id body)))}}]
+   ["/update-item/:item-id/update-log"
+    {:post {:summary     "更新本周计划项目：更新记录"
+            :description "更新本周计划项目：更新记录。
+           其中 body 必须传入 id, progress-delta 项，可以有 name，description，update"
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+                          :path  {:item-id string?}
+                          :body  any?}
+            :handler     (fn [{{{:keys [item-id]} :path
+                                body              :body} :parameters}]
+                           (hr/response (week/handle-update-week-plan-item-log
+                                          item-id body)))}}]
    ["/update-item/:item-id/remove-log/:log-id"
     {:post {:summary     "更新本周计划项目：删除记录"
             :description "更新本周计划项目：删除记录"

@@ -841,16 +841,6 @@
                 :Todo todo
                 :Weather w)))
 
-;struct Dashboard: Codable {
-; var workStatus:String
-; var cardCheck:[String]
-; var weatherInfo: String
-; var todo:[String]
-; var updateAt: Int64
-; var needWeekLearn: Bool
-; var needPlantWater: Bool
-; }
-
 (defn have-finish-daily-report-today?
   "查找 day 数据库获取当日日报信息，如果非工作日，则直接返回不查找数据库"
   []

@@ -84,6 +84,36 @@
                                           {:progress-delta "10.0"})
              :origin-data-is-subscribed true})))
 
+(defonce update-log-now (atom nil))
+;id name update item-id description progress-delta
+
+(defn week-plan-log-update-dialog
+  "更新本周计划项目日志，需要传入至少 name, category,
+  可选 description, progress, id，其中 category 为 learn/work/fitness/diet"
+  [success-update]
+  (let []
+    (dialog :update-week-plan-log!
+            "更新项目日志"
+            [[:name "名称*" "日志名称"]
+             [:progress-delta "进度*" "当前计划项目的进度"]
+             [:description "详述" "日志详述" {:type :textarea :attr {:rows 3}}]
+             [:update "更新日期" "日志日期"]
+             #_[:id "编号" "当前的日志编号"]]
+            "确定"
+            #(if-let [err (va/validate! @%1 [[:name va/required] [:progress-delta va/number-str]])]
+               (reset! %2 err)
+               (do (rf/dispatch [:dashboard/week-plan-item-update-log @%1])
+                   (reset! update-log-now @%1)))
+            {:subscribe-ajax            [:dashboard/week-plan-item-update-log-data]
+             :call-when-exit            [[:dashboard/week-plan-item-update-log-clean]]
+             :call-when-success         [[:dashboard/week-plan-item-update-log-clean]
+                                         [success-update]]
+             :origin-data (if-let [update-log @update-log-now]
+                            (select-keys update-log [:id :name :progress-delta
+                                                     :description :update :item-id])
+                            {})
+             :origin-data-is-subscribed true})))
+
 (defn plan-widget
   [week-plans {:keys [go-diary-add-log show-todo]
                :or   {go-diary-add-log false show-todo false}}]
@@ -131,7 +161,7 @@
             ;每个 WEEK PLAN ITEM 的 LOG
             (when @(rf/subscribe [:week-plan-db-query item-id])
               [:div.mb-2
-               (for [{:keys [id name description progress-delta update]} logs]
+               (for [{:keys [id name description progress-delta update] :as log} logs]
                  ^{:key id}
                  [:<>
                   (let []
@@ -143,7 +173,11 @@
                                      {:message  (str "是否要删除日志" name "?")
                                       :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])}
                       (gstring/format "+%s" (if (>= progress-delta 10) progress-delta (str "\u00a0\u00a0" progress-delta)))]
-                     name])])])])]))]
+                     [:span.is-clickable
+                      {:on-click #(when-not go-diary-add-log ;仅在日记页面允许点击
+                                    (reset! update-log-now log)
+                                    (rf/dispatch [:app/show-modal :update-week-plan-log!]))}
+                      name]])])])])]))]
    [:div.column.is-6.is-size-7
     (when show-todo
       (if @(rf/subscribe [:week-plan-db-query :todo])

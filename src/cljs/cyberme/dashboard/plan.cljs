@@ -20,8 +20,9 @@
      "\uD83C\uDF0F 本月工作日历"]
     [:span.is-size-6.ml-1.my-1.is-clickable
      {:on-click #(rf/dispatch [:common/navigate! :work-all])}
-     "\uD83C\uDF0F 工作生涯 @浪潮思科"]]
+     "\uD83C\uDF0F 工作生涯日历"]]
    [wp/week-plan-modify-item-dialog :dashboard/week-plan-range]
+   [wp/week-plan-log-update-dialog :dashboard/week-plan-range]
    (let [{{:keys [date result]} :data}
          @(rf/subscribe [:dashboard/week-plan-range-data])]
      (for [some-week date]                                  ;;所有周的数据
@@ -75,6 +76,9 @@
                    [:p.mb-1                                 ;each log's body and entity
                     [:span.ml-2.is-family-code.is-clickable
                      {:style {:vertical-align :bottom}
+                      :on-click (fn [_]
+                                  (reset! wp/update-log-now log)
+                                  (rf/dispatch [:app/show-modal :update-week-plan-log!]))
                       :title (str "更新于：" update)} name]
                     [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]]
                    (when description

@@ -186,10 +186,10 @@
                   :style {:font-variant "all-small-caps"}}
                  [:div.navbar-start
                   [nav-link "/" "Dashboard" :dashboard]
-                  [nav-link "/plan" "Plan" :plan]
                   [nav-link "/diary" "Diary" :diary]
-                  [nav-link "/library" "Library" :file]
+                  [nav-link "/plan" "Plan" :plan]
                   [nav-link "/goal" "Goal" :goal]
+                  [nav-link "/library" "Library" :file]
                   #_[nav-link "/cook" "厨记" :cook]
                   [nav-link "/properties" "Goods" :properties]
                   #_[nav-link "/clothes" "衣物" :clothes]
