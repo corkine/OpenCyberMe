@@ -126,7 +126,9 @@
     (future (slack/notify "HCM Token 过期！" "SERVER"))))
 
 (defn get-hcm-info
-  "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}"
+  "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}
+  如果使用缓存，若缓存不过期，则返回缓存，反之请求 HCM。
+  如果不使用缓存，则请求 HCM。"
   [{:keys [^LocalDateTime time ^String token notUseCache]
     :or   {notUseCache false}}]
   (let [time (if (nil? time) (-> (LocalDateTime/now) (.format DateTimeFormatter/ISO_LOCAL_DATE))
@@ -911,16 +913,25 @@
 
 (defn handle-serve-today
   "Google Pixel 服务，根据打卡信息返回一句话
-  如果 ifCacheSuccessSkip，那么先强制使用缓存，找不到则强制不使用缓存返回最后结果。
-  如果没有此参数，则按照 useCache 执行：完全使用缓存 or 完全不使用缓存。"
-  [{:keys [ifCacheSuccessSkip] :as all}]
-  (if ifCacheSuccessSkip
-    (let [{:keys [status] :as cached-result}
-          (serve-day-internal (assoc all :useCache true))]
-      (if (= status 0)
-        (serve-day-internal (assoc all :useCache false))
-        cached-result))
-    (serve-day-internal all)))
+  如果 preferCacheSuccess，那么先强制使用缓存找成功结果，找不到则强制不使用缓存返回最后结果。
+  如果没有此参数，则按照 useCache 执行：完全使用缓存（如果缓存失效则依旧会请求HCM，
+  如果缓存未失效则可能获取到较旧数据） or 完全不使用缓存（总是请求HCM）。
+  preferCacheSuccess 总是能获得当天第一次打卡，但不能及时获取当天最后一次打卡（延迟等于 HCM-INFO L2 缓存周期）"
+  [{:keys [preferCacheSuccess] :as all}]
+  (if preferCacheSuccess
+    ;如果偏好先从缓存中找成功结果，则：
+    ;   如果有缓存，则从缓存中查找，找到的结果成功则返回，失败则不使用缓存请求 HCM
+    ;   如果没有缓存，则直接不使用缓存请求 HCM。
+    (let [time (-> (LocalDateTime/now) (.format DateTimeFormatter/ISO_LOCAL_DATE))
+          cache-hcm-info (hcm-info-from-cache time)]
+      (if cache-hcm-info
+        (let [{:keys [status] :as cache-computed-result}
+              (serve-day-internal (assoc all :useCache true))]
+          (if (= status 0)
+            (serve-day-internal (assoc all :useCache false))
+            cache-computed-result))
+        (serve-day-internal (assoc all :useCache false)))
+      (serve-day-internal all))))
 
 (defn handle-serve-set-auto
   "新增 Pixel 打卡条件，day 格式为 20220202 格式，card1/2 格式为 10:30-11:40"

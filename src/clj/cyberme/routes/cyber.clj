@@ -50,7 +50,7 @@
 (s/def :summary/showDetails boolean?)
 (s/def :device/plainText boolean?)
 (s/def :device/useCache boolean?)
-(s/def :device/ifCacheSuccessSkip boolean?)
+(s/def :device/preferCacheSuccess boolean?)
 (s/def :slack/from string?)
 (s/def :slack/channel string?)
 (s/def :slack/message string?)
@@ -213,12 +213,16 @@
     {:get {:summary     "获取当前打卡情况 (Pixel)"
            :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法，默认不使用缓存，但设置缓存。
            plainText 返回文本，而非 JSON 数据。
-           userCache 总是使用缓存结果，不发送 HCM 请求。
-           ifCacheSuccessSkip 先检查缓存，缓存成功则直接返回，反之发送 HCM 请求。"
+           useCache 总是使用缓存结果，不发送 HCM 请求。
+           preferCacheSuccess 先检查缓存，缓存成功则直接返回，反之发送 HCM 请求。
+
+           使用 useCache 导致任何打卡都最长延迟 HCM-INFO L2 缓存周期时间
+           使用 preferCacheSuccess 能保证当天第一次打上班和下班卡无延迟，下班打多次卡除了第一次
+           其他的会延迟最长一个 HCM-INFO L2 缓存周期时间。"
            :parameters  {:query (s/keys :req-un []
                                         :opt-un [:global/user :global/secret
                                                  :hcm/token :device/plainText
-                                                 :device/useCache :device/ifCacheSuccessSkip])}
+                                                 :device/useCache :device/preferCacheSuccess])}
            :handler     (fn [{{{:keys [plainText] :as query} :query} :parameters}]
                           (let [res (inspur/handle-serve-today query)]
                             (if plainText
