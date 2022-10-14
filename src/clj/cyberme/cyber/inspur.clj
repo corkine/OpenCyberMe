@@ -930,8 +930,8 @@
           (if (= status 0)
             (serve-day-internal (assoc all :useCache false))
             cache-computed-result))
-        (serve-day-internal (assoc all :useCache false)))
-      (serve-day-internal all))))
+        (serve-day-internal (assoc all :useCache false))))
+    (serve-day-internal all)))
 
 (defn handle-serve-set-auto
   "新增 Pixel 打卡条件，day 格式为 20220202 格式，card1/2 格式为 10:30-11:40"
