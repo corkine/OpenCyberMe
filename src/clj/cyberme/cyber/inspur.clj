@@ -856,8 +856,8 @@
         todo (todo/handle-today {:focus false :showCompleted true})
         w (weather/get-weather-cache (or (keyword id) :na-tie))]
     #_(assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
-                :Todo todo
-                :Weather w)
+                  :Todo todo
+                  :Weather w)
     (log/info "[iOSWidget] request widget info now...")
     {:weatherInfo     (or (:weather w) "")
      :workStatus      (cond NeedMorningCheck "🔴"
@@ -885,13 +885,12 @@
                                 (mapv (fn [item]
                                         {:title      (:title item)
                                          :isFinished (= "completed" (:status item))
-                                         :create_at (:create_at item)}) (:tasks todo))) [])
+                                         :create_at  (:create_at item)}) (:tasks todo))) [])
      :needDiaryReport (not (have-finish-daily-report-today?))
      :needPlantWater  true
      :updateAt        (int (/ (System/currentTimeMillis) 1000))}))
 
-(defn handle-serve-today
-  "Google Pixel 服务，根据打卡信息返回一句话"
+(defn- serve-day-internal
   [{:keys [user secret token useCache]
     :or   {useCache false} :as all}]
   (let [now (LocalDateTime/now)
@@ -909,6 +908,19 @@
                 {:status 0 :message "没有成功打卡。"}))
       {:status  1
        :message "今日无需工作。"})))
+
+(defn handle-serve-today
+  "Google Pixel 服务，根据打卡信息返回一句话
+  如果 ifCacheSuccessSkip，那么先强制使用缓存，找不到则强制不使用缓存返回最后结果。
+  如果没有此参数，则按照 useCache 执行：完全使用缓存 or 完全不使用缓存。"
+  [{:keys [ifCacheSuccessSkip] :as all}]
+  (if ifCacheSuccessSkip
+    (let [{:keys [status] :as cached-result}
+          (serve-day-internal (assoc all :useCache true))]
+      (if (= status 0)
+        (serve-day-internal (assoc all :useCache false))
+        cached-result))
+    (serve-day-internal all)))
 
 (defn handle-serve-set-auto
   "新增 Pixel 打卡条件，day 格式为 20220202 格式，card1/2 格式为 10:30-11:40"

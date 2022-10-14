@@ -50,6 +50,7 @@
 (s/def :summary/showDetails boolean?)
 (s/def :device/plainText boolean?)
 (s/def :device/useCache boolean?)
+(s/def :device/ifCacheSuccessSkip boolean?)
 (s/def :slack/from string?)
 (s/def :slack/channel string?)
 (s/def :slack/message string?)
@@ -210,10 +211,14 @@
                           (hr/response (inspur/handle-serve-hint-summary query)))}}]
    ["/now"
     {:get {:summary     "获取当前打卡情况 (Pixel)"
-           :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法，默认不使用缓存，但设置缓存。"
+           :description "仅供 PIXEL 使用的，打卡后通知 Slack 的内部方法，默认不使用缓存，但设置缓存。
+           plainText 返回文本，而非 JSON 数据。
+           userCache 总是使用缓存结果，不发送 HCM 请求。
+           ifCacheSuccessSkip 先检查缓存，缓存成功则直接返回，反之发送 HCM 请求。"
            :parameters  {:query (s/keys :req-un []
                                         :opt-un [:global/user :global/secret
-                                                 :hcm/token :device/plainText :device/useCache])}
+                                                 :hcm/token :device/plainText
+                                                 :device/useCache :device/ifCacheSuccessSkip])}
            :handler     (fn [{{{:keys [plainText] :as query} :query} :parameters}]
                           (let [res (inspur/handle-serve-today query)]
                             (if plainText
