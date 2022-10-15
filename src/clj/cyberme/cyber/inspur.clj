@@ -870,7 +870,7 @@
                           (try
                             (mapv (fn [{:keys [^LocalDateTime time]}]
                                     (if (instance? LocalDateTime time)
-                                      (.format (DateTimeFormatter/ofPattern "hh:mm") time)
+                                      (.format (DateTimeFormatter/ofPattern "HH:mm") time)
                                       (throw (RuntimeException. "未预期的结果")))) signin)
                             (catch Exception e
                               (log/error "error to parse time from SignIn" e)
