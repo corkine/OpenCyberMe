@@ -10,7 +10,7 @@
             [cyberme.config :refer [edn-in]]
             [cheshire.core :as json]
             [clojure.string :as str])
-  (:import (java.time LocalTime LocalDateTime Period Duration)))
+  (:import (java.time LocalTime LocalDateTime Period Duration LocalDate)))
 
 (defn url [token locale]
   (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=1&hourlysteps=24"
@@ -28,24 +28,31 @@
 ;                 :description 一句话总结，此总结为当天总结, 比如 未来24小时多云
 (comment
   (json/parse-string
-    (:body @(client/request {:url     (url (edn-in [:weather :token]) (edn-in [:weather :map :na-tie :locale]))
+    (:body @(client/request {:url     (url (edn-in [:weather :token])
+                                           (edn-in [:weather :map :na-tie :locale]))
                              :method  :get
                              :headers {"Content-Type" "application/json"}}))
     true))
 
+(declare put-temp-cache)
+
 (defn check-weather
   "检查天气信息，token 为彩云 API，place 为目标经纬度，for-day? 是否获取当日天气/每小时天气一句话信息"
-  [token place for-day?]
+  [token name place for-day?]
   (try
     (let [response (json/parse-string
                      (:body @(client/request {:url     (url token place)
                                               :method  :get
                                               :headers {"Content-Type" "application/json"}}))
-                     true)]
+                     true)
+          ;_ (clojure.pprint/pprint response)
+          ]
       (if (= "ok" (-> response :status))
-        (if for-day?
-          (-> response :result :hourly :description)
-          (-> response :result :minutely :description))
+        (do
+          (put-temp-cache name response)
+          (if for-day?
+            (-> response :result :hourly :description)
+            (-> response :result :minutely :description)))
         (log/error "[weather-service] api failed with: " (dissoc response :result))))
     (catch Exception e
       (log/error "[weather-service] failed to request: " (.getMessage e)))))
@@ -71,20 +78,46 @@
 (defn set-weather-cache! [place weather]
   (swap! weather-cache dissoc place)
   (swap! weather-cache assoc place {:weather (remap-weather-info weather)
-                                    :origin weather
+                                    :origin  weather
                                     :update  (LocalDateTime/now)}))
 
 (defn unset-weather-cache! [place]
   (swap! weather-cache dissoc place))
 
+(defn put-temp-cache [place response]
+  ;temperature_08h_20h ;temperature_20h_32h
+  (if-let [today-temp (-> response :result :daily :temperature first)]
+    (swap! weather-cache assoc-in [place :temp (LocalDate/now)]
+           {:origin today-temp
+            :min    (:min today-temp)
+            :max    (:max today-temp)
+            :avg    (:avg today-temp)})))
+
+(defn diff-temp [place]
+  (if-let [cache (get-in @weather-cache [place :temp])]
+    (let [now (LocalDate/now)
+          {ymin :min ymax :max yavg :avg :as y} (get cache (.minusDays now 1))
+          {tmin :min tmax :max tavg :avg :as t} (get cache now)]
+      (cond (and y t)
+            (format "[↑%.0f%+.0f↓%.0f%+.0f]"
+                ymax (- tmax ymax)
+                ymin (- tmin ymin))
+            t
+            (format "[↑%.0f↓%.0f]" tmax tmin)
+            :else
+            ""))
+    ""))
+
 (defn get-weather-cache [place]
   (let [{:keys [weather ^LocalDateTime update] :as origin}
         (get @weather-cache place nil)]
     (when (and weather update)
-      (assoc origin :weather (str weather " +"
-                                  (.toMinutes (Duration/between
-                                                update (LocalDateTime/now)))
-                                  "m")))))
+      (let [temp-info (diff-temp place)
+            temp-info (if-not (str/blank? temp-info) (str temp-info " ") temp-info)]
+        (assoc origin :weather (str temp-info weather " +"
+                                    (.toMinutes (Duration/between
+                                                  update (LocalDateTime/now)))
+                                    "m"))))))
 
 (defn will-notice-warn? [in]
   (str/includes? in "正在下"))
@@ -99,10 +132,10 @@
               locale (:locale locale-map)
               name (:name locale-map)]
           (cond (= hour 7)
-                (if-let [weather (check-weather token locale true)]
+                (if-let [weather (check-weather token name locale true)]
                   (slack/notify (str name ": " weather) "SERVER"))
                 (and (> hour 7) (<= hour 20))
-                (if-let [weather (check-weather token locale false)]
+                (if-let [weather (check-weather token name locale false)]
                   (do (set-weather-cache! check weather)
                       (slack/notify (str name ": " weather) "PIXEL")
                       (when (will-notice-warn? weather)
@@ -124,10 +157,10 @@
                 locale (:locale locale-map)
                 name (:name locale-map)]
             (cond (= hour 7)
-                  (if-let [weather (check-weather token locale true)]
+                  (if-let [weather (check-weather token name locale true)]
                     (slack/notify (str name ": " weather) "SERVER"))
                   (and (> hour 7) (<= hour 20))
-                  (if-let [weather (check-weather token locale false)]
+                  (if-let [weather (check-weather token name locale false)]
                     (do (set-weather-cache! check weather)
                         (slack/notify (str name ": " weather) "PIXEL")
                         (when (will-notice-warn? weather)
