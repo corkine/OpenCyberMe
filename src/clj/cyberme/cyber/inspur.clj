@@ -863,6 +863,7 @@
     (log/info "[iOSWidget] request widget info now...")
     {:weatherInfo     (:weather w)
      :tempInfo        (:temp w)
+     :tempFutureInfo  (:tempFuture w)
      :workStatus      (cond NeedMorningCheck "🔴"
                             OffWork "🟢"
                             :else "🟡")

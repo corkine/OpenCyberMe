@@ -13,7 +13,7 @@
   (:import (java.time LocalTime LocalDateTime Period Duration LocalDate)))
 
 (defn url [token locale]
-  (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=1&hourlysteps=24"
+  (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=2&hourlysteps=24"
           token locale))
 
 ;百度经纬度查询 http://api.map.baidu.com/lbsapi/getpoint/index.html
@@ -87,12 +87,22 @@
 
 (defn put-temp-cache [place response]
   ;temperature_08h_20h ;temperature_20h_32h
-  (if-let [today-temp (-> response :result :daily :temperature first)]
-    (swap! temp-cache assoc-in [place :temp (LocalDate/now)]
-           {:origin today-temp
-            :min    (:min today-temp)
-            :max    (:max today-temp)
-            :avg    (:avg today-temp)})))
+  (if-let [temp (-> response :result :daily :temperature)]
+    (let [today-temp (first temp)
+          tomorrow-temp (second temp)
+          today (LocalDate/now)
+          tomorrow (.plusDays today 1)]
+      (swap! temp-cache assoc-in [place :temp today]
+             {:origin today-temp
+              :min    (:min today-temp)
+              :max    (:max today-temp)
+              :avg    (:avg today-temp)})
+      (when tomorrow-temp
+        (swap! temp-cache assoc-in [place :temp tomorrow]
+               {:origin tomorrow-temp
+                :min    (:min tomorrow-temp)
+                :max    (:max tomorrow-temp)
+                :avg    (:avg tomorrow-temp)})))))
 
 ;(swap! temp-cache assoc-in [:na-tie :temp (.minusDays (LocalDate/now) 1)]
 ;       {:min 12.0 :max 25.0})
@@ -124,18 +134,39 @@
       ""
       nil)))
 
+(defn diff-temp-tomorrow [place]
+  (if-let [cache (get-in @temp-cache [place :temp])]
+    (let [now (LocalDate/now)
+          {mmin :min mmax :max mavg :avg :as m} (get cache (.plusDays now 1))
+          {tmin :min tmax :max tavg :avg :as t} (get cache now)]
+      (cond (and m t)
+            {:high     tmax
+             :low      tmin
+             :diffHigh (- mmax tmax)
+             :diffLow  (- mmin tmin)}
+            t
+            {:high tmax
+             :low  tmin}
+            :else
+            nil))
+    nil))
+
 (defn get-weather-cache
   "包括 weather-cache 和 temp-cache"
   [place]
   (let [{:keys [weather ^LocalDateTime update] :as origin}
         (get @weather-cache place nil)]
-    (when (and weather update)
-      (let [temp-info (diff-temp place false)]
-        (assoc origin :weather (str weather " +"
-                                    (.toMinutes (Duration/between
-                                                  update (LocalDateTime/now)))
-                                    "m")
-                      :temp temp-info)))))
+    (cond (and weather update) ;白天
+          (let [temp-info (diff-temp place false)
+                temp-future-info (diff-temp-tomorrow place)]
+            (assoc origin :weather (str weather " +"
+                                        (.toMinutes (Duration/between
+                                                      update (LocalDateTime/now)))
+                                        "m")
+                          :temp temp-info
+                          :tempFuture temp-future-info))
+          :else ;晚上
+          {:tempFuture (diff-temp-tomorrow place)})))
 
 (defn will-notice-warn? [in]
   (str/includes? in "正在下"))
@@ -160,6 +191,11 @@
                         (slack/notify (str name ": " weather) "SERVER"))))
                 :else
                 (unset-weather-cache! check)))))))
+
+#_(set-weather-cache! :na-tie
+                    (check-weather (edn-in [:weather :token])
+                                   :na-tie (:locale (edn-in [:weather :map :na-tie]))
+                                   false))
 
 ;初步设计：每天早 7:00 预告当日天气，每天 8:00 - 20:00 预告本小时降雨情况
 ;程序每 5 分钟运行一次，如果在时间范围内，则通知，否则不通知
