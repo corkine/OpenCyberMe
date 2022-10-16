@@ -107,8 +107,8 @@
               (format "[↑%.0f%+.0f↓%.0f%+.0f]"
                       ymax (- tmax ymax)
                       ymin (- tmin ymin))
-              {:high     ymax
-               :low      ymin
+              {:high     tmax
+               :low      tmin
                :diffHigh (- tmax ymax)
                :diffLow  (- tmin ymin)})
             t
