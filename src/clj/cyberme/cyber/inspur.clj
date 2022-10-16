@@ -861,7 +861,8 @@
                   :Todo todo
                   :Weather w)
     (log/info "[iOSWidget] request widget info now...")
-    {:weatherInfo     (or (:weather w) "")
+    {:weatherInfo     (:weather w)
+     :tempInfo        (:temp w)
      :workStatus      (cond NeedMorningCheck "🔴"
                             OffWork "🟢"
                             :else "🟡")

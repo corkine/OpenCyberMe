@@ -74,6 +74,7 @@
         :else in))
 
 (defonce weather-cache (atom {}))
+(defonce temp-cache (atom {}))
 
 (defn set-weather-cache! [place weather]
   (swap! weather-cache dissoc place)
@@ -87,37 +88,54 @@
 (defn put-temp-cache [place response]
   ;temperature_08h_20h ;temperature_20h_32h
   (if-let [today-temp (-> response :result :daily :temperature first)]
-    (swap! weather-cache assoc-in [place :temp (LocalDate/now)]
+    (swap! temp-cache assoc-in [place :temp (LocalDate/now)]
            {:origin today-temp
             :min    (:min today-temp)
             :max    (:max today-temp)
             :avg    (:avg today-temp)})))
 
-(defn diff-temp [place]
-  (if-let [cache (get-in @weather-cache [place :temp])]
+;(swap! temp-cache assoc-in [:na-tie :temp (.minusDays (LocalDate/now) 1)]
+;       {:min 12.0 :max 25.0})
+
+(defn diff-temp [place one-line?]
+  (if-let [cache (get-in @temp-cache [place :temp])]
     (let [now (LocalDate/now)
           {ymin :min ymax :max yavg :avg :as y} (get cache (.minusDays now 1))
           {tmin :min tmax :max tavg :avg :as t} (get cache now)]
       (cond (and y t)
-            (format "[↑%.0f%+.0f↓%.0f%+.0f]"
-                ymax (- tmax ymax)
-                ymin (- tmin ymin))
+            (if one-line?
+              (format "[↑%.0f%+.0f↓%.0f%+.0f]"
+                      ymax (- tmax ymax)
+                      ymin (- tmin ymin))
+              {:high     ymax
+               :low      ymin
+               :diffHigh (- tmax ymax)
+               :diffLow  (- tmin ymin)})
             t
-            (format "[↑%.0f↓%.0f]" tmax tmin)
+            (if one-line?
+              (format "[↑%.0f↓%.0f]" tmax tmin)
+              {:high tmax
+               :low  tmin})
             :else
-            ""))
-    ""))
+            (if one-line?
+              ""
+              nil)))
+    (if one-line?
+      ""
+      nil)))
 
-(defn get-weather-cache [place]
+(defn get-weather-cache
+  "包括 weather-cache 和 temp-cache"
+  [place]
   (let [{:keys [weather ^LocalDateTime update] :as origin}
         (get @weather-cache place nil)]
     (when (and weather update)
-      (let [temp-info (diff-temp place)
-            temp-info (if-not (str/blank? temp-info) (str temp-info " ") temp-info)]
-        (assoc origin :weather (str temp-info weather " +"
+      (let [temp-info (diff-temp place false)]
+        (assoc origin :weather (str weather " +"
                                     (.toMinutes (Duration/between
                                                   update (LocalDateTime/now)))
-                                    "m"))))))
+                                    "m")
+                      :temp temp-info)))))
 
 (defn will-notice-warn? [in]
   (str/includes? in "正在下"))
@@ -132,10 +150,10 @@
               locale (:locale locale-map)
               name (:name locale-map)]
           (cond (= hour 7)
-                (if-let [weather (check-weather token name locale true)]
+                (if-let [weather (check-weather token check locale true)]
                   (slack/notify (str name ": " weather) "SERVER"))
                 (and (> hour 7) (<= hour 20))
-                (if-let [weather (check-weather token name locale false)]
+                (if-let [weather (check-weather token check locale false)]
                   (do (set-weather-cache! check weather)
                       (slack/notify (str name ": " weather) "PIXEL")
                       (when (will-notice-warn? weather)
@@ -157,10 +175,10 @@
                 locale (:locale locale-map)
                 name (:name locale-map)]
             (cond (= hour 7)
-                  (if-let [weather (check-weather token name locale true)]
+                  (if-let [weather (check-weather token check locale true)]
                     (slack/notify (str name ": " weather) "SERVER"))
                   (and (> hour 7) (<= hour 20))
-                  (if-let [weather (check-weather token name locale false)]
+                  (if-let [weather (check-weather token check locale false)]
                     (do (set-weather-cache! check weather)
                         (slack/notify (str name ": " weather) "PIXEL")
                         (when (will-notice-warn? weather)
