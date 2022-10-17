@@ -227,7 +227,7 @@
           :B
           "https://static2.mazhangjing.com/cyber/202209/c0897262_图片.png"]
          [:q7
-          "https://static2.mazhangjing.com/cyber/202209/ae3dbd3c_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/17a42073_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/b48e46b3_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/069831dd_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/f29b9940_图片.png"

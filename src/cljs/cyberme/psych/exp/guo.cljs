@@ -48,12 +48,12 @@
           "https://static2.mazhangjing.com/cyber/202209/2acd6821_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/ebf06992_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/bcbfb74a_图片.png" :B]
-         [:q7 "https://static2.mazhangjing.com/cyber/202209/4bb40621_图片.png"
+         [:q7 "https://static2.mazhangjing.com/cyber/202210/17a42073_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/96640b98_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/76fad390_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/ecd66eea_图片.png" :D]
          [:q8 "https://static2.mazhangjing.com/cyber/202209/0a4d4a09_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/6774eafd_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/553c128a_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/10de7878_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/11c6fafd_图片.png" :C]
          [:q9 "https://static2.mazhangjing.com/cyber/202209/de6aab47_图片.png"
@@ -113,7 +113,7 @@
                :step2-each   [step2cond1 step2cond2 step2cond3]}]}))
 
 (defn wrap-header [origin index]
-  {:type :wrapped
+  {:type   :wrapped
    :widget [:<> [w/top-info ["1.学习前调查" "2.基础水平测验" "3.正式反馈学习"
                              "4.学习后调查" "5.学习后测验"] (- index 1)]
             (-> origin :widget)]})
@@ -127,7 +127,7 @@
         [;被试信息收集
          {:type :intro
           :widget
-          [w/image "https://static2.mazhangjing.com/cyber/202210/48432fdb_图片.png"]}
+          [w/image "https://static2.mazhangjing.com/cyber/202210/4ddeec1b_图片.png"]}
          (wrap-header {:type :collect :widget [w/collect-guo]} 1)
          (when-not skip-front                               ;允许跳过前测量表和前测知识
            [;兴趣量表
@@ -137,15 +137,17 @@
             ;前测知识指导语
             {:type :intro
              :widget
-             [w/image "https://static2.mazhangjing.com/cyber/202210/b0d840ac_图片.png"]}
+             [w/image "https://static2.mazhangjing.com/cyber/202210/a20bdf7e_图片.png"]}
             ;前测十道题
-            (mapv #(wrap-header % 2) (d/front-questions))])
-         ;情绪前测、练习和正文指导语
+            (mapv #(wrap-header % 2) (d/front-questions))
+            ;休息界面
+            {:type   :hint
+             :widget [w/hint-jiang ""
+                      "请休息1分钟，等你觉得休息好了，就可以点击按钮继续学习" "继续学习" w/go-next]}])
+         ;练习和正文指导语
          {:type :intro
           :widget
-          [w/image "https://static2.mazhangjing.com/cyber/202210/7fafd7da_图片.png"]}
-         ;前测情绪列表
-         (wrap-header (d/emotion-questions-guo) 3)
+          [w/image "https://static2.mazhangjing.com/cyber/202210/99f5350e_图片.png"]}
          ;练习展示
          (wrap-header {:type   :hint
                        :widget [w/hint-jiang ""
@@ -165,19 +167,23 @@
           :widget
           [w/image "https://static2.mazhangjing.com/cyber/202210/5a80c004_图片.png"]}
          ;后测情绪量表
-         (wrap-header (d/emotion-questions-guo-2) 4)
+         (wrap-header (d/emotion-questions) 4)
          ;后测控制感量表
-         (wrap-header (d/control-questions) 4)
+         ;(wrap-header (d/control-questions) 4)
          ;后测自主感量表
          (wrap-header (d/liberty-questions) 4)
          ;后测动机量表
          (wrap-header (d/motivation-questions-guo) 4)
          ;认知负荷量表
          (wrap-header (d/cong-questions) 4)
+         ;休息界面
+         {:type   :hint
+          :widget [w/hint-jiang ""
+                   "请休息1分钟，等你觉得休息好了，就可以点击按钮继续学习" "继续学习" w/go-next]}
          ;迁移表现指导语
          {:type :intro
           :widget
-          [w/image "https://static2.mazhangjing.com/cyber/202210/399cb8e4_图片.png"]}
+          [w/image "https://static2.mazhangjing.com/cyber/202210/25c22607_图片.png"]}
          ;后测十道题
          (mapv #(wrap-header % 5) (d/back-questions))
          ;上传数据页面

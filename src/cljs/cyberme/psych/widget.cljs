@@ -642,7 +642,9 @@
            3 [:p {:style {:font-size "1.3em"}}
               "以下是本题的" [:span.has-text-weight-bold "详细解答"] "，请认真学习"])
          [:img {:src   step-2
-                :style {:max-width  :25em :border "3px solid"
+                :style {
+                        ;:max-width  :25em
+                        :border "3px solid"
                         :margin-top "20px"}}]
          [:div {:style {:display "flex" :flex-direction "column" :margin-top "20px"}}
           (when is-demo
@@ -762,7 +764,9 @@
                 2 [:p {:style {:font-size "1.3em"}}
                    "以下是本题的" [:span.has-text-weight-bold "详细解答"] "，请认真学习"])
               [:img {:src   (get step2-each @select-style)
-                     :style {:max-width  :25em :border "3px solid"
+                     :style {
+                             ;:max-width  :25em
+                             :border "3px solid"
                              :margin-top "20px"}}]])]
           [:img {:src   demo-step2-hint-right
                  :style {:margin-top "0px" :max-width :25em :align-self "start"}}]]
