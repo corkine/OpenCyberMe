@@ -102,7 +102,7 @@
   {:type   :question
    :widget [questionnaire
             {:id      "情境学习动机问卷"
-             :leading "请对以下题目中的说法,选出最符合你实际情况的数字。"
+             :leading "请对以下题目中的说法,选出最符合你实际情况的选项。"
              :answers ["极不符合" "不符合" "不确定" "符合" "完全符合"]
              :questions
              ["1.我觉得刚才的学习很容易。"
