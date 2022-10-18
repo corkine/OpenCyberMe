@@ -127,7 +127,7 @@
         [;被试信息收集
          {:type :intro
           :widget
-          [w/image "https://static2.mazhangjing.com/cyber/202210/4ddeec1b_图片.png"]}
+          [w/image "https://static2.mazhangjing.com/cyber/202210/bcee1314_图片.png"]}
          (wrap-header {:type :collect :widget [w/collect-guo]} 1)
          (when-not skip-front                               ;允许跳过前测量表和前测知识
            [;兴趣量表
