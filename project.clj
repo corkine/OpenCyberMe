@@ -68,6 +68,7 @@
   [:target-path "target/cljsbuild"]
   :shadow-cljs
   {:nrepl {:port 7002}
+   :fs-watch {:hawk false}
    :builds
    {:app
     {:target     :browser
