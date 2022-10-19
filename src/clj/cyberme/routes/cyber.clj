@@ -662,8 +662,9 @@
                            (hr/response (task/upload-job (:id path) body)))}}]])
 
 (s/def :week-plan/week-id string?)
-
 (s/def :week-plan/range-week int?)
+(s/def :week-plan/from int?)
+(s/def :week-plan/to int?)
 
 (def week-plan-route
   ;"其中获取本周计划使用 API /dashboard/plant-week，其余 API 参见此处"
@@ -678,9 +679,11 @@
    ["/list-items"
     {:get {:summary     "列出指定时间范围的所有计划项目"
            :description "列出指定时间范围的所有计划项目，从本周起，向前 range-week 周, 数据格式 {:date :result}"
-           :parameters  {:query (s/keys :opt-un [:global/user :global/secret :week-plan/range-week])}
-           :handler     (fn [{{{range :range-week} :query} :parameters}]
-                          (hr/response (week/handle-get-week-plan-range range)))}}]
+           :parameters  {:query (s/keys :opt-un [:global/user :global/secret
+                                                 :week-plan/from
+                                                 :week-plan/to])}
+           :handler     (fn [{{query :query} :parameters}]
+                          (hr/response (week/handle-get-week-plan-range query)))}}]
    ["/add-item"
     {:post {:summary     "添加本周计划项目"
             :description "添加本周计划项目，需要传入至少 name, category,

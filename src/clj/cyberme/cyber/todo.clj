@@ -215,8 +215,7 @@
           (log/warn "[todo-today] need focus but miss access-token, "
                     "may not enable by todologin or not refresh token frequently."))))
     (let [all (db/to-do-recent-day-2 {:day 15})
-          recent (filterv #(and (= (:importance %) "high")
-                                (= (:status %) "notStarted")) all)
+          ;recent (filterv #(and (= (:importance %) "high") (= (:status %) "notStarted")) all)
           ;使用新计算方法：不管是否 high importance，只要 due or finish or create 是今天就算
           ;recent-start-and-not-start (filterv #(and (= (:importance %) "high")) all)
           today (LocalDate/now)

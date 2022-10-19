@@ -18,12 +18,13 @@
     (take 7 (iterate #(.plusDays % 1) week-first))))
 
 (defn each-monday-of
-  "获取从本周一开始(包括)向前 n 个周一的 LocalDate 序列"
-  [n]
-  (let [now (LocalDate/now)
-        today-day-of-week (.getValue (.getDayOfWeek now))
-        week-first (.minusDays now (- today-day-of-week 1))]
-    (take n (iterate #(.minusDays % 7) week-first))))
+  "获取从某个日期的周一开始(包括)向前 n 个周一的 LocalDate 序列"
+  ([start n]
+   (let [today-day-of-week (.getValue (.getDayOfWeek start))
+         week-first (.minusDays start (- today-day-of-week 1))]
+     (take n (iterate #(.minusDays % 7) week-first))))
+  ([n]
+   (each-monday-of (LocalDate/now) n)))
 
 (defn all-day
   "获取最近所有的 LocalDate 实例"

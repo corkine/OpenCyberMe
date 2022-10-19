@@ -61,9 +61,18 @@
    ["/plan"
     (merge {:name :plan}
            #?(:cljs {:view        #'core/plan-page
-                     :controllers [{:start (fn [_]
+                     :controllers [{:parameters {:query file-share/diary-key}
+                                    :start (fn [{query :query}]
                                              (rf/dispatch [:user/fetch-from-local])
-                                             (rf/dispatch [:dashboard/week-plan-range]))}]}))]
+                                             (let [[from to] (if (and (:from query) (:to query))
+                                                               (let [from (js/parseInt (:from query))
+                                                                     from (if (< from 0) 0 from)
+                                                                     to (js/parseInt (:to query))
+                                                                     to (if (<= to from) (+ from 4) to)]
+                                                                 [from to]) [0 4])
+                                                   all-obj (merge query {:from from :to to})]
+                                               (rf/dispatch [:week-plan/search-obj-reset! all-obj])
+                                               (rf/dispatch [:dashboard/week-plan-range-with-search])))}]}))]
 
    ["/work"
     (merge {:name :work}

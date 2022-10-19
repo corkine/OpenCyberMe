@@ -12,6 +12,39 @@
     [cyberme.dashboard.week-plan :as wp]
     [clojure.string :as str]))
 
+(rf/reg-event-db
+  :week-plan/trigger-url-search!
+  (fn [db [_ push-state?]]
+    (let [real-search-obj (:week-plan/search-obj db)]
+      (if push-state?
+        (reitit.frontend.easy/push-state :plan nil real-search-obj)
+        (reitit.frontend.easy/replace-state :plan nil real-search-obj))
+      db)))
+
+(rf/reg-event-db
+  :week-plan/search-obj-set!
+  (fn [db [_ [key value]]]
+    (if (:week-plan/search-obj db)
+      (assoc-in db [:week-plan/search-obj key] value)
+      (assoc db :week-plan/search-obj {key value}))))
+
+(rf/reg-event-db
+  :week-plan/search-obj-merge!
+  (fn [db [_ new-map]]
+    (if-let [old (:week-plan/search-obj db)]
+      (assoc db :week-plan/search-obj (merge old new-map))
+      (assoc db :week-plan/search-obj new-map))))
+
+(rf/reg-event-db
+  :week-plan/search-obj-reset!
+  (fn [db [_ maps]]
+    (assoc db :week-plan/search-obj maps)))
+
+(rf/reg-sub
+  :week-plan/current-range
+  (fn [db _] (let [obj (:week-plan/search-obj db)]
+               [(:from obj) (:to obj)])))
+
 (defn plan-page []
   [:div.mt-5.ml-4.mr-4
    [:div
@@ -86,4 +119,29 @@
                                     :opacity "0.5"
                                     :white-space "pre-wrap" :word-wrap "break-word"}}
                       [:span.is-text-grey description]])])]])]])]))
+   [:nav.pagination.is-centered.is-justify-content-end.pt-5.mt-5
+    {:role "navigation" :aria-label "pagination"}
+    [:a.pagination-previous
+     {:on-click (fn [_]
+                  (let [[f t] @(rf/subscribe [:week-plan/current-range])]
+                    (if (<= f 4)
+                      (do
+                        (rf/dispatch [:week-plan/search-obj-merge!
+                                      {:from 0 :to 4}])
+                        (rf/dispatch [:week-plan/trigger-url-search! true])
+                        (.scrollTo js/window 0 0))
+                      (do
+                        (rf/dispatch [:week-plan/search-obj-merge!
+                                      {:from (- f 4) :to (- t 4)}])
+                        (rf/dispatch [:week-plan/trigger-url-search! true])
+                        (.scrollTo js/window 0 0)))))}
+     "上一页"]
+    [:a.pagination-next
+     {:on-click (fn [_]
+                  (let [[f t] @(rf/subscribe [:week-plan/current-range])]
+                    (rf/dispatch [:week-plan/search-obj-merge!
+                                  {:from (+ f 4) :to (+ t 4)}])
+                    (rf/dispatch [:week-plan/trigger-url-search! true])
+                    (.scrollTo js/window 0 0)))}
+     "下一页"]]
    [:div {:style {:margin-bottom "100px"}}]])

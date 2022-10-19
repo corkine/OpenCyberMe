@@ -87,9 +87,10 @@
 
 (defn handle-get-week-plan-range
   "获取特定日期范围的计划，如果当周没有计划，则返回空"
-  [range]
-  (let [range (if (nil? range) 1 (+ range 1))
-        range-local-date (tool/each-monday-of range)]
+  [{:keys [from to]}]
+  (let [skip (or from 0)
+        take (or to 4)
+        range-local-date (tool/each-monday-of (.minusDays (LocalDate/now) (* 7 skip)) take)]
     (try
       {:message "获取范围计划成功"
        :data

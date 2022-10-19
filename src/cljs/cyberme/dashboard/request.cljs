@@ -100,10 +100,18 @@
 
 ;周计划范围接口：获取最近几周的周计划（倒序排列）
 (ajax-flow {:call                   :dashboard/week-plan-range
-            :uri-fn                 #(str "/cyber/week-plan/list-items?range-week=4")
+            :uri-fn                 #(let [{:keys [from to]} %]
+                                       (str "/cyber/week-plan/list-items?from=" from "&to=" to))
             :data                   :dashboard/week-plan-range-data
             :clean                  :dashboard/week-plan-range-clean
             :failure-notice         true})
+
+(rf/reg-event-db
+  :dashboard/week-plan-range-with-search
+  (fn [db _]
+    (let [search-obj (get db :week-plan/search-obj {})]
+      (rf/dispatch [:dashboard/week-plan-range search-obj]))
+    db))
 
 ;周计划接口：删除、新建项目成功后触发更新主页，其余：列出项目，添加删除记录仅请求 HTTP
 (rf/reg-sub
