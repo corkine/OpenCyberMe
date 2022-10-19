@@ -54,8 +54,8 @@
     [:span.is-size-6.ml-1.my-1.is-clickable
      {:on-click #(rf/dispatch [:common/navigate! :work-all])}
      "\uD83C\uDF0F 工作生涯日历"]]
-   [wp/week-plan-modify-item-dialog :dashboard/week-plan-range]
-   [wp/week-plan-log-update-dialog :dashboard/week-plan-range]
+   [wp/week-plan-modify-item-dialog :dashboard/week-plan-range-with-search]
+   [wp/week-plan-log-update-dialog :dashboard/week-plan-range-with-search]
    (let [{{:keys [date result]} :data}
          @(rf/subscribe [:dashboard/week-plan-range-data])]
      (for [some-week date]                                  ;;所有周的数据
