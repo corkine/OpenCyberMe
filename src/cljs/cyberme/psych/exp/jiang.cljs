@@ -438,4 +438,4 @@
          (d/back-questions)
          ;数据上传
          {:type   :upload
-          :widget [w/upload "上传数据" "正在上传数据，请勿关闭此页面！"]}]))))
+          :widget [w/upload "学习和实验结束！感谢你的参与！" "感谢你的认真学习~"]}]))))

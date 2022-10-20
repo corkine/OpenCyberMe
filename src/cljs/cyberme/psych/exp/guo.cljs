@@ -188,4 +188,4 @@
          (mapv #(wrap-header % 5) (d/back-questions))
          ;上传数据页面
          {:type   :upload
-          :widget [w/upload "学习和实验结束！" "感谢你的认真学习~"]}]))))
+          :widget [w/upload "学习和实验结束！感谢你的参与！" "感谢你的认真学习~"]}]))))
