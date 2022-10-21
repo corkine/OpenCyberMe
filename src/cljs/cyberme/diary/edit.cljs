@@ -65,7 +65,8 @@
               (merge
                 {:style     {:box-shadow    "none"
                              :border-radius 0
-                             :border-color  :transparent}
+                             :border-color  :transparent
+                             :font-family (if preview? :serif :inherit)}
                  :value     title-str
                  :on-change #(reset! title (.. % -target -value))}
                 (if preview? {:readOnly "readOnly"} {}))]]
@@ -134,7 +135,8 @@
            (when week-items
              [:div {:style {:margin "-10px 0px 20px 12px"}}
               [week/plan-widget week-items {:go-diary-add-log false :show-todo true}]])
-           [:div.is-size-6.markdown-body {:style {:margin "12px 12px 12px 12px"}}
+           [:div.is-size-6.markdown-body {:style {:margin "12px 12px 12px 12px"
+                                                  :font-family "serif"}}
             (if preview?
               [md/mark-down (string/replace content-str #"(https://static2.mazhangjing.com/.*?\.\w+)\)" (str "$1" oss-process ")"))]
               [:textarea.textarea.is-light

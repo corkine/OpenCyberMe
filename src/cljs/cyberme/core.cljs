@@ -301,6 +301,7 @@
 
 (defn init! []
   (start-router!)
+  (js/setInterval (fn [_] (rf/dispatch [:dashboard/sync-all])) (* 1000 60 10))
   (set! (.-onpaste js/document)
         (fn [event]
           (let [target (.-clipboardData event)

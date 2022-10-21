@@ -230,18 +230,37 @@
        :tasks     []
        :message   (str "获取 Today 消息失败：" (.getMessage e))})))
 
+(defn sort-todo
+  "对待办事项按照如下规则进行排序：是否完成（未完成优先）、列表、创建时间（较晚的优先）"
+  [todo-list]
+  (sort (fn [{s1 :status l1 :list c1 :create_at :as a1}
+             {s2 :status l2 :list c2 :create_at :as a2}]
+          (cond (= s1 s2)
+                (if (= l1 l2) (* -1 (compare c1 c2)) (compare l1 l2))
+                (= "completed" s1) 100
+                (= "completed" s2) -100
+                :else (compare a1 a2)))
+        todo-list))
+
 (defn handle-recent
   "返回最近 n 天的 TODO 待办事项，按照天数进行分组"
   [{day :day :or {day 7}}]
   (let [data (db/to-do-recent-day-2 {:day day})]
-    (group-by #(str (:time %)) data)))
+    (let [origin (group-by #(str (:time %)) data)
+          ;{"2022-10-10" [{:modified_at :time :finish_at :title :list
+          ; :status :due_at :create_at :importance}]}
+          sorted-data (into {}
+                            (mapv (fn [[date-str todo-list]]
+                                    [date-str (sort-todo todo-list)])
+                                  origin))]
+      sorted-data)))
 
 (defn handle-work-today
   "获取今日的工作事项"
   []
   (try
     {:message "Success"
-     :status 1
+     :status  1
      :data
      (let [recent-items (db/to-do-recent-day-2 {:day 2})
            today (LocalDate/now)
@@ -282,7 +301,7 @@
          with-time-items))}
     (catch Exception e
       {:message (str "Error:" (.getMessage e))
-       :status -1})))
+       :status  -1})))
 
 (defn handle-week-static
   "返回本周的 TODO 待办事项，格式：{:2022-03-01 {:finished 3 :total 4}}"
