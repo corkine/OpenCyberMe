@@ -339,13 +339,31 @@
          {:type   :collect
           :widget [w/collect-guo]}
          ;前测知识 - 指导语
-         {:type   :hint
-          :widget [w/hint-jiang "欢迎参加心理学实验！"
-                   "同学你好，欢迎进入《二次根式》学习系统。<br>
-                    该系统的目的在于通过反馈学习来提高你对《二次根式》的掌握程度。<br>
-                    <b>首先，为了解你当前的学习情况，我们准备了10道题目。<br>请认真作答。</b>"
-                   "开始作答"
-                   w/go-next]}
+         (when-not is-exp-2?
+           {:type   :hint
+            :widget [w/hint-jiang "欢迎参加心理学实验！"
+                     "同学你好，欢迎进入《二次根式》学习系统。<br>
+                      该系统的目的在于通过反馈学习来提高你对《二次根式》的掌握程度。<br>
+                      <b>首先，为了解你当前的学习情况，我们准备了10道题目。<br>请认真作答。</b>"
+                     "开始作答"
+                     w/go-next]})
+         ;实验二指导语、前测问卷和 10 道题指导语
+         (when is-exp-2?
+           [{:type   :hint
+             :widget [w/hint-jiang "欢迎参加心理学实验！"
+                      "同学你好，欢迎进入《二次根式》学习系统。<br>
+                       该系统的目的在于通过反馈学习来提高你对《二次根式》的掌握程度。<br>
+                       <b>首先，请你填写一些问卷，<br>这些题目没有正误之分，根据你的真实情况和想法作答即可。</b>"
+                      "开始作答"
+                      w/go-next]}
+            (d/adapt1-questions)
+            (d/adapt2-questions)
+            (d/mentality-questions)
+            {:type   :hint
+             :widget [w/hint-jiang ""
+                      "接下来，为了解你当前的学习情况，我们准备了 10 道关于二次根式的题目。<br>请认真作答。"
+                      "开始作答"
+                      w/go-next]}])
          ;前测知识 - 10 道题目
          (d/front-questions)
          ;休息界面
@@ -354,11 +372,6 @@
                    "请休息1分钟，之后点击“继续”进入正式学习阶段。"
                    "继续"
                    w/go-next]}
-         ;实验二前测问卷
-         (when is-exp-2?
-           [(d/adapt1-questions)
-            (d/adapt2-questions)
-            (d/mentality-questions)])
          ;练习指导语
          (cond (= exp-cond 4)
                ;反馈学习 - 练习指导语 KR+正确解答步骤 一次反馈
