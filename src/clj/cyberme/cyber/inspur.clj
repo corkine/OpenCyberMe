@@ -856,6 +856,8 @@
   (let [{:keys [OffWork NeedMorningCheck WorkHour SignIn]} (handle-serve-hint {:token token})
         ;summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
         todo (todo/handle-today {:focus false :showCompleted true})
+        ;{:active, :rest, :diet, :goal-active, :goal-cut}
+        fitness (fitness/today-active)
         w (weather/get-weather-cache (or (keyword id) :na-tie))]
     #_(assoc hint :Summary (dissoc summary :Hint :Note :CurrentDate :WeekRawData)
                   :Todo todo
@@ -864,9 +866,11 @@
     {:weatherInfo     (:weather w)
      :tempInfo        (:temp w)
      :tempFutureInfo  (:tempFuture w)
+     :fitnessInfo     fitness
      :workStatus      (cond NeedMorningCheck "🔴"
                             OffWork "🟢"
                             :else "🟡")
+     :offWork         (if (nil? OffWork) true OffWork)
      :cardCheck       (let [alter (if WorkHour [(str WorkHour)] [])]
                         (if-let [signin SignIn]
                           (try
