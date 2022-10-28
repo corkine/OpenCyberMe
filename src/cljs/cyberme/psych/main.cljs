@@ -2,6 +2,7 @@
   (:require [cyberme.psych.widget :as w]
             [cyberme.psych.data :as d]
             [cyberme.psych.exp.guo :as g]
+            [cyberme.psych.data :as d]
             [cyberme.psych.exp.jiang :as j]
             [re-frame.core :as rf]
             [reagent.core :as r]
@@ -18,6 +19,10 @@
         (let [data (first (j/problem-data))]
           (vec (flatten
                  [
+                  (d/interest-questions-jiang)
+                  ;for test
+                  (doall (mapv #(j/problem 1 %) (j/problem-data)))
+                  ;(j/problem 1 (get (j/problem-data) 8 ))
                   (hint "条件1练习")
                   (j/problem-demo 1)
                   (hint "条件2练习")

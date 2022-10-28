@@ -96,8 +96,8 @@
                   [:img {:src   (let [ans @first-answer]
                                   (cond (= :A ans) feedback-a (= :B ans) feedback-b
                                         (= :C ans) feedback-c (= :D ans) feedback-d))
-                         :style {:display "block" :max-width :50em
-                                 :margin  "0 auto" :border "2px solid"}}]
+                         :style {:display "block" :max-width :50em :padding "10px"
+                                 :margin  "10px auto 0 auto" :border "2px solid"}}]
                   [:div
                    (if is-second?
                      [:button.button.is-info.is-large
@@ -180,20 +180,20 @@
   (let [data                                                ;问题 ID、题干、选项 A - D 提示、正确答案、详细解释
         [[:q1
           "https://static2.mazhangjing.com/cyber/202209/920a2d73_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/6fd91477_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/cc8187ec_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/7cff4d57_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/ba566a2b_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/50cdc480_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/6df0df94_图片.png"
           ""
           :D
-          "https://static2.mazhangjing.com/cyber/202209/d0b9bfe3_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/b4f0b76b_图片.png"]
          [:q2
           "https://static2.mazhangjing.com/cyber/202209/c9401387_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/d3a56c29_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/0e5c020c_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/ab80150a_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/7969d754_图片.png"
           ""
-          "https://static2.mazhangjing.com/cyber/202209/0b1448b0_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/08495b02_图片.png"
           :C
-          "https://static2.mazhangjing.com/cyber/202209/331c7862_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/a2f3945e_图片.png"]
          [:q3
           "https://static2.mazhangjing.com/cyber/202209/60da217e_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/664da060_图片.png"
@@ -205,27 +205,27 @@
          [:q4
           "https://static2.mazhangjing.com/cyber/202209/2d1bac16_图片.png"
           ""
-          "https://static2.mazhangjing.com/cyber/202209/8b0084ec_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/6a0cc2b3_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/1f919807_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/f7a94005_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/66533123_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/a7bc5fba_图片.png"
           :A
-          "https://static2.mazhangjing.com/cyber/202209/8d3c3d55_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/077d069a_图片.png"]
          [:q5
           "https://static2.mazhangjing.com/cyber/202209/9a072bd3_图片.png"
           ""
-          "https://static2.mazhangjing.com/cyber/202209/7f8d22dc_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/6adeb132_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/f4633427_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/70e75709_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/307ec2f9_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/28d5bd84_图片.png"
           :A
-          "https://static2.mazhangjing.com/cyber/202210/5b5ae9d4_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/3e3da95e_图片.png"]
          [:q6
           "https://static2.mazhangjing.com/cyber/202209/2b0dae53_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/1ed5d881_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/69858d31_图片.png"
           ""
-          "https://static2.mazhangjing.com/cyber/202209/d1b5a1de_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/cbff2481_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/0586cc76_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/a946bf2c_图片.png"
           :B
-          "https://static2.mazhangjing.com/cyber/202209/c0897262_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/9030c896_图片.png"]
          [:q7
           "https://static2.mazhangjing.com/cyber/202210/17a42073_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/b48e46b3_图片.png"
@@ -237,28 +237,27 @@
          [:q8
           "https://static2.mazhangjing.com/cyber/202209/9008bdb7_图片.png"
           "https://static2.mazhangjing.com/cyber/202209/565b3c42_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/3741358c_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/a626068e_图片.png"
           ""
           "https://static2.mazhangjing.com/cyber/202209/cfcae2f5_图片.png"
           :C
           "https://static2.mazhangjing.com/cyber/202209/b60483e0_图片.png"]
          [:q9
           "https://static2.mazhangjing.com/cyber/202209/d657a93e_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/8af9fc97_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/35f35895_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/35f35895_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/62679dcd_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/96455cbe_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/e0f8f651_图片.png"
           ""
           :D
-          "https://static2.mazhangjing.com/cyber/202209/98d4aded_图片.png"]
+          "https://static2.mazhangjing.com/cyber/202210/841bd6c4_图片.png"]
          [:q10
           "https://static2.mazhangjing.com/cyber/202209/64024208_图片.png"
           ""
-          "https://static2.mazhangjing.com/cyber/202210/3b3435f2_图片.png"
-          #_"https://static2.mazhangjing.com/cyber/202209/7190ab09_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/bafcd4d3_图片.png"
-          "https://static2.mazhangjing.com/cyber/202209/bafcd4d3_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/478bb9a6_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/eae1ef33_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/4a8d3993_图片.png"
           :A
-          "https://static2.mazhangjing.com/cyber/202209/0d984652_图片.png"]]]
+          "https://static2.mazhangjing.com/cyber/202210/78f75d68_图片.png"]]]
     (if @w/is-debug (vec (take 2 data)) data)))
 
 (defn problem-demo [exp-cond]
@@ -331,6 +330,7 @@
 
 (defn data []
   (let [is-exp-2? (= "true" (w/get-config :exp-2))
+        version2? (= "true" (w/get-config :version2))
         exp-cond (case (w/get-config :exp-cond) "1" 1 "2" 2 "3" 3 "4" 4 1)]
     (filterv
       (comp not nil?)
@@ -359,19 +359,24 @@
             (d/adapt1-questions)
             (d/adapt2-questions)
             (d/mentality-questions)
-            {:type   :hint
-             :widget [w/hint-jiang ""
-                      "接下来，为了解你当前的学习情况，我们准备了 10 道关于二次根式的题目。<br>请认真作答。"
-                      "开始作答"
-                      w/go-next]}])
-         ;前测知识 - 10 道题目
-         (d/front-questions)
-         ;休息界面
-         {:type   :hint
-          :widget [w/hint-jiang ""
-                   "请休息1分钟，之后点击“继续”进入正式学习阶段。"
-                   "继续"
-                   w/go-next]}
+            (when version2?
+              (d/interest-questions-jiang))
+            (when-not version2?
+              {:type   :hint
+               :widget [w/hint-jiang ""
+                        "接下来，为了解你当前的学习情况，我们准备了 10 道关于二次根式的题目。<br>请认真作答。"
+                        "开始作答"
+                        w/go-next]})])
+         (when-not version2?
+           ;前测知识 - 10 道题目
+           (d/front-questions))
+         (when-not version2?
+           ;休息界面
+           {:type   :hint
+            :widget [w/hint-jiang ""
+                     "请休息1分钟，之后点击“继续”进入正式学习阶段。"
+                     "继续"
+                     w/go-next]})
          ;练习指导语
          (cond (= exp-cond 4)
                ;反馈学习 - 练习指导语 KR+正确解答步骤 一次反馈

@@ -584,6 +584,60 @@
                          (rf/dispatch [:go-step 1]))))}
         "完成问卷"]]])])
 
+(defn interest-questionnaire-jiang
+  "自评问卷
+  返回的数据以 id 为 key，value 为 k-v 列表，其中 k 为每个题目编号（从 1 开始），v 为答案。
+  如果 answers 为数字，则返回答案 v 为每个题目的 answer 数字，
+  如果 answers 非数字，则返回答案 v 为每个题目的 answers 位置（从 1 开始），"
+  [{:keys [id leading answers questions]}]
+  [:div {:style {:margin-top :10em
+                 :background "white"}}
+   (if @is-debug [:div {:style {:position :absolute :right :20px :bottom :10px}}
+                  [:span.is-clickable {:on-click #(rf/dispatch [:go-step -1])} "<  "]
+                  [:span.is-clickable {:on-click #(rf/dispatch [:go-step 1])} "  >"]])
+   (r/with-let
+     [answer (r/atom {})]
+     [:div.is-flex.is-justify-content-center.is-flex-direction-column
+      [:div {:style {:max-width :70em :align-self :center}}
+       (when leading [:p.mb-2 leading])
+       [:<>
+        (for [index (range 1 (+ (count questions) 1))]
+          ^{:key index}
+          [:div.mb-5.mt-5
+           [:p.mb-4 (get questions (- index 1) "空")]
+           [:div.is-flex.pl-3.pr-3
+            (for [each answers]
+              ^{:key each}
+              [:div {:style {:text-align :center}}
+               [:label.radio
+                {:on-click #(swap! answer assoc index each)}
+                [:input {:type "radio" :name (str "q" index)}]
+                (str " " each)]
+               (cond (= each 1)
+                     [:p {:style {:min-width :6em}} "最低水平"]
+                     (= each 10)
+                     [:p {:style {:min-width :6em}} "最高水平"]
+                     :else
+                     [:p {:style {:min-width :6em}} ""])])]])]]
+      [:div.is-flex.is-justify-content-center
+       [:button.button.is-info.is-large.is-fullwidth
+        {:style    {:margin-top :100px :margin-bottom :100px
+                    :max-width  :30em}
+         :on-click (fn []
+                     (if (< (count @answer) (count questions))
+                       (js/alert "请完成所有题目后再提交！")
+                       (let [num-answer
+                             (into {}
+                                   (mapv (fn [[k v]] (if-not (number? v)
+                                                       [k (+ (-indexOf answers v) 1)]
+                                                       [k v]))
+                                         @answer))]
+                         (println @answer num-answer)
+                         (rf/dispatch [:save-answer [id num-answer]])
+                         (reset! answer {})
+                         (rf/dispatch [:go-step 1]))))}
+        "完成问卷"]]])])
+
 (defn problem-guo
   "展示题目，被试做出选择根据实验条件给与提示"
   [{:keys [id step-1 step-2 right-answer exp-cond is-demo demo-step2-hint demo-step3-hint]}]
