@@ -213,9 +213,9 @@
          [:q5
           "https://static2.mazhangjing.com/cyber/202209/9a072bd3_图片.png"
           ""
-          "https://static2.mazhangjing.com/cyber/202210/70e75709_图片.png"
-          "https://static2.mazhangjing.com/cyber/202210/307ec2f9_图片.png"
-          "https://static2.mazhangjing.com/cyber/202210/28d5bd84_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/5f69481c_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/89338ed3_图片.png"
+          "https://static2.mazhangjing.com/cyber/202210/fa4b9d0a_图片.png"
           :A
           "https://static2.mazhangjing.com/cyber/202210/3e3da95e_图片.png"]
          [:q6
@@ -257,7 +257,7 @@
           "https://static2.mazhangjing.com/cyber/202210/eae1ef33_图片.png"
           "https://static2.mazhangjing.com/cyber/202210/4a8d3993_图片.png"
           :A
-          "https://static2.mazhangjing.com/cyber/202210/78f75d68_图片.png"]]]
+          "https://static2.mazhangjing.com/cyber/202210/ae587d0d_图片.png"]]]
     (if @w/is-debug (vec (take 2 data)) data)))
 
 (defn problem-demo [exp-cond]
