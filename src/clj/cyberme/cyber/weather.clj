@@ -169,7 +169,9 @@
           {:tempFuture (diff-temp-tomorrow place)})))
 
 (defn will-notice-warn? [in]
-  (str/includes? in "正在下"))
+  ;不再通知下雨，iOS Widget 界面已经可以很好的提供及时天气信息
+  ;(str/includes? in "正在下")
+  false)
 
 (defn weather-routine-test []
   (let [now (LocalTime/now)
