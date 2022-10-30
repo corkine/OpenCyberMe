@@ -197,7 +197,9 @@
           :style    {:margin-top "-0.5em"}}
          (let [todo @(rf/subscribe [:dashboard/recent-data])
                items (-> todo :data :todo)]
-           (for [[day day-items] (vec items)]
+           (for [[day day-items] (sort (fn [[ka _] [kb _]]
+                                         (compare kb ka))
+                                       (vec items))]
              ^{:key day}
              [:<>
               [:p.mb-1.mt-2.is-family-code.has-text-weight-bold day]
