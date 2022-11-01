@@ -174,11 +174,11 @@
                         :on-change #(reset! name (.. % -target -value))}]]]]]
      [:div.field.is-horizontal
       [:div.field-label.is-normal
-       [:label.label "学号"]]
+       [:label.label "班级"]]
       [:div.field-body
        [:div.field
         [:p.control
-         [:input.input {:type      "text" :placeholder "请输入你的学号"
+         [:input.input {:type      "text" :placeholder "请输入你的班级"
                         :value     (or @school "")
                         :on-change #(reset! school (.. % -target -value))}]]]]]
      [:div.field.is-horizontal
@@ -194,7 +194,7 @@
                        (cond (nil? (re-matches #"\d\d" (or @age "")))
                              (js/alert "请输入正确的年龄，两位数字")
                              (nil? (re-matches #"\d+" (or @school "")))
-                             (js/alert "请输入正确的学号，纯数字")
+                             (js/alert "请输入正确的班级，纯数字")
                              :else
                              (let [is-ok (and @name
                                               @age

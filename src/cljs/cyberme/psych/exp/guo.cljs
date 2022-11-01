@@ -118,7 +118,13 @@
                              "4.学习后调查" "5.学习后测验"] (- index 1)]
             (-> origin :widget)]})
 
-(defn data []
+(defn wrap-header-version2 [origin index]
+  {:type   :wrapped
+   :widget [:<> [w/top-info ["1.学习前调查" "2.正式反馈学习"
+                             "3.学习后调查" "4.学习后测验"] (- index 1)]
+            (-> origin :widget)]})
+
+(defn data-version1 []
   (let [skip-front (= "true" (w/get-config :skip-front))
         exp-cond (case (w/get-config :exp-cond) "1" 1 "2" 2 "3" 3 "4" 4 1)]
     (filterv
@@ -186,6 +192,89 @@
           [w/image "https://static2.mazhangjing.com/cyber/202210/25c22607_图片.png"]}
          ;后测十道题
          (mapv #(wrap-header % 5) (d/back-questions))
+         ;上传数据页面
+         {:type   :upload
+          :widget [w/upload "学习和实验结束！感谢你的参与！" "感谢你的认真学习~"]}]))))
+
+(defn data []
+  (let [skip-front (= "true" (w/get-config :skip-front))
+        exp-cond (case (w/get-config :exp-cond) "1" 1 "2" 2 "3" 3 "4" 4 1)]
+    (filterv
+      (comp not nil?)
+      (flatten
+        [;欢迎指导语：信息、问卷
+         {:type   :hint
+          :widget [w/hint-jiang "欢迎来到数学反馈学习系统"
+                   "本次学习涉及《二次根式》的内容，本次学习将帮助你提升对知识点的掌握程度。<br>
+                    在进入正式学习之前，我们会收集一些信息，包括你的个人信息、与数学相关的一些观念。<br>
+                    这些题目并没有正确答案，请按照你的真实情况和想法作答即可。"
+                   "开始作答"
+                   w/go-next]}
+         ;被试信息收集
+         (wrap-header-version2 {:type :collect :widget [w/collect-guo]} 1)
+         (when-not skip-front                               ;允许跳过前测量表和前测知识
+           [;兴趣量表
+            (wrap-header-version2 (d/interest-questions) 1)
+            ;元认知量表
+            (wrap-header-version2 (d/meta-cong-questions) 1)
+            ;二次根式三道题（version2）
+            (wrap-header-version2 (d/interest-questions-jiang) 1)
+            ;休息界面
+            {:type   :hint
+             :widget [w/hint-jiang ""
+                      "请休息1分钟，等你觉得休息好了，就可以点击按钮继续学习" "继续学习" w/go-next]}])
+         ;练习和正文指导语
+         {:type   :hint
+          :widget [w/hint-jiang "《二次根式》正式学习"
+                   "欢迎进入《二次根式》的正式学习：<br>
+                    1. 首先，我们将完成一个情绪问卷；<br>
+                    2. 然后，我们需要做10道《二次根式》的选择题，<br>每做完一道题之后，将会提供对应的反馈，以帮助你进一步学习。"
+                   "开始作答"
+                   w/go-next]}
+         ;练习展示
+         (wrap-header-version2 {:type   :hint
+                       :widget [w/hint-jiang ""
+                                "这是一个练习题目，不记录正误，帮助你了解作答的流程。" "开始练习" w/go-next]}
+                      2)
+         (wrap-header-version2 (problem-demo exp-cond) 2)
+         ;正文指导语
+         (wrap-header-version2 {:type   :hint
+                       :widget [w/hint-jiang "" "下面开始正式反馈学习。" "开始学习"
+                                #(do (w/go-next)
+                                     (rf/dispatch [:save-answer ["开始时间" (.getTime (js/Date.))]]))]}
+                      2)
+         ;学习展示
+         (mapv #(wrap-header-version2 % 2) (mapv #(problem exp-cond %) (step23)))
+         ;后测指导语
+         {:type   :hint
+          :widget [w/hint-jiang "学习后问卷测量"
+                   "恭喜你完成了《二次根式》的反馈学习，接下来需要填写一些问卷，
+                   了解你在学习过程中的感受，这些题目并没有正确答案，请按照你的真实情况和想法作答即可。"
+                   "开始作答"
+                   w/go-next]}
+         ;后测情绪量表
+         (wrap-header-version2 (d/emotion-questions) 3)
+         ;后测自主感量表
+         (wrap-header-version2 (d/liberty-questions) 3)
+         ;后测动机量表
+         (wrap-header-version2 (d/motivation-questions-guo) 3)
+         ;认知负荷量表
+         (wrap-header-version2 (d/cong-questions) 3)
+         ;休息界面
+         {:type   :hint
+          :widget [w/hint-jiang ""
+                   "请休息1分钟，等你觉得休息好了，就可以点击按钮继续学习" "继续学习" w/go-next]}
+         ;迁移表现指导语
+         {:type   :hint
+          :widget [w/hint-jiang "《二次根式》学习后测验"
+                   "接下来我们最后要完成10道《二次根式》的选择题，<br>以了解你在刚刚反馈学习后的掌握情况。<br>
+                   需要做到以下要求：<br>
+                   1. 请认真作答，按照自己的真实水平完成题目，独立完成；<br>
+                   2. 可在草稿纸上计算后，选择你认为正确的答案。"
+                   "开始作答"
+                   w/go-next]}
+         ;后测十道题
+         (mapv #(wrap-header-version2 % 4) (d/back-questions))
          ;上传数据页面
          {:type   :upload
           :widget [w/upload "学习和实验结束！感谢你的参与！" "感谢你的认真学习~"]}]))))
