@@ -464,11 +464,17 @@
   ["/fitness"
    {:tags #{"健康数据"}}
    ["/iOSUpload"
-    {:post {:summary     "上传健康样本"
-            :description "IOS 健康 App 上传最近样本"
+    {:post {:summary     "上传健康样本（fitness 数据库，捷径）"
+            :description "IOS 健康 App 上传最近样本（fitness 数据库，捷径）"
             :parameters  {:formData (s/keys :req-un [:fitness/data])}
             :handler     (fn [{data :form-params}]
-                           (hr/response (fitness/handle-upload (get data "data"))))}}]
+                           (hr/response (fitness/handle-shortcut-upload (get data "data"))))}}]
+   ["/appUpload"
+    {:post {:summary     "上传健康样本（HealthKit）"
+            :description "IOS 健康 App 上传最近样本（HealthKit）"
+            :parameters  {:body any?}
+            :handler     (fn [{{data :body} :parameters}]
+                           (hr/response (fitness/handle-ios-app-active-upload data)))}}]
    ["/data"
     {:get {:summary     "最近健康样本"
            :description "查看最近的健康样本"
