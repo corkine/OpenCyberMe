@@ -195,24 +195,25 @@
   因为计算本周数据时，need-compute-day 包括未来空数据，day-count 则截止到今天为止"
   [need-compute-day day-count]
   (let [recent (db-recent day-count)
-        all-day (mapv str need-compute-day)
         recent-map (into {} (map (fn [data] [(:day data) data]) recent))
-        recent-result-from-watch (reduce #(assoc %1
-                                            (keyword %2)
-                                            (if-let [health-info (:health-info (:info (get recent-map %2)))]
-                                              {:active    (:activeEnergy health-info)
-                                               :rest      (:basalEnergy health-info)
-                                               :stand     (:standTime health-info)
-                                               :exercise  (:exerciseTime health-info)
-                                               :from-todo false}
-                                              {:active    0.0
-                                               :rest      0.0
-                                               :stand     0
-                                               :exercise  0
-                                               :from-todo false}))
-                                         {} all-day)]
+        recent-result-from-watch
+        (reduce #(assoc %1
+                   (keyword (str %2))
+                   (if-let [health-info (:health-info (:info (get recent-map %2)))]
+                     {:active    (:activeEnergy health-info)
+                      :rest      (:basalEnergy health-info)
+                      :stand     (:standTime health-info)
+                      :exercise  (:exerciseTime health-info)
+                      :from-todo false}
+                     {:active    0.0
+                      :rest      0.0
+                      :stand     0
+                      :exercise  0
+                      :from-todo false}))
+                {} need-compute-day)]
     (merge recent-result-from-watch
-           (recent-active-by-todo-pick (set (mapv keyword all-day)) day-count))))
+           (recent-active-by-todo-pick
+             (set need-compute-day) day-count))))
 
 ;;;;;;;;; 内部接口 ;;;;;;;;
 
