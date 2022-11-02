@@ -199,7 +199,7 @@
         recent-map (into {} (map (fn [data] [(:day data) data]) recent))
         recent-result-from-watch (reduce #(assoc %1
                                             (keyword %2)
-                                            (if-let [health-info (:health-info (get recent-map %2))]
+                                            (if-let [health-info (:health-info (:info (get recent-map %2)))]
                                               {:active    (:activeEnergy health-info)
                                                :rest      (:basalEnergy health-info)
                                                :stand     (:standTime health-info)
@@ -236,8 +236,8 @@
                  :goal-cut    goal-cut}
                 by-todo))
        (let [{{:keys [activeEnergy basalEnergy standTime exerciseTime] :as health-info}
-              :health-info} (db-fetch)]
-         (merge {:active      (or activeEnergy 0.0)                  ;;TODO check type
+              :health-info} (:info (db-fetch))]
+         (merge {:active      (or activeEnergy 0.0)
                  :rest        (or basalEnergy 0.0)
                  :stand       (or standTime 0)
                  :exercise    (or exerciseTime 0)
@@ -287,6 +287,7 @@
     :standTime int,minutes
     :exerciseTime int,minutes}]"
   [logs]
+  (log/info "[HealthUploader] upload from iOS " logs)
   (try
     (jdbc/with-transaction
       [t db/*db*]
