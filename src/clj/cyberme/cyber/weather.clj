@@ -1,62 +1,13 @@
 (ns cyberme.cyber.weather
-  (:require [cyberme.db.core :as db]
-            [org.httpkit.client :as client]
-            [org.httpkit.sni-client :as sni-client]
-            [hickory.core :as hi]
-            [hickory.select :refer [select child first-child tag] :as s]
+  (:require [cheshire.core :as json]
+            [clojure.string :as str]
             [clojure.tools.logging :as log]
-            [clojure.set :as set]
-            [cyberme.cyber.slack :as slack]
             [cyberme.config :refer [edn-in]]
-            [cheshire.core :as json]
-            [clojure.string :as str])
-  (:import (java.time LocalTime LocalDateTime Period Duration LocalDate)))
+            [cyberme.cyber.slack :as slack]
+            [org.httpkit.client :as client])
+  (:import (java.time Duration LocalDate LocalDateTime LocalTime)))
 
-(defn url [token locale]
-  (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=2&hourlysteps=24"
-          token locale))
-
-;百度经纬度查询 http://api.map.baidu.com/lbsapi/getpoint/index.html
-;:status "ok" / "failed" with :error
-;:result :alert {:status "ok" :content []} 预警信息
-;        :realtime {:status "ok" :pressure :air_quality :cloudrate :wind :temperature..} 实时天气
-;        :minutely {:status "ok" :precipitation_2h [] :precipitation [] :probability []
-;                   :description 此总结为本小时总结, 比如 最近的降雨带在西南50公里外呢
-;        :hourly {:status "ok" :skycon [] 每小时图标 :temperature 每小时温度 :visibility 每小时可见度
-;                 :precipitation 每小时降雨 :apparent_temperature 每小时实际温度 :humidity 怡人度
-;                 :wind 风速和风向 :cloudrate 云量 :air_quality 空气质量 :pressure 气压 :dswrf ??
-;                 :description 一句话总结，此总结为当天总结, 比如 未来24小时多云
-(comment
-  (json/parse-string
-    (:body @(client/request {:url     (url (edn-in [:weather :token])
-                                           (edn-in [:weather :map :na-tie :locale]))
-                             :method  :get
-                             :headers {"Content-Type" "application/json"}}))
-    true))
-
-(declare put-temp-cache)
-
-(defn check-weather
-  "检查天气信息，token 为彩云 API，place 为目标经纬度，for-day? 是否获取当日天气/每小时天气一句话信息"
-  [token name place for-day?]
-  (try
-    (let [response (json/parse-string
-                     (:body @(client/request {:url     (url token place)
-                                              :method  :get
-                                              :headers {"Content-Type" "application/json"}}))
-                     true)
-          ;_ (clojure.pprint/pprint response)
-          ]
-      (if (= "ok" (-> response :status))
-        (do
-          (put-temp-cache name response)
-          (if for-day?
-            (-> response :result :hourly :description)
-            (-> response :result :minutely :description)))
-        (log/error "[weather-service] api failed with: " (dissoc response :result))))
-    (catch Exception e
-      (log/error "[weather-service] failed to request: " (.getMessage e)))))
-
+;;;;;;;;;;;;;; CONFIG ;;;;;;;;;;;;
 (defn remap-weather-info [in]
   (cond (str/includes? in "最近的降雨带")
         (let [[_ target] (re-find #"最近的降雨带在(.*?)外呢" (str (or in "")))]
@@ -73,8 +24,60 @@
 
         :else in))
 
+(defn will-notice-warn? [in]
+  ;不再通知下雨，iOS Widget 界面已经可以很好的提供及时天气信息
+  ;(str/includes? in "正在下")
+  false)
+
+;;;;;;;;;;;;;; CACHE ;;;;;;;;;;;;
+
 (defonce weather-cache (atom {}))
+
 (defonce temp-cache (atom {}))
+
+(defn- diff-temp [place one-line?]
+  (if-let [cache (get-in @temp-cache [place :temp])]
+    (let [now (LocalDate/now)
+          {ymin :min ymax :max yavg :avg :as y} (get cache (.minusDays now 1))
+          {tmin :min tmax :max tavg :avg :as t} (get cache now)]
+      (cond (and y t)
+            (if one-line?
+              (format "[↑%.0f%+.0f↓%.0f%+.0f]"
+                      ymax (- tmax ymax)
+                      ymin (- tmin ymin))
+              {:high     tmax
+               :low      tmin
+               :diffHigh (- tmax ymax)
+               :diffLow  (- tmin ymin)})
+            t
+            (if one-line?
+              (format "[↑%.0f↓%.0f]" tmax tmin)
+              {:high tmax
+               :low  tmin})
+            :else
+            (if one-line?
+              ""
+              nil)))
+    (if one-line?
+      ""
+      nil)))
+
+(defn- diff-temp-tomorrow [place]
+  (if-let [cache (get-in @temp-cache [place :temp])]
+    (let [now (LocalDate/now)
+          {mmin :min mmax :max mavg :avg :as m} (get cache (.plusDays now 1))
+          {tmin :min tmax :max tavg :avg :as t} (get cache now)]
+      (cond (and m t)
+            {:high     tmax
+             :low      tmin
+             :diffHigh (- mmax tmax)
+             :diffLow  (- mmin tmin)}
+            t
+            {:high tmax
+             :low  tmin}
+            :else
+            nil))
+    nil))
 
 (defn set-weather-cache! [place weather]
   (swap! weather-cache dissoc place)
@@ -104,53 +107,6 @@
                 :max    (:max tomorrow-temp)
                 :avg    (:avg tomorrow-temp)})))))
 
-;(swap! temp-cache assoc-in [:na-tie :temp (.minusDays (LocalDate/now) 1)]
-;       {:min 12.0 :max 25.0})
-
-(defn diff-temp [place one-line?]
-  (if-let [cache (get-in @temp-cache [place :temp])]
-    (let [now (LocalDate/now)
-          {ymin :min ymax :max yavg :avg :as y} (get cache (.minusDays now 1))
-          {tmin :min tmax :max tavg :avg :as t} (get cache now)]
-      (cond (and y t)
-            (if one-line?
-              (format "[↑%.0f%+.0f↓%.0f%+.0f]"
-                      ymax (- tmax ymax)
-                      ymin (- tmin ymin))
-              {:high     tmax
-               :low      tmin
-               :diffHigh (- tmax ymax)
-               :diffLow  (- tmin ymin)})
-            t
-            (if one-line?
-              (format "[↑%.0f↓%.0f]" tmax tmin)
-              {:high tmax
-               :low  tmin})
-            :else
-            (if one-line?
-              ""
-              nil)))
-    (if one-line?
-      ""
-      nil)))
-
-(defn diff-temp-tomorrow [place]
-  (if-let [cache (get-in @temp-cache [place :temp])]
-    (let [now (LocalDate/now)
-          {mmin :min mmax :max mavg :avg :as m} (get cache (.plusDays now 1))
-          {tmin :min tmax :max tavg :avg :as t} (get cache now)]
-      (cond (and m t)
-            {:high     tmax
-             :low      tmin
-             :diffHigh (- mmax tmax)
-             :diffLow  (- mmin tmin)}
-            t
-            {:high tmax
-             :low  tmin}
-            :else
-            nil))
-    nil))
-
 (defn get-weather-cache
   "包括 weather-cache 和 temp-cache"
   [place]
@@ -168,61 +124,55 @@
           :else ;晚上
           {:tempFuture (diff-temp-tomorrow place)})))
 
-(defn will-notice-warn? [in]
-  ;不再通知下雨，iOS Widget 界面已经可以很好的提供及时天气信息
-  ;(str/includes? in "正在下")
-  false)
+;;;;;;;;;;;;;; INTERNAL API ;;;;;;;;;;;
+(defn- url [token locale]
+  (format "https://api.caiyunapp.com/v2.6/%s/%s/weather?alert=true&dailysteps=2&hourlysteps=24"
+          token locale))
 
-(defn weather-routine-test []
-  (let [now (LocalTime/now)
-        hour (.getHour now)]
-    (let [token (edn-in [:weather :token])
-          check-list (edn-in [:weather :check])]
-      (doseq [check check-list]
-        (let [locale-map (edn-in [:weather :map check])
-              locale (:locale locale-map)
-              name (:name locale-map)]
-          (cond (= hour 7)
-                (if-let [weather (check-weather token check locale true)]
-                  (slack/notify (str name ": " weather) "SERVER"))
-                (and (> hour 7) (<= hour 20))
-                (if-let [weather (check-weather token check locale false)]
-                  (do (set-weather-cache! check weather)
-                      (slack/notify (str name ": " weather) "PIXEL")
-                      (when (will-notice-warn? weather)
-                        (slack/notify (str name ": " weather) "SERVER"))))
-                :else
-                (unset-weather-cache! check)))))))
+(defn- check-weather
+  "检查天气信息，token 为彩云 API，place 为目标经纬度，for-day? 是否获取当日天气/每小时天气一句话信息"
+  [token name place for-day?]
+  (try
+    (let [response (json/parse-string
+                     (:body @(client/request {:url     (url token place)
+                                              :method  :get
+                                              :headers {"Content-Type" "application/json"}}))
+                     true)]
+      (if (= "ok" (-> response :status))
+        (do
+          (put-temp-cache name response)
+          (if for-day?
+            (-> response :result :hourly :description)
+            (-> response :result :minutely :description)))
+        (log/error "[weather-service] api failed with: " (dissoc response :result))))
+    (catch Exception e
+      (log/error "[weather-service] failed to request: " (.getMessage e)))))
 
-#_(set-weather-cache! :na-tie
-                    (check-weather (edn-in [:weather :token])
-                                   :na-tie (:locale (edn-in [:weather :map :na-tie]))
-                                   false))
-
-;初步设计：每天早 7:00 预告当日天气，每天 8:00 - 20:00 预告本小时降雨情况
-;程序每 5 分钟运行一次，如果在时间范围内，则通知，否则不通知
-;TODO 如果不降雨，下一小时话和上一小时一样，则不提示，如果降雨，每小时都提示
-(defn weather-routine-once []
-  (let [now (LocalTime/now)
-        hour (.getHour now)]
-    (if (-> now (.getMinute) (< 5))
-      (let [token (edn-in [:weather :token])
-            check-list (edn-in [:weather :check])]
-        (doseq [check check-list]
-          (let [locale-map (edn-in [:weather :map check])
-                locale (:locale locale-map)
-                name (:name locale-map)]
-            (cond (= hour 7)
-                  (if-let [weather (check-weather token check locale true)]
-                    (slack/notify (str name ": " weather) "SERVER"))
-                  (and (> hour 7) (<= hour 20))
-                  (if-let [weather (check-weather token check locale false)]
-                    (do (set-weather-cache! check weather)
-                        (slack/notify (str name ": " weather) "PIXEL")
-                        (when (will-notice-warn? weather)
-                          (slack/notify (str name ": " weather) "SERVER"))))
-                  :else
-                  (unset-weather-cache! check))))))))
+(defn weather-routine-once
+  "每天早 7:00 预告当日天气，每天 8:00 - 20:00 预告本小时降雨情况。
+  程序每 5 分钟运行一次，如果在时间范围内，则通知，否则不通知"
+  ([ignore-time-now?]
+   (let [now (LocalTime/now)
+         hour (.getHour now)]
+     (if (or ignore-time-now? (-> now (.getMinute) (< 5)))
+       (let [token (edn-in [:weather :token])
+             check-list (edn-in [:weather :check])]
+         (doseq [check check-list]
+           (let [locale-map (edn-in [:weather :map check])
+                 locale (:locale locale-map)
+                 name (:name locale-map)]
+             (cond (= hour 7)
+                   (if-let [weather (check-weather token check locale true)]
+                     (slack/notify (str name ": " weather) "SERVER"))
+                   (and (> hour 7) (<= hour 20))
+                   (if-let [weather (check-weather token check locale false)]
+                     (do (set-weather-cache! check weather)
+                         (slack/notify (str name ": " weather) "PIXEL")
+                         (when (will-notice-warn? weather)
+                           (slack/notify (str name ": " weather) "SERVER"))))
+                   :else
+                   (unset-weather-cache! check))))))))
+  ([] (weather-routine-once false)))
 
 (defn backend-weather-routine []
   (while true
@@ -237,3 +187,27 @@
         (Thread/sleep (* 1000 sleep-sec)))
       (catch Exception e
         (log/info "[weather-service] weather-service routine failed: " (.getMessage e))))))
+
+;;;;;;;;;;;;;;;; COMMENT ;;;;;;;;;;;;;;
+
+;百度经纬度查询 http://api.map.baidu.com/lbsapi/getpoint/index.html
+;:status "ok" / "failed" with :error
+;:result :alert {:status "ok" :content []} 预警信息
+;        :realtime {:status "ok" :pressure :air_quality :cloudrate :wind :temperature..} 实时天气
+;        :minutely {:status "ok" :precipitation_2h [] :precipitation [] :probability []
+;                   :description 此总结为本小时总结, 比如 最近的降雨带在西南50公里外呢
+;        :hourly {:status "ok" :skycon [] 每小时图标 :temperature 每小时温度 :visibility 每小时可见度
+;                 :precipitation 每小时降雨 :apparent_temperature 每小时实际温度 :humidity 怡人度
+;                 :wind 风速和风向 :cloudrate 云量 :air_quality 空气质量 :pressure 气压 :dswrf ??
+;                 :description 一句话总结，此总结为当天总结, 比如 未来24小时多云
+(comment
+  (set-weather-cache! :na-tie
+                      (check-weather (edn-in [:weather :token])
+                                     :na-tie (:locale (edn-in [:weather :map :na-tie]))
+                                     false))
+  (json/parse-string
+    (:body @(client/request {:url     (url (edn-in [:weather :token])
+                                           (edn-in [:weather :map :na-tie :locale]))
+                             :method  :get
+                             :headers {"Content-Type" "application/json"}}))
+    true))
