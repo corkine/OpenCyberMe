@@ -189,12 +189,7 @@
           [:p.is-size-7.mb-3.has-text-weight-light "Blue 最长坚持 " blue-marvel-count " 天"]]]]
        [:div#week-info.mx-2.box {:style {:margin-bottom :1em
                                          :position      :relative
-                                         :border-radius "6px 6px 0 0"
-                                         ;:background-color "#0f224c"
-                                         ;:color :white
-                                         ;:box-shadow :none
-                                         ;:z-index       10
-                                         }}
+                                         :border-radius "6px 6px 0 0"}}
         [:div.columns
          (for [day [0 1 2 3 4 5 6]]
            ^{:key day}
@@ -353,33 +348,36 @@
                     ;今日的待办事项项目
                     (for [{:keys [title status list] :as todo} data]
                       ^{:key todo}
-                      [:p.mt-1
+                      [:p.mt-1 {:style {:overflow :hidden
+                                        :text-overflow :ellipsis
+                                        :white-space :nowrap}
+                                :title title}
                        [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
                        [:span.is-size-7 (when (= status "completed")
                                           {:style {:text-decoration :line-through}})
                         title]])])]
                 ;非今日的待办事项
                 [:div.mb-4 {:style {:opacity 0.5}}
-                 [:span.has-text-weight-bold.is-family-code
-                  (cond (= day (keyword today)) "今天"
-                        (= day (keyword yesterday)) "昨天"
-                        (= day (keyword tomorrow)) "明天"
-                        (= day (keyword tomorrow+1)) "后天"
-                        :else day)]
+                 (cond (= day (keyword today))
+                       [:span.has-text-weight-bold.is-family-code "今天"]
+                       (= day (keyword yesterday))
+                       [:span.has-text-weight-bold.is-family-code "昨天"]
+                       (= day (keyword tomorrow))
+                       [:span.has-text-weight-bold.is-family-code "明天"]
+                       (= day (keyword tomorrow+1))
+                       [:span.has-text-weight-bold.is-family-code "后天"]
+                       :else
+                       [:<>
+                        [:span.has-text-weight-bold.is-family-code day]
+                        [:span.is-family-code.is-size-7.ml-1 (tool/day-kw->week day)]])
                  (let [data (get todo day)
-                       data (filter #(not (or #_(str/includes? (:list %) "INSPUR")
-                                            (str/includes? (:list %) "任务"))) data)
-                       #_data #_(sort (fn [{s1 :status c1 :create_at l1 :list} {s2 :status c2 :create_at l2 :list}]
-                                        (cond (= l1 l2)
-                                              (cond (and (= "completed" s1) (= s1 s2)) (compare c2 c1)
-                                                    (= "completed" s1) 100
-                                                    (= "completed" s2) -100
-                                                    :else (compare c2 c1))
-                                              :else (compare l1 l2))) data)]
-                   (for [{:keys [time finish_at modified_at create_at
-                                 title status list importance] :as todo} data]
+                       data (filter #(not (str/includes? (:list %) "任务")) data)]
+                   (for [{:keys [title status list] :as todo} data]
                      ^{:key todo}
-                     [:p.mt-1
+                     [:p.mt-1 {:style {:overflow :hidden
+                                       :text-overflow :ellipsis
+                                       :white-space :nowrap}
+                               :title title}
                       [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
                       [:span.is-size-7 title]
                       [:span.is-size-7.has-text-weight-light.has-text-danger

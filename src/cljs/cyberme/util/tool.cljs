@@ -40,17 +40,23 @@
   [local-date-str]
   (second (re-find #"\d+-\d+-\d+T(\d+:\d+):\d+" local-date-str)))
 
-(defn week-? []
+(defn week-?
   "获取当天星期几的字符串"
-  (let [now (t/day-of-week (t/time-now))]
-    (case now
-      1 "周一"
-      2 "周二"
-      3 "周三"
-      4 "周四"
-      5 "周五"
-      6 "周六"
-      7 "周日")))
+  ([date] (let [now (t/day-of-week date)]
+            (case now
+              1 "周一"
+              2 "周二"
+              3 "周三"
+              4 "周四"
+              5 "周五"
+              6 "周六"
+              7 "周日")))
+  ([] (week-? (t/time-now))))
+
+(defn day-kw->week [day-kw]
+  (let [day (name day-kw)
+        date (format/parse-local-date (format/formatter "yyyy-MM-dd") day)]
+    (week-? date)))
 
 (defn datetime->simple
   "将 2022-03-29T08:11:46.12312 转换为 2022-03-29 08:11"
