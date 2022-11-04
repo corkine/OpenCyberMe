@@ -10,8 +10,7 @@
     [clojure.string :as str]))
 
 (defn auth-header []
-  (let [;{:keys [username password]} (storage/get-item "api_auth")
-        api-auth (rf/subscribe [:api-auth])
+  (let [api-auth (rf/subscribe [:api-auth])
         {username :user password :pass} @api-auth]
     (if (or (nil? username) (nil? password))
       {"Authorization" (str "Basic " (b64/encodeString (str "unknown" ":" (b64/encodeString "unknown"))))}
@@ -32,7 +31,7 @@
                    user (:user fetch)]
                (if (str/ends-with? (or user "") "__")
                  (assoc fetch :user-display (.substring user 0 (- (.-length user) 2))
-                              :is-sec? true)
+                              :is-super? true)
                  (assoc fetch :user-display user)))))
 
 (rf/reg-event-db

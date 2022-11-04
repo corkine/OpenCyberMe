@@ -264,13 +264,13 @@
                     [:a.navbar-item
                      {:on-click #(rf/dispatch [:common/navigate! :about])}
                      "关于 CyberMe"]]]
-                  (let [{login-hint :user-display is-sec? :is-sec?} @(rf/subscribe [:api-auth])
+                  (let [{login-hint :user-display is-super? :is-super?} @(rf/subscribe [:api-auth])
                         login-hint (or login-hint "登录")]
                     [:div.navbar-item.mx-0
                      [:div.is-clickable
                       {:on-click #(rf/dispatch [:app/show-modal :login-info-set])}
                       [:span.icon-text
-                       [:span.icon [(if is-sec? :i.fa.fa-user-secret :i.fa.fa-user)
+                       [:span.icon [(if is-super? :i.fa.fa-user-secret :i.fa.fa-user)
                                     {:style {:margin-left :-10px}}]]
                        [:span {:style {:margin-left :-5px}} login-hint]]]])]]]]))
 
