@@ -25,7 +25,15 @@
       (when (and username password)
         (assoc db :api-auth {:user username :pass password})))))
 
-(rf/reg-sub :api-auth (fn [db _] (:api-auth db)))
+;如果是 sec 模式，则替换删除下划线不显示
+(rf/reg-sub
+  :api-auth
+  (fn [db _] (let [fetch (:api-auth db)
+                   user (:user fetch)]
+               (if (str/ends-with? (or user "") "__")
+                 (assoc fetch :user-display (.substring user 0 (- (.-length user) 2))
+                              :is-sec? true)
+                 (assoc fetch :user-display user)))))
 
 (rf/reg-event-db
   :show-login

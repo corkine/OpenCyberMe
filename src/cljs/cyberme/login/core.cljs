@@ -11,11 +11,8 @@
   (r/with-let
     [fields (r/atom {})
      errors (r/atom {})]
-    (let [{username :user password :pass} @(rf/subscribe [:api-auth])
-          _ (when username (swap! fields assoc :username username))
-          ;因为实际使用密文，因此这里直接显示为空
-          ;_ (when password (swap! fields assoc :password password))
-          ]
+    (let [{username :user-display} @(rf/subscribe [:api-auth])
+          _ (when username (swap! fields assoc :username username))]
       (letfn [(common-fields [id label hint {:keys [type attr selects]}]
                 (r/with-let [v (r/cursor fields [id])
                              e (r/cursor errors [id])]

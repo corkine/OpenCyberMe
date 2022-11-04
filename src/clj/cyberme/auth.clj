@@ -4,7 +4,8 @@
             [cyberme.db.core :as db]
             [cyberme.tool :as tool]
             [cyberme.config :refer [env]]
-            [clojure.string :as s])
+            [clojure.string :as s]
+            [clojure.string :as str])
   (:import java.util.Base64))
 
 (defn get-logs-from-match [req]
@@ -81,8 +82,13 @@
   [request auth-fn]
   (let [auth ((:headers request) "authorization")
         cred (and auth (decode-base64 (last (re-find #"^Basic (.*)$" auth))))
-        [user pass] (and cred (s/split (str cred) #":" 2))]
-    (assoc request :basic-authentication (and cred (auth-fn (str user) (str pass))))))
+        [user pass] (and cred (s/split (str cred) #":" 2))
+        _ (println "user is " user)
+        is-super? (str/ends-with? (or user "") "__")
+        user (if is-super? (.subSequence user 0 (- (.length user) 2)) user)
+        is-authed? (and cred (auth-fn (str user) (str pass)))]
+    (assoc request :basic-authentication is-authed?
+                   :auth-info (when is-authed? {:user user :is-super? is-super?}))))
 
 (defn authentication-failure
   [& [realm denied-response]]
@@ -129,7 +135,6 @@
   [app authenticate & [realm denied-response]]
   (fn [{:keys [request-method] :as req}]
     (let [auth-req (basic-authentication-request req authenticate)]
-      #_(clojure.pprint/pprint (:uri req))
       (if (or (:basic-authentication auth-req)
               (auth-in-query (:query-params req))
               (is-allowed req)

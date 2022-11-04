@@ -49,95 +49,80 @@
   ;            :sql-func               db/delete-current}))
   )
 
-(defn handle-recent-diaries
-  "获取最近的日记"
-  [_]
-  (try
-    {:message "获取成功"
-     :data    (db/all-diary)
-     :status  1}
-    (catch Exception e
-      {:message (str "获取最近的日记失败" (.getMessage e)) :status 0})))
-
 (defn handle-diaries-limit
   "获取最近的日记，按照范围获取，from 最小值为 1"
-  [{:keys [from to] :or {from 1 to 100}}]
+  [{:keys [from to is-super?] :or {from 1 to 100}}]
   (try
     {:message (format "获取日记从 %d 到 %d 条成功" from to)
-     :data    (db/range-diary {:drop (- from 1) :take (+ (- to from) 1)})
+     :data    (let [all (db/range-diary {:drop (- from 1) :take (+ (- to from) 1)})]
+                (if is-super? all (filterv #(-> % :info :is-sec? not) all)))
      :status  1}
     (catch Exception e
       {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
 
 (defn handle-diaries-query
   "获取最近的日记，按照范围获取，from 最小值为 1"
-  [{:keys [from to search tag year month from-year from-month to-year to-month]
+  [{:keys [from to search tag year month from-year from-month to-year to-month is-super?]
     :or   {from 1 to 100}}]
   (try
     {:message (format "获取日记从 %d 到 %d 条成功" from to)
-     :data    (db/find-diary
-                {:drop   (- from 1)
-                 :take   (+ (- to from) 1)
-                 ;目前只搜索第一个关键词
-                 :search (if (vector? search)
-                           (first search)
-                           search)
-                 ;tag 标签目前不搜索，其需要对 JSON 的字段进行模糊匹配
-                 ;后期抽取为单独的表
-                 :tag    (when tag
-                           (if (vector? tag)
-                             (str/replace (first tag) "#" "")
-                             (str/replace tag "#" "")))
-                 :year   year
-                 :month  month
-                 :from   (cond (and from-year from-month)
-                               (format "%s-%s-%s" from-year from-month 1)
-                               from-year
-                               (format "%s-%s-%s" from-year 1 1)
-                               from-month
-                               (format "%s-%s-%s" (.getYear (LocalDate/now)) from-month 1))
-                 :to     (let [to-year1 (when to-year (Integer/parseInt to-year))
-                               to-month1 (when to-month (Integer/parseInt to-month))]
-                           (cond (and to-year1 to-month1)
-                                 (format "%s-%s-%s" to-year1 to-month1
-                                         (.getDayOfMonth
-                                           (.minusDays
-                                             (.plusMonths (LocalDate/of to-year1 to-month1
-                                                                        1) 1) 1)))
-                                 to-year1
-                                 (format "%s-%s-%s" to-year1 12
-                                         (.getDayOfMonth
-                                           (.minusDays
-                                             (.plusMonths (LocalDate/of to-year1 12 1) 1) 1)))
-                                 to-month1
-                                 (let [year (.getYear (LocalDate/now))]
-                                   (format "%s-%s-%s" year to-month1
-                                           (.getDayOfMonth
-                                             (.minusDays
-                                               (.plusMonths (LocalDate/of year to-month1
-                                                                          1) 1) 1))))))})
+     :data    (let [all
+                    (db/find-diary
+                      {:drop   (- from 1)
+                       :take   (+ (- to from) 1)
+                       ;目前只搜索第一个关键词
+                       :search (if (vector? search)
+                                 (first search)
+                                 search)
+                       ;tag 标签目前不搜索，其需要对 JSON 的字段进行模糊匹配
+                       ;后期抽取为单独的表
+                       :tag    (when tag
+                                 (if (vector? tag)
+                                   (str/replace (first tag) "#" "")
+                                   (str/replace tag "#" "")))
+                       :year   year
+                       :month  month
+                       :from   (cond (and from-year from-month)
+                                     (format "%s-%s-%s" from-year from-month 1)
+                                     from-year
+                                     (format "%s-%s-%s" from-year 1 1)
+                                     from-month
+                                     (format "%s-%s-%s" (.getYear (LocalDate/now)) from-month 1))
+                       :to     (let [to-year1 (when to-year (Integer/parseInt to-year))
+                                     to-month1 (when to-month (Integer/parseInt to-month))]
+                                 (cond (and to-year1 to-month1)
+                                       (format "%s-%s-%s" to-year1 to-month1
+                                               (.getDayOfMonth
+                                                 (.minusDays
+                                                   (.plusMonths (LocalDate/of to-year1 to-month1
+                                                                              1) 1) 1)))
+                                       to-year1
+                                       (format "%s-%s-%s" to-year1 12
+                                               (.getDayOfMonth
+                                                 (.minusDays
+                                                   (.plusMonths (LocalDate/of to-year1 12 1) 1) 1)))
+                                       to-month1
+                                       (let [year (.getYear (LocalDate/now))]
+                                         (format "%s-%s-%s" year to-month1
+                                                 (.getDayOfMonth
+                                                   (.minusDays
+                                                     (.plusMonths (LocalDate/of year to-month1
+                                                                                1) 1) 1))))))})]
+                (if is-super? all (filterv #(-> % :info :is-sec? not) all)))
      :status  1}
     (catch Exception e
       {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
 
-(defn handle-diaries-range
-  "获取最近范围的日志"
-  [^LocalDate start ^LocalDate end]
-  (try
-    {:message "获取成功"
-     :data    (db/diaries-range {:start start :end end})
-     :status  1}
-    (catch Exception e
-      {:message (str "获取最近范围的日记失败" (.getMessage e)) :status 0})))
-
 (defn handle-diary-by-id
   "获取某一日记"
-  [{:keys [id]}]
+  [{:keys [id is-super?]}]
   (try
     (if-let [data (db/diary-by-id {:id id})]
-      {:message "获取成功"
-       :data    data
-       :status  1}
+      (if is-super?
+        {:message "获取成功" :data data :status 1}
+        (if (-> data :info :is-sec?)
+          {:message "获取失败，没有权限" :data nil :status 0}
+          {:message "获取成功" :data data :status 1}))
       {:message (str "获取失败，没有找到 id 为 " id " 的日记。")
        :status  0})
     (catch Exception e
@@ -146,13 +131,17 @@
 
 (defn handle-diary-by-day
   "获取某一天的日记，天数使用 2022-03-01 格式传入"
-  [{:keys [date]}]
+  [{:keys [date is-super?]}]
   (try
     (let [day-inst (LocalDate/parse
                      date
                      (DateTimeFormatter/ISO_LOCAL_DATE))
           data (db/diaries-by-day {:day day-inst})]
-      {:message "获取成功" :data data :status 1})
+      (if is-super?
+        {:message "获取成功" :data data :status 1}
+        (if (-> data :info :is-sec?)
+          {:message "获取失败" :data nil :status 0}
+          {:message "获取成功" :data data :status 1})))
     (catch Exception e
       {:message (str "获取日记 @" date " 失败" (.getMessage e))
        :status  0})))
@@ -191,10 +180,12 @@
                         (log/error "[diary-save] parse (:day info) error: "
                                    info ", e: " (.getMessage e))
                         nil)) (LocalDate/now))
-            insert-diary-action (db/insert-diary t
-                                                 {:title   title
-                                                  :content content
-                                                  :info    info})]
+            insert-diary-action
+            (db/insert-diary t
+                             {:title   title
+                              :content content
+                              :info    (assoc info
+                                         :is-sec? (str/ends-with? (or title "") "__"))})]
         (if-let [score (:score info)]
           {:message "添加成功并成功更新每日分数"
            :status  1
@@ -219,10 +210,11 @@
                         (log/error "[diary-save] parse (:day info) error: "
                                    info ", e: " (.getMessage e))
                         nil)) (LocalDate/now))
-            update-action (db/update-diary t {:title   title
-                                              :content content
-                                              :info    info
-                                              :id      id})]
+            update-action
+            (db/update-diary t {:title   title
+                                :content content
+                                :info    (assoc info :is-sec? (str/ends-with? (or title "") "__"))
+                                :id      id})]
         (if-let [score (:score info)]
           {:message "更新成功并成功更新每日分数"
            :status  1

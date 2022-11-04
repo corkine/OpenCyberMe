@@ -602,16 +602,17 @@
             其中 from to 表示开始和结束的条数，默认 from 从 0 开始，默认 to 为 100"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret
                                                   :diary/from :diary/to])}
-            :handler     (fn [{{query :query} :parameters}]
-                           (hr/response (diary/handle-diaries-limit query)))}
+            :handler     (fn [{{query :query} :parameters auth :auth-info}]
+                           (hr/response (diary/handle-diaries-limit (merge query auth))))}
      :post {:summary     "获取特定查询参数日记"
             :description "查询参数包括：from, to(用于分页),
             from-year, to-year, from-month, to-month, year, month(过滤查询)
             origin, search, tag(搜索原始关键字和搜索关键字)"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                           :body  any?}
-            :handler     (fn [{{body :body} :parameters}]
-                           (hr/response (diary/handle-diaries-query body)))}}]
+            :handler     (fn [{{body :body} :parameters auth :auth-info}]
+                           (println "data" (merge body auth))
+                           (hr/response (diary/handle-diaries-query (merge body auth))))}}]
    ["/diary-new"
     {:tags #{"我的日记"}
      :post {:summary     "新建日记"
@@ -627,15 +628,15 @@
             :description "日记包括 title content info create_at update_at id 信息"
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                           :path  (s/keys :req-un [:diary/date])}
-            :handler     (fn [{{path :path} :parameters}]
-                           (hr/response (diary/handle-diary-by-day path)))}}]
+            :handler     (fn [{{path :path} :parameters auth :auth-info}]
+                           (hr/response (diary/handle-diary-by-day (merge path auth))))}}]
     ["/by-id/:id"
      {:get  {:summary     "获取某一日记"
              :description "日记包括 title content info create_at update_at id 信息"
              :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                            :path  (s/keys :req-un [:diary/id])}
-             :handler     (fn [{{path :path} :parameters}]
-                            (hr/response (diary/handle-diary-by-id path)))}
+             :handler     (fn [{{path :path} :parameters auth :auth-info}]
+                            (hr/response (diary/handle-diary-by-id (merge path auth))))}
       :post {:summary     "更新某一日记"
              :description "日记更新的包括 title content info id 信息"
              :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
