@@ -611,7 +611,6 @@
             :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
                           :body  any?}
             :handler     (fn [{{body :body} :parameters auth :auth-info}]
-                           (println "data" (merge body auth))
                            (hr/response (diary/handle-diaries-query (merge body auth))))}}]
    ["/diary-new"
     {:tags #{"我的日记"}
