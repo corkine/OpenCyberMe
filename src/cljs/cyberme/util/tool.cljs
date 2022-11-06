@@ -53,10 +53,14 @@
               7 "周日")))
   ([] (week-? (t/time-now))))
 
-(defn day-kw->week [day-kw]
-  (let [day (name day-kw)
-        date (format/parse-local-date (format/formatter "yyyy-MM-dd") day)]
-    (week-? date)))
+(defn day-kw->week
+  ([day-kw]
+   (day-kw->week day-kw false))
+  ([day-kw with-date-prefix]
+   (let [day (name day-kw)
+         date (format/parse-local-date (format/formatter "yyyy-MM-dd") day)
+         week (week-? date)]
+     (if with-date-prefix (str day " " week) week))))
 
 (defn datetime->simple
   "将 2022-03-29T08:11:46.12312 转换为 2022-03-29 08:11"

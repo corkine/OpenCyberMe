@@ -126,6 +126,7 @@
              :origin-data-is-subscribed true})))
 
 (defn plan-widget
+  "日记和 Dashboard 页面的每周计划组件"
   [week-plans {:keys [go-diary-add-log show-todo]
                :or   {go-diary-add-log false show-todo false}}]
   [:div.columns
@@ -202,7 +203,7 @@
                                        (vec items))]
              ^{:key day}
              [:<>
-              [:p.mb-1.mt-2.is-family-code.has-text-weight-bold day]
+              [:p.mb-1.mt-2.is-family-code.has-text-weight-bold (tool/day-kw->week day true)]
               (for [{:keys [list title status time create_at finish_at importance]} day-items]
                 ^{:key (str title create_at)}
                 [:p.my-1 [:span list] " / " [:span title]])]))]
