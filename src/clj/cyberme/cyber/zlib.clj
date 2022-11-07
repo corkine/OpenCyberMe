@@ -60,42 +60,47 @@
                               (.getStringCellValue ^StreamingCell cell)))
                 id-str (cell->str 0)]
             (if (re-matches #"\d+" id-str)
-              (let [id (Long/parseLong (cell->str 0))
-                    upload (LocalDate/parse (cell->str 1) pattern)
-                    modified (LocalDate/parse (cell->str 2) pattern)
-                    file-type (cell->str 3)
-                    file-size (Long/parseLong (fuck-num! (cell->str 4)))
-                    name (cell->str 5)
-                    author (cell->str 6)
-                    publisher (cell->str 7)
-                    language (cell->str 8)
-                    have-intro? (:include-intro? @config)
-                    next (if have-intro? 10 9)
-                    intro (if have-intro? (cell->str 9) nil)
-                    year (let [raw (cell->str next)]
-                           (if (str/blank? raw) nil (Integer/parseInt raw)))
-                    pages (let [raw (cell->str (+ next 1))]
-                            (if (str/blank? raw) nil (Integer/parseInt raw)))
-                    torrent (let [raw (cell->str (+ next 2))]
-                              (if (str/includes? raw "NULL") nil raw))]
-                #_(println id upload modified file-type file-size
-                           name author publisher language
-                           intro year pages torrent)
-                (.add collect [id upload modified file-type file-size
-                               name author publisher language
-                               intro year pages torrent {}])
-                (when (= (.size collect) 100)
-                  (print "⚡ ")
-                  (flush)
-                  (try
-                    (db/insert-zlib-batch {:books collect})
-                    (catch Exception e
-                      (.printStackTrace e)
-                      (doseq [co collect]
-                        (println co))
-                      (throw e)))
-                  (.clear collect)
-                  #_(println "upload done!")))
+              (try
+                (let [id (Long/parseLong (cell->str 0))
+                      upload (LocalDate/parse (cell->str 1) pattern)
+                      modified (LocalDate/parse (cell->str 2) pattern)
+                      file-type (cell->str 3)
+                      file-size (Long/parseLong (fuck-num! (cell->str 4)))
+                      name (cell->str 5)
+                      author (cell->str 6)
+                      publisher (cell->str 7)
+                      language (cell->str 8)
+                      have-intro? (:include-intro? @config)
+                      next (if have-intro? 10 9)
+                      intro (if have-intro? (cell->str 9) nil)
+                      year (let [raw (cell->str next)]
+                             (if (str/blank? raw) nil (Integer/parseInt raw)))
+                      pages (let [raw (cell->str (+ next 1))]
+                              (if (str/blank? raw) nil (Integer/parseInt raw)))
+                      torrent (let [raw (cell->str (+ next 2))]
+                                (if (str/includes? raw "NULL") nil raw))]
+                  #_(println id upload modified file-type file-size
+                             name author publisher language
+                             intro year pages torrent)
+                  (.add collect [id upload modified file-type file-size
+                                 name author publisher language
+                                 intro year pages torrent {}])
+                  (when (= (.size collect) 100)
+                    (print "⚡ ")
+                    (flush)
+                    (try
+                      (db/insert-zlib-batch {:books collect})
+                      (catch Exception e
+                        (.printStackTrace e)
+                        (doseq [co collect]
+                          (println co))
+                        (throw e)))
+                    (.clear collect)
+                    #_(println "upload done!")))
+                (catch Exception e
+                  (.printStackTrace e)
+                  (println "Error when handling line " id-str)
+                  (throw e)))
               (do
                 (println "not a valid line, first cell is " (cell->str 0))
                 (when (str/includes? (or (cell->str 9) "") "简介")
