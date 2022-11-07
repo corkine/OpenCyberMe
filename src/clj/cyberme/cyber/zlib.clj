@@ -33,7 +33,7 @@
              "西方心理学大师经典译丛" 2013 224 "pilimi-zlib-12000000-12039999.torrent" {}]})
   (db/search-zlib-book {:search "corkine" :regex true}))
 
-(defonce config (atom {}))
+(def config (atom {}))
 
 (defn import!
   "zlib xlsx importer"
@@ -45,12 +45,16 @@
                        (.open (clojure.java.io/input-stream path))))
         sheets (fn [workbook]
                  (->> workbook (map #(vector (.getSheetName %) %)) (into {})))]
+    (reset! config {})
     (with-open [wk (workbook file-path)]
       (let [collect (ArrayList.)
             all-sheets (sheets wk)
             sheet1 (all-sheets "Sheet1")
             pattern (DateTimeFormatter/ofPattern "M/d/yy")
-            fuck-num! #(str/replace (or % "") "," "")]
+            fuck-num! #(-> (or % "") (str/replace "," "")
+                           (str/replace "- 0" "0")
+                           (str/replace "NULL" ""))
+            year-4! #(if (> (count %) 4) (.substring % 0 4) %)]
         (doseq [row ^StreamingRow (seq sheet1)]
           (when (:break @config) (throw (RuntimeException. "中断工作！")))
           (let [cells (vec (iterator-seq (.cellIterator row)))
@@ -74,7 +78,7 @@
                       next (if have-intro? 10 9)
                       intro (if have-intro? (cell->str 9) nil)
                       year (let [raw (cell->str next)]
-                             (if (str/blank? raw) nil (Integer/parseInt raw)))
+                             (if (str/blank? raw) nil (Integer/parseInt (year-4! raw))))
                       pages (let [raw (cell->str (+ next 1))]
                               (if (str/blank? raw) nil (Integer/parseInt raw)))
                       torrent (let [raw (cell->str (+ next 2))]
@@ -82,21 +86,22 @@
                   #_(println id upload modified file-type file-size
                              name author publisher language
                              intro year pages torrent)
-                  (.add collect [id upload modified file-type file-size
-                                 name author publisher language
-                                 intro year pages torrent {}])
-                  (when (= (.size collect) 100)
-                    (print "⚡ ")
-                    (flush)
-                    (try
-                      (db/insert-zlib-batch {:books collect})
-                      (catch Exception e
-                        (.printStackTrace e)
-                        (doseq [co collect]
-                          (println co))
-                        (throw e)))
-                    (.clear collect)
-                    #_(println "upload done!")))
+                  (when true
+                    (.add collect [id upload modified file-type file-size
+                                   name author publisher language
+                                   intro year pages torrent {}])
+                    (when (= (.size collect) 100)
+                      (print "⚡ ")
+                      (flush)
+                      (try
+                        (db/insert-zlib-batch {:books collect})
+                        (catch Exception e
+                          (.printStackTrace e)
+                          (doseq [co collect]
+                            (println co))
+                          (throw e)))
+                      (.clear collect)
+                      #_(println "upload done!"))))
                 (catch Exception e
                   (.printStackTrace e)
                   (println "Error when handling line " id-str)
@@ -117,8 +122,9 @@
   (let [paths (iterator-seq
                 (.iterator
                   (Files/list
-                    (Paths/get "C:\\Users\\mazhangjing\\Desktop\\书籍目录" (into-array [""])))))]
-    (doseq [path ^Path (filterv #(str/ends-with? % ".xlsx")
+                    (Paths/get "/Users/corkine/Downloads/书籍目录/" (into-array [""])))))]
+    (doseq [path ^Path (filterv #(and (str/ends-with? % ".xlsx")
+                                      (not (str/starts-with? (last (str/split % #"/")) "~")))
                                 (mapv #(.toString %) paths))]
       (println "handling file" path)
       (import! (.toString path)))))
