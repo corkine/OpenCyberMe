@@ -498,3 +498,20 @@ where id = :id;
 -- :name drop-saver-log :! :1
 delete from moneysaverlogs
 where id = :id;
+
+
+----------------------------- zlib --------------------------
+-- :name insert-zlib-batch :! :*
+insert into zlib (id, file_update, info_update, file_type, file_size,
+                  name, author, publisher, language,
+                  description, publish_year, page, torrent, info)
+values :tuple*:books on conflict (id) do nothing;
+
+-- :name search-zlib-book :? :*
+select * from zlib
+where name
+/*~ (if (:regex params) */
+~ :search
+/*~*/
+ilike ('%'|| :search ||'%')
+/*~ ) ~*/

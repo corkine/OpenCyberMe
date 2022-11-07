@@ -1,6 +1,6 @@
 (defproject cyberme "1.0.1-SNAPSHOT"
 
-  :description "一个简单易用的家庭模块化物品管理系统"
+  :description "个人业务平台验证系统"
   :url "https://mazhangjing.com"
 
   :dependencies [[ch.qos.logback/logback-classic "1.2.3"]
@@ -50,7 +50,8 @@
                  [org.xerial/sqlite-jdbc "3.16.1"]
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  [thheller/shadow-cljs "2.11.5" :scope "provided"]
-                 [com.aliyun.oss/aliyun-sdk-oss "2.8.3"]]
+                 [com.aliyun.oss/aliyun-sdk-oss "2.8.3"]
+                 [com.monitorjbl/xlsx-streamer "2.1.0"]]
 
   ;:repositories [["central" "https://maven.aliyun.com/nexus/content/groups/public"]
   ;               ["clojars" "https://mirrors.tuna.tsinghua.edu.cn/clojars/"]]
