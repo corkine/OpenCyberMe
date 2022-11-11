@@ -7,6 +7,7 @@
             [taoensso.carmine :as car :refer (wcar)]
             [cyberme.config :refer [edn-in edn]]
             [cyberme.cyber.slack :as slack]
+            [cyberme.cyber.week-plan :as week-plan]
             [cyberme.cyber.todo :as todo]
             [cyberme.cyber.clean :as clean]
             [cyberme.cyber.fitness :as fitness]
@@ -857,7 +858,7 @@
   每周计划"
   [{:keys [day] :as params :or {day 7}}]
   (let [{:keys [data message status]} (handle-dashboard params)
-        {week-plan :data} (cyberme.cyber.week-plan/handle-get-week-plan)]
+        {week-plan :data} (week-plan/handle-get-week-plan)]
     {:message message
      :status status
      :data (merge data {:weekPlan week-plan})}))
