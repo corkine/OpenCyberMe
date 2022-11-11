@@ -864,16 +864,15 @@
           week-info (db/day-range {:from (first this-week) :to (last this-week)})
           week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
           full-week-info (map #(get week-info-map % {}) this-week)
-          status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)
           count-learn-req (count (filterv #(-> % :info :learn-request nil? not) full-week-info))
           count-learn-done (count (filterv #(-> % :info :learn-done nil? not) full-week-info))
           learn-done (= count-learn-req count-learn-done)
           with-week-learn-data
-          (assoc-in with-week-plan-data [:work :NeedWeekLearn] learn-done)]
+          (assoc-in with-week-plan-data [:work :NeedWeekLearn] (not learn-done))]
       (let [if-work-day? (do-need-work (LocalDateTime/now))
             need-diary-report?
             (if if-work-day?
-              (str/includes? (or (-> (db/today) :info :day-work) "") "已完成")
+              (not (str/includes? (or (-> (db/today) :info :day-work) "") "已完成"))
               false)]
         {:message message
          :status status
