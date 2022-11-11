@@ -855,13 +855,29 @@
 
 (defn handle-ios-dashboard
   "在 handle-dashboard 的基础上添加额外信息：
-  每周计划"
+  每周计划、每周学习和日报"
   [{:keys [day] :as params :or {day 7}}]
   (let [{:keys [data message status]} (handle-dashboard params)
-        {week-plan :data} (week-plan/handle-get-week-plan)]
-    {:message message
-     :status status
-     :data (merge data {:weekPlan week-plan})}))
+        {week-plan :data} (week-plan/handle-get-week-plan)
+        with-week-plan-data (merge data {:weekPlan week-plan})]
+    (let [this-week (tool/all-week-day)
+          week-info (db/day-range {:from (first this-week) :to (last this-week)})
+          week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
+          full-week-info (map #(get week-info-map % {}) this-week)
+          status (mapv #(if (nil? (-> % :info :plant)) 0 1) full-week-info)
+          count-learn-req (count (filterv #(-> % :info :learn-request nil? not) full-week-info))
+          count-learn-done (count (filterv #(-> % :info :learn-done nil? not) full-week-info))
+          learn-done (= count-learn-req count-learn-done)
+          with-week-learn-data
+          (assoc-in with-week-plan-data [:work :NeedWeekLearn] learn-done)]
+      (let [if-work-day? (do-need-work (LocalDateTime/now))
+            need-diary-report?
+            (if if-work-day?
+              (str/includes? (or (-> (db/today) :info :day-work) "") "已完成")
+              false)]
+        {:message message
+         :status status
+         :data (assoc-in with-week-learn-data [:work :NeedDiaryReport] need-diary-report?)}))))
 
 (defn handle-serve-hint-summary-widget [{:keys [kpi token id]}]
   (let [{:keys [OffWork NeedMorningCheck WorkHour SignIn]} (handle-serve-hint {:token token})
