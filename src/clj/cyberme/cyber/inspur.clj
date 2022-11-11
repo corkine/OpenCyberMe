@@ -852,6 +852,16 @@
                      "已完成")
       true)))
 
+(defn handle-ios-dashboard
+  "在 handle-dashboard 的基础上添加额外信息：
+  每周计划"
+  [{:keys [day] :as params :or {day 7}}]
+  (let [{:keys [data message status]} (handle-dashboard params)
+        {week-plan :data} (cyberme.cyber.week-plan/handle-get-week-plan)]
+    {:message message
+     :status status
+     :data (merge data {:weekPlan week-plan})}))
+
 (defn handle-serve-hint-summary-widget [{:keys [kpi token id]}]
   (let [{:keys [OffWork NeedMorningCheck WorkHour SignIn]} (handle-serve-hint {:token token})
         ;summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
