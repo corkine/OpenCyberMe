@@ -16,8 +16,9 @@
             [next.jdbc :as jdbc]
             [cyberme.cyber.goal :as goal]
             [cyberme.tool :as tool])
-  (:import (java.time LocalDate LocalDateTime)
-           (java.util UUID)))
+  (:import (java.time LocalDate LocalDateTime DayOfWeek)
+           (java.util UUID)
+           (java.time.temporal WeekFields)))
 
 (defn first-week-day
   "获取某天所在的周的第一天，作为本周的标记"
@@ -246,9 +247,12 @@
                                     items)]
                 (set-some-week t now {:plan all-items})
                 (if-let [goal-id goal-id]
-                  (let [goal-body {:name name
-                                   :description (str "由周计划 #" (:name current-item) " 的日志 " name " 创建")
-                                   :earn progress-delta}
+                  (let [goal-body {:name        name
+                                   :description (str "周计划 #"
+                                                     (.get now (.weekOfYear (WeekFields/of DayOfWeek/MONDAY 1)))
+                                                     " "
+                                                     (:name current-item) " 的日志")
+                                   :earn        progress-delta}
                         _ (goal/create-goal-log goal-id goal-body)]
                     {:message (str "更新本周计划的项目：添加新记录并关联目标日志成功。")
                      :status  1})

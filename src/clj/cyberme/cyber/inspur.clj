@@ -859,7 +859,7 @@
   [{:keys [day] :as params :or {day 7}}]
   (let [{:keys [data message status]} (handle-dashboard params)
         {week-plan :data} (week-plan/handle-get-week-plan)
-        with-week-plan-data (merge data {:weekPlan week-plan})]
+        with-week-plan-data (merge data {:weekPlan (or week-plan [])})]
     (let [this-week (tool/all-week-day)
           week-info (db/day-range {:from (first this-week) :to (last this-week)})
           week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
