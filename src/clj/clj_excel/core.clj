@@ -4,10 +4,10 @@
   (:import java.util.Date)
   (:import [org.apache.poi.xssf.usermodel XSSFWorkbook])
   (:import [org.apache.poi.hssf.usermodel HSSFWorkbook])
-  (:import [org.apache.poi.ss.usermodel Row Cell DateUtil WorkbookFactory CellStyle Font
-                                        Hyperlink Workbook Sheet]))
+  (:import [org.apache.poi.ss.usermodel Row DateUtil WorkbookFactory CellStyle Font
+                                        Hyperlink Workbook Sheet Row$MissingCellPolicy]))
 
-(def ^:dynamic *row-missing-policy* Row/CREATE_NULL_AS_BLANK)
+(def ^:dynamic *row-missing-policy* Row$MissingCellPolicy)
 
 (def data-formats {:general 0 :number 1 :decimal 2 :comma 3 :accounting 4
                    :dollars 5 :red-neg 6 :cents 7 :dollars-red-neg 8
