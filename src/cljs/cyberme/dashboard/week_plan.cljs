@@ -200,13 +200,18 @@
                       name]
                      [menu {:id name :padding :25px
                             :actions
-                            [["编辑" #(when-not go-diary-add-log ;仅在日记页面允许点击
-                                        (reset! update-log-now log)
-                                        (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
-                             ["删除" #(rf/dispatch
-                                        [:global/notice
-                                         {:message  (str "是否要删除日志" name "?")
-                                          :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]]}]])])])])]))]
+                            (if show-todo
+                              [["编辑" #(when-not go-diary-add-log ;仅在日记页面允许点击
+                                          (reset! update-log-now log)
+                                          (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
+                               ["删除" #(rf/dispatch
+                                          [:global/notice
+                                           {:message  (str "是否要删除日志" name "?")
+                                            :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]]
+                              [["删除" #(rf/dispatch
+                                          [:global/notice
+                                           {:message  (str "是否要删除日志" name "?")
+                                            :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]])}]])])])])]))]
    ;;;;;;; 仅在日记界面展示：最近待办事项 ;;;;;;;;
    [:div.column.is-6.is-size-7
     (when show-todo

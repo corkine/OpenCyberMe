@@ -81,7 +81,8 @@
         ;不论怎样，都将分数至少设置为 0.1，哪怕还没有日记
         today-score (if (= today-score-origin 0.0) default-score today-score-origin)
         ;;FITNESS
-        {:keys [active rest diet goal-active goal-cut]} fitness
+        {:keys [active rest exercise diet goal-active goal-cut]
+         :or {exercise 0}} fitness
         now-cost-energy (- (+ active rest) diet)
         ;;CLEAN
         {:keys [MorningBrushTeeth MorningCleanFace
@@ -151,15 +152,17 @@
                                           :finished (- (count today-todo)
                                                        not-finished-todo)})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "习惯" :value (/ clean-count 4)
-                    :start "#D8BFD8" :stop "#DDA0DD"
-                    :hint  (simple-print clean)}]]
+          [chart-1 {:title "锻炼" :value (/ exercise 60)
+                    :hint  (simple-print {:exercise exercise
+                                          :goal 60
+                                          :hint "Apple Watch 记录的每天锻炼分钟数"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "能量" :value (min (/ now-cost-energy goal-cut) (/ active goal-active))
+          [chart-1 {:title "运动" :value (min (/ now-cost-energy goal-cut) (/ active goal-active))
                     :start "#EE0000" :stop "#EE9572"
                     :hint  (simple-print fitness)}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "日记" :value today-score
+                    :start "#D8BFD8" :stop "#DDA0DD"
                     :hint  (simple-print {:score (* today-score-origin 100)})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
          {:style {:margin-top :20px :margin-bottom :3px}}
