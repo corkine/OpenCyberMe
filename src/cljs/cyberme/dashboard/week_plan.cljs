@@ -4,6 +4,7 @@
             [goog.string :as gstring]
             [re-frame.core :as rf]
             [cyberme.util.tool :as tool]
+            [cyberme.util.menu :refer [toggle! menu]]
             [clojure.string :as str]))
 
 (defn week-plan-modify-item-dialog
@@ -51,6 +52,14 @@
            :call-when-success [[:dashboard/week-plan-add-item-clean]
                                [:dashboard/plant-week]]
            :origin-data       {:category "learn" :progress "0.0"}}))
+
+(defn week-plan-log-add-from-todo [todo plan]
+  (let [{:keys [title time]} todo]
+    (rf/dispatch [:dashboard/week-plan-item-add-log-with-update-week
+                  {:name (str (tool/week-?) "：" title)
+                   :progress-delta 10.0
+                   :description (str "由 Microsoft TODO #" time " 添加")
+                   :item-id (:id plan)}])))
 
 (defn week-plan-log-add-dialog
   "添加本周计划项目日志，需要传入至少 name, category,
@@ -119,19 +128,20 @@
              :call-when-exit            [[:dashboard/week-plan-item-update-log-clean]]
              :call-when-success         [[:dashboard/week-plan-item-update-log-clean]
                                          [success-update]]
-             :origin-data (if-let [update-log @update-log-now]
-                            (select-keys update-log [:id :name :progress-delta
-                                                     :description :update :item-id])
-                            {})
+             :origin-data               (if-let [update-log @update-log-now]
+                                          (select-keys update-log [:id :name :progress-delta
+                                                                   :description :update :item-id])
+                                          {})
              :origin-data-is-subscribed true})))
 
 (defn plan-widget
-  "日记和 Dashboard 页面的每周计划组件"
+  "每周计划组件，在 Dashboard 右上角、新建日记或当日日记的编写栏上面展示"
   [week-plans {:keys [go-diary-add-log show-todo]
                :or   {go-diary-add-log false show-todo false}}]
   [:div.columns
    [(if show-todo :div.column.is-6 :div.column.is-12)
     (doall
+      ;;;;;; 每个周计划项目 ;;;;;;
       (for [{:keys [id name logs category progress description] :as item} week-plans]
         ^{:key id}
         [:<>
@@ -170,9 +180,9 @@
                            (rf/dispatch [:week-plan-db-set :modify-item item])
                            (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
               "_"]]
-            ;每个 WEEK PLAN ITEM 的 LOG
             (when @(rf/subscribe [:week-plan-db-query item-id])
               [:div.mb-2
+               ;;;; 周计划项目的每条日志 ;;;
                (for [{:keys [id name description progress-delta update] :as log} logs]
                  ^{:key id}
                  [:<>
@@ -186,10 +196,18 @@
                                       :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])}
                       (gstring/format "+%s" (if (>= progress-delta 10) progress-delta (str "\u00a0\u00a0" progress-delta)))]
                      [:span.is-clickable
-                      {:on-click #(when-not go-diary-add-log ;仅在日记页面允许点击
-                                    (reset! update-log-now log)
-                                    (rf/dispatch [:app/show-modal :update-week-plan-log!]))}
-                      name]])])])])]))]
+                      {:on-click (partial toggle! name)}
+                      name]
+                     [menu {:id name :padding :25px
+                            :actions
+                            [["编辑" #(when-not go-diary-add-log ;仅在日记页面允许点击
+                                        (reset! update-log-now log)
+                                        (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
+                             ["删除" #(rf/dispatch
+                                        [:global/notice
+                                         {:message  (str "是否要删除日志" name "?")
+                                          :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]]}]])])])])]))]
+   ;;;;;;; 仅在日记界面展示：最近待办事项 ;;;;;;;;
    [:div.column.is-6.is-size-7
     (when show-todo
       (if @(rf/subscribe [:week-plan-db-query :todo])

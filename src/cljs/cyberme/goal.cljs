@@ -11,6 +11,7 @@
     [reagent.core :as r]
     [cyberme.util.tool :as tool]
     [cyberme.util.form :refer [dialog]]
+    [cyberme.util.menu :refer [toggle menu]]
     [cyberme.dashboard.week-plan :as wp]
     [clojure.string :as str]))
 
@@ -168,10 +169,12 @@
 (defn goal-main []
   [:div.mt-5.ml-4.mr-4
    [:div
-    [:span.title "所有目标"]
+    [:span.title.is-clickable {:on-click (partial toggle :goal-123)}
+     "所有目标"]
     [:span.ml-3.is-clickable.is-size-7
      {:on-click
-      #(rf/dispatch [:app/show-modal :add-goal-goal!])} "[新建]"]]
+      #(rf/dispatch [:app/show-modal :add-goal-goal!])} "[新建]"]
+    [menu {:id :goal-123}]]
    [add-goal] [add-goal-log] [edit-goal]
    (let [{data :data} @(rf/subscribe [:goal/goals-data])]
      (for [{:keys [id name info create_at update_at logs] :as goal} data] ;;所有 Goals

@@ -8,8 +8,10 @@
             [cyberme.util.form :refer [dialog]]
             [cyberme.util.tool :as tool]
             [cyberme.validation :as va]
+            [cyberme.util.menu :refer [toggle! menu]]
             [goog.string :as gstring]
-            [re-frame.core :as rf]))
+            [re-frame.core :as rf]
+            [cyberme.dashboard.week-plan :as wp]))
 
 (def max-word 43)
 
@@ -308,11 +310,8 @@
                                     :outline          "13px solid #f5f5f5"
                                     :border-radius    :0px}}
                  (let [data (get todo day)
-                       data (filter #(and (not (or #_(str/includes? (:list %) "INSPUR")
-                                                 (str/includes? (:list %) "任务")))
+                       data (filter #(and (not (str/includes? (:list %) "任务"))
                                           (= (:importance %) "high")) data)
-                       finished-count (count (filter #(= (:status %) "completed") data))
-                       all-count (count data)
                        data (sort (fn [{s1 :status c1 :create_at :as a1} {s2 :status c2 :create_at :as a2}]
                                     (cond (= s1 s2) (compare c2 c1)
                                           (= "completed" s1) 100
@@ -346,16 +345,23 @@
                                        (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
                        "没有日报"])
                     ;今日的待办事项项目
-                    (for [{:keys [title status list] :as todo} data]
-                      ^{:key todo}
-                      [:p.mt-1 {:style {:overflow :hidden
-                                        :text-overflow :ellipsis
-                                        :white-space :nowrap}
-                                :title title}
-                       [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
-                       [:span.is-size-7 (when (= status "completed")
-                                          {:style {:text-decoration :line-through}})
-                        title]])])]
+                    (for [{:keys [title status list create_at] :as todo} data]
+                      ^{:key create_at}
+                      [:<>
+                       [:p.mt-1 {:style {:overflow :hidden
+                                         :text-overflow :ellipsis
+                                         :white-space :nowrap}
+                                 :title title
+                                 :on-click (partial toggle! create_at)}
+                        [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
+                        [:span.is-size-7 (when (= status "completed")
+                                           {:style {:text-decoration :line-through}})
+                         title]]
+                       [menu {:id create_at :padding :1px :actions
+                              (mapv (fn [plan]
+                                      [(str "添加到 \"" (:name plan) "\"")
+                                       #(wp/week-plan-log-add-from-todo todo plan)])
+                                    week-plans)}]])])]
                 ;非今日的待办事项
                 [:div.mb-4 {:style {:opacity 0.5}}
                  (cond (= day (keyword today))
@@ -372,7 +378,7 @@
                         [:span.is-family-code.is-size-7.ml-1 (tool/day-kw->week day)]])
                  (let [data (get todo day)
                        data (filter #(not (str/includes? (:list %) "任务")) data)]
-                   (for [{:keys [title status list] :as todo} data]
+                   (for [{:keys [title status list create_at] :as todo} data]
                      ^{:key todo}
                      [:p.mt-1 {:style {:overflow :hidden
                                        :text-overflow :ellipsis

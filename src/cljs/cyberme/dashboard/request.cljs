@@ -157,6 +157,14 @@
             :success-callback-event [[:app/scroll-to-result]]
             :failure-notice         true})
 
+(ajax-flow {:call                   :dashboard/week-plan-item-add-log-with-update-week
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (:item-id %) "/add-log")
+            :is-post                true
+            :data                   :dashboard/week-plan-item-add-log-data-2
+            :clean                  :dashboard/week-plan-item-add-log-clean-2
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
 (ajax-flow {:call                   :dashboard/week-plan-item-update-log
             :uri-fn                 #(str "/cyber/week-plan/update-item/" (:item-id %) "/update-log")
             :is-post                true
