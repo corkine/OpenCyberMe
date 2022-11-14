@@ -312,8 +312,10 @@
                  (let [data (get todo day)
                        data (filter #(and (not (str/includes? (:list %) "任务"))
                                           (= (:importance %) "high")) data)
-                       data (sort (fn [{s1 :status c1 :create_at :as a1} {s2 :status c2 :create_at :as a2}]
-                                    (cond (= s1 s2) (compare c2 c1)
+                       data (sort (fn [{s1 :status l1 :list c1 :create_at :as a1}
+                                       {s2 :status l2 :list c2 :create_at :as a2}]
+                                    (cond (= s1 s2)
+                                          (if (= l1 l2) (compare c1 c2) (compare l1 l2))
                                           (= "completed" s1) 100
                                           (= "completed" s2) -100
                                           :else (compare a1 a2))) data)]
