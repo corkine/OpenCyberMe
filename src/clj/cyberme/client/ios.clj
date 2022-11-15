@@ -17,7 +17,16 @@
   [{:keys [day] :as params :or {day 7}}]
   (let [{:keys [data message status]} (inspur/handle-dashboard params)
         {week-plan :data} (week-plan/handle-get-week-plan)
-        with-week-plan-data (merge data {:weekPlan (or week-plan [])})]
+        week-plan (or week-plan [])
+        with-log-week-plan (mapv (fn [plan]
+                                   (let [with-logs (if (nil? (:logs plan))
+                                                     (assoc plan :logs [])
+                                                     plan)
+                                         final (if (string? (:progress plan))
+                                                 (assoc plan :progress 0.0)
+                                                 plan)]
+                                     final)) week-plan)
+        with-week-plan-data (merge data {:weekPlan with-log-week-plan})]
     (let [this-week (tool/all-week-day)
           week-info (db/day-range {:from (first this-week) :to (last this-week)})
           week-info-map (reduce #(assoc %1 (:day %2) %2) {} week-info)
