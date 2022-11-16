@@ -202,7 +202,7 @@
                             :actions
                             (if show-todo
                               [["编辑" #(when-not go-diary-add-log ;仅在日记页面允许点击
-                                          (reset! update-log-now log)
+                                          (reset! update-log-now (assoc log :item-id item-id))
                                           (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
                                ["删除" #(rf/dispatch
                                           [:global/notice

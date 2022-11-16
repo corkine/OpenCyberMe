@@ -103,14 +103,14 @@
                                                   :font-size "5em"
                                                   :opacity   "0.04"}
                                     :aria-hidden "true"}]
-                (for [{:keys [id name update item-id description progress-delta] :as log} logs]
+                (for [{:keys [id name update description progress-delta] :as log} logs]
                   ^{:key id}
                   [:div.mb-2                                ;each log
                    [:p.mb-1                                 ;each log's body and entity
                     [:span.ml-2.is-family-code.is-clickable
                      {:style {:vertical-align :bottom}
                       :on-click (fn [_]
-                                  (reset! wp/update-log-now log)
+                                  (reset! wp/update-log-now (assoc log :item-id (:id item)))
                                   (rf/dispatch [:app/show-modal :update-week-plan-log!]))
                       :title (str "更新于：" update)} name]
                     [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]]
