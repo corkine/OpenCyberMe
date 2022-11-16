@@ -56,10 +56,10 @@
 (defn week-plan-log-add-from-todo [todo plan]
   (let [{:keys [title time]} todo]
     (rf/dispatch [:dashboard/week-plan-item-add-log-with-update-week
-                  {:name (str (tool/week-?) "：" title)
+                  {:name           (str (tool/week-?) "：" title)
                    :progress-delta 10.0
-                   :description (str "由 Microsoft TODO #" time " 添加")
-                   :item-id (:id plan)}])))
+                   :description    (str "由 Microsoft TODO #" time " 添加")
+                   :item-id        (:id plan)}])))
 
 (defn week-plan-log-add-dialog
   "添加本周计划项目日志，需要传入至少 name, category,
@@ -117,7 +117,7 @@
             [[:name "名称*" "日志名称"]
              [:progress-delta "进度*" "当前计划项目的进度"]
              [:description "详述" "日志详述" {:type :textarea :attr {:rows 3}}]
-             [:update "更新日期" "日志日期"]
+             [:update "更新日期" "日志日期"]                        ;如果更新日期为空，则填充为新值，即移动到最后
              #_[:id "编号" "当前的日志编号"]]
             "确定"
             #(if-let [err (va/validate! @%1 [[:name va/required] [:progress-delta va/number-str]])]

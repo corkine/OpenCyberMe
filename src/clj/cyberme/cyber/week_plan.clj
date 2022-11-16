@@ -15,7 +15,8 @@
             [cyberme.db.core :as db]
             [next.jdbc :as jdbc]
             [cyberme.cyber.goal :as goal]
-            [cyberme.tool :as tool])
+            [cyberme.tool :as tool]
+            [clojure.string :as str])
   (:import (java.time LocalDate LocalDateTime DayOfWeek)
            (java.util UUID)
            (java.time.temporal WeekFields)))
@@ -95,7 +96,7 @@
     (try
       {:message "获取范围计划成功"
        :data
-       {:date (mapv str range-local-date)
+       {:date   (mapv str range-local-date)
         :result (reduce
                   (fn [agg day]
                     (assoc agg (str day) (-> (get-some-week day) :info :plan)))
@@ -215,12 +216,14 @@
     (jdbc/with-transaction
       [t db/*db*]
       (let [progress-delta (Double/parseDouble (str progress-delta))
+            now (LocalDate/now)
+            now-time (LocalDateTime/now)
             log-input (merge log-input
                              {:id             id
                               :name           name
                               :progress-delta progress-delta})
-            now (LocalDate/now)
-            now-time (LocalDateTime/now)
+            update-input (or (:update log-input) "")
+            update-set (if (str/blank? update-input) now-time update-input)
             items (-> (get-some-week t now) :info :plan)
             current-item (first (filterv #(= item-id (:id %)) items))]
         (if-not current-item
@@ -236,9 +239,13 @@
                     item-log (merge log-input
                                     {:progress-from progress
                                      :progress-to   progress-now
-                                     :update        now-time})
+                                     :update        update-set})
                     current-item (merge current-item
-                                        {:logs        (conj logs item-log)
+                                        {:logs        (sort (fn [a b]
+                                                              (let [au (str (:update a))
+                                                                    bu (str (:update b))]
+                                                                (compare au bu)))
+                                                            (conj logs item-log))
                                          :progress    progress-now
                                          :last-update now-time})
                     all-items (mapv (fn [item]
