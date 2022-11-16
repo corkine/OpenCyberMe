@@ -301,10 +301,10 @@
     (jdbc/with-transaction
       [t db/*db*]
       (doseq [log logs]
-        (fitness/db-save t
-                         (if (:time log) (LocalDate/parse (:time log))
-                                         (LocalDate/now))
-                         {:health-info (dissoc log :time)}))
+        (db-save t
+                 (if (:time log) (LocalDate/parse (:time log))
+                                 (LocalDate/now))
+                 {:health-info (dissoc log :time)}))
       {:message (str "批量上传成功，共 " (count logs) " 天的数据。")
        :status  1})
     (catch Exception e
