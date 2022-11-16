@@ -7,8 +7,9 @@
             [cyberme.cyber.week-plan :as week-plan]
             [cyberme.tool :as tool]
             [cyberme.db.core :as db]
-            [clojure.string :as str])
-  (:import (java.time LocalDateTime)
+            [clojure.string :as str]
+            [next.jdbc :as jdbc])
+  (:import (java.time LocalDateTime LocalDate)
            (java.time.format DateTimeFormatter)))
 
 (defn handle-ios-dashboard
@@ -82,3 +83,8 @@
      :needDiaryReport (not (inspur/have-finish-daily-report-today?))
      :needPlantWater  true
      :updateAt        (int (/ (System/currentTimeMillis) 1000))}))
+
+(defn handle-ios-app-active-upload
+  "iOS HealthKit Information Upload API"
+  [logs]
+  (fitness/handle-ios-app-active-upload logs))

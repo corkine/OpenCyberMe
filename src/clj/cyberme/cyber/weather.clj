@@ -177,7 +177,8 @@
 (defn backend-weather-routine []
   (while true
     (try
-      (let [sleep-sec (* 5 60)]
+      ;改为每半小时运行一次
+      (let [sleep-sec (* 5 30)]
         (try
           (log/debug "[weather-service] starting checking with server...")
           (weather-routine-once)

@@ -237,14 +237,21 @@
                  :goal-cut    goal-cut}
                 by-todo))
        (let [{{:keys [activeEnergy basalEnergy standTime exerciseTime] :as health-info}
-              :health-info} (:info (db-fetch))]
-         (merge {:active      (or activeEnergy 0.0)
-                 :rest        (or basalEnergy 0.0)
-                 :stand       (or standTime 0)
-                 :exercise    (or exerciseTime 0)
-                 :goal-active goal-active
-                 :goal-cut    goal-cut}
-                by-todo)))))
+              :health-info} (:info (db-fetch))
+             result-v2 {:active      (or activeEnergy 0.0)
+                        :rest        (or basalEnergy 0.0)
+                        :stand       (or standTime 0)
+                        :exercise    (or exerciseTime 0)
+                        :goal-active goal-active
+                        :goal-cut    goal-cut}
+             ;任何其他 :health-info 中可能存在的数据
+             result-v3 (merge (dissoc health-info
+                                      :activeEnergy
+                                      :basalEnergy
+                                      :standTime
+                                      :exerciseTime)
+                              result-v2)]
+         (merge result-v3 by-todo)))))
   ([] (today-active false)))
 
 (defn week-active
@@ -286,17 +293,18 @@
     :activeEnergy double,kcal
     :basalEnergy double,kcal
     :standTime int,minutes
-    :exerciseTime int,minutes}]"
+    :exerciseTime int,minutes
+    :ANY OTHER KIND FITNESS INFORMATION HERE}]"
   [logs]
   (log/info "[HealthUploader] upload from iOS " logs)
   (try
     (jdbc/with-transaction
       [t db/*db*]
       (doseq [log logs]
-        (db-save t
-                 (if (:time log) (LocalDate/parse (:time log))
-                                 (LocalDate/now))
-                 {:health-info (dissoc log :time)}))
+        (fitness/db-save t
+                         (if (:time log) (LocalDate/parse (:time log))
+                                         (LocalDate/now))
+                         {:health-info (dissoc log :time)}))
       {:message (str "批量上传成功，共 " (count logs) " 天的数据。")
        :status  1})
     (catch Exception e
