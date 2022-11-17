@@ -200,11 +200,14 @@
         (reduce #(assoc %1
                    (keyword (str %2))
                    (if-let [health-info (:health-info (:info (get recent-map %2)))]
-                     {:active    (:activeEnergy health-info)
-                      :rest      (:basalEnergy health-info)
-                      :stand     (:standTime health-info)
-                      :exercise  (:exerciseTime health-info)
-                      :from-todo false}
+                     ;包括任何 HealthKit 上传的健康字段，比如 mindful
+                     (merge (dissoc health-info [:activeEnergy :basalEnergy
+                                                 :standTime :exerciseTime])
+                            {:active    (:activeEnergy health-info)
+                             :rest      (:basalEnergy health-info)
+                             :stand     (:standTime health-info)
+                             :exercise  (:exerciseTime health-info)
+                             :from-todo false})
                      {:active    0.0
                       :rest      0.0
                       :stand     0

@@ -75,29 +75,15 @@
         recent @(rf/subscribe [:dashboard/recent-data])
         day-work-res @(rf/subscribe [:dashboard/day-work-data])
         day-work (-> day-work-res :data)
-        {:keys [todo fitness blue clean express movie score work]} (:data recent)
-        ;;TODAY-SCORE
-        today-score-origin (* (or (:today (:data recent)) 0) 0.01)
-        ;不论怎样，都将分数至少设置为 0.1，哪怕还没有日记
-        today-score (if (= today-score-origin 0.0) default-score today-score-origin)
+        {:keys [todo fitness express movie score work]} (:data recent)
         ;;FITNESS
-        {:keys [active rest exercise diet goal-active goal-cut]
-         :or {exercise 0}} fitness
+        {:keys [active rest exercise diet mindful marvel-active marvel-mindful
+                goal-active goal-cut acc-active acc-mindful]
+         :or {exercise 0 mindful 0 marvel-active 0 marvel-mindful 0
+              acc-active 0 acc-mindful 0}} fitness
         now-cost-energy (- (+ active rest) diet)
-        ;;CLEAN
-        {:keys [MorningBrushTeeth MorningCleanFace
-                NightCleanFace NightBrushTeeth HabitCountUntilNow]} clean
-        clean-marvel-count (or (:MarvelCount clean) HabitCountUntilNow)
-        clean-count (+ (if MorningBrushTeeth 1 0)
-                       (if MorningCleanFace 1 0)
-                       (if NightCleanFace 1 0)
-                       (if NightBrushTeeth 1 0))
         ;;EXPRESS
         express (filterv #(not= (:status %) 0) express)
-        ;;BLUE
-        {:keys [MonthBlueCount MaxNoBlueDay Day120BalanceDay]} blue
-        blue-marvel-count (or (:MarvelCount blue) MaxNoBlueDay)
-        non-blue-percent (- 1 (/ MonthBlueCount month-days))
         ;;MOVIE
         movie (reverse (sort :last_update movie))
         ;;TO-DO
@@ -111,14 +97,7 @@
                              :else (/ finished-todo all-todo))
         days (reverse (sort (keys todo)))
         ;;WORK
-        {:keys [NeedWork OffWork NeedMorningCheck WorkHour SignIn Policy]} work
-        ;SignIn ;source, time
-        {:keys [exist pending success failed policy-count]} Policy
-        policy-str (if exist (gstring/format "[%s/%s/%s]"
-                                             success
-                                             (+ pending success failed)
-                                             policy-count)
-                             "[0/0/0]")
+        {:keys [NeedWork OffWork NeedMorningCheck WorkHour SignIn]} work
         ;;SCORE
         ;首先生成今天日期占据本周日期的百分比，以供进度条使用
         {:keys [hint show-pass-percent show-score-percent week-items]}
@@ -152,18 +131,24 @@
                                           :finished (- (count today-todo)
                                                        not-finished-todo)})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
+          [chart-1 {:title "运动" :value (min (/ now-cost-energy goal-cut) (/ active goal-active))
+                    :start "#EE0000" :stop "#EE9572"
+                    :hint  (simple-print {:active active
+                                          :week-active marvel-active
+                                          :acc-active acc-active
+                                          :hint "Apple Watch 记录的每天活动卡路里消耗"})}]]
+         [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "锻炼" :value (/ exercise 60)
                     :hint  (simple-print {:exercise exercise
                                           :goal 60
                                           :hint "Apple Watch 记录的每天锻炼分钟数"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "运动" :value (min (/ now-cost-energy goal-cut) (/ active goal-active))
-                    :start "#EE0000" :stop "#EE9572"
-                    :hint  (simple-print fitness)}]]
-         [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "日记" :value today-score
+          [chart-1 {:title "冥想" :value (let [origin (/ mindful 5)] (if (= origin 0) 0.1 origin))
                     :start "#D8BFD8" :stop "#DDA0DD"
-                    :hint  (simple-print {:score (* today-score-origin 100)})}]]]
+                    :hint  (simple-print {:mindful mindful
+                                          :week-mindful marvel-mindful
+                                          :acc-mindful acc-mindful
+                                          :hint "Apple Watch 记录的每天冥想分钟数"})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
          {:style {:margin-top :20px :margin-bottom :3px}}
          [:div.is-align-self-center.px-3 {:style {:margin-left :-10px :margin-right :-20px}}
@@ -177,7 +162,7 @@
            " 小时" (when-not NeedWork "*")
            " " [:span.is-family-code.is-size-7.is-clickable.dui-tips
                 {:on-click     #(rf/dispatch [:hcm/sync])
-                 :data-tooltip "同步 HCM"} policy-str] " "]
+                 :data-tooltip "同步 HCM"}] " "]
           [:div.tags
            (for [index (range (count SignIn))]
              ^{:key index}
@@ -185,13 +170,13 @@
               (let [{:keys [source time]} (get SignIn index)]
                 [:span.tag "#" " " (tool/datetime->time time)])])]]
          [:div.is-align-self-center.is-hidden-touch1.px-3
-          [:p.mt-2 "习惯已坚持 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} HabitCountUntilNow] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "最长坚持 " clean-marvel-count " 天"]]
+          [:p.mt-2 "本周已锻炼 "
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} (int marvel-active) ] " 千卡"]
+          [:p.is-size-7.mb-3.has-text-weight-light "历史累计 " (int acc-active) " 千卡"]]
          [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
-          [:p.mt-2 "平衡已坚持 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} Day120BalanceDay] " 天"]
-          [:p.is-size-7.mb-3.has-text-weight-light "Blue 最长坚持 " blue-marvel-count " 天"]]]]
+          [:p.mt-2 "本周已冥想 "
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} marvel-mindful ] " 分钟"]
+          [:p.is-size-7.mb-3.has-text-weight-light "历史累计 " acc-mindful  " 分钟"]]]]
        [:div#week-info.mx-2.box {:style {:margin-bottom :1em
                                          :position      :relative
                                          :border-radius "6px 6px 0 0"}}
@@ -200,7 +185,7 @@
            ^{:key day}
            [:div.column
             [:p.mb-1 (condp = day 0 "周一" 1 "周二" 2 "周三" 3 "周四" 4 "周五" 5 "周六" 6 "周日")]
-            (let [{:keys [clean blue energy today todo]} (get week-items day)
+            (let [{:keys [todo active mindful]} (get week-items day)
                   check-fnn (fn [check good bad]
                               (cond (nil? check) ""
                                     check (if (str/blank? good) "" [:p.mr-1 good])
@@ -208,27 +193,18 @@
               [:div.is-size-6.is-family-code {:style {:white-space :nowrap}}
                [:div.is-flex.is-flex-wrap-wrap
                 (check-fnn todo "✅" "❌")
-                (check-fnn clean "🧼" "")
-                (check-fnn energy "🥦" "🧀")
-                (check-fnn blue "🕳" "🎭")
-                (check-fnn today "🔰️" "")]])])]]
+                (check-fnn active "🔥" "🧀")
+                (check-fnn mindful "🧘‍" "🕳")]])])]]
        [:div#progress-info.mx-2.box.px-0.wave.is-flex
         {:style {:margin-bottom :1em
                  :padding-top   :0px
                  :overflow      :hidden
                  :height        :100px
-                 ;:background-color "#0F224C"
                  :position      :relative
                  :border-radius "0 0 6px 6px"
                  :top           :-40px
-                 :box-shadow    "0 .5em 1em -.125em rgba(10,10,10,.1),0 0 0 1px rgba(10,10,10,0)"
-                 ;:z-index       11
-                 }}
-        [chart-2 {:width show-pass-percent :hint hint :finish show-score-percent}]
-        #_[:div.is-family-code.has-text-white
-           {:style {:font-size     :70px
-                    :line-height   :80px
-                    :margin-bottom :-20px}} "27"]]
+                 :box-shadow    "0 .5em 1em -.125em rgba(10,10,10,.1),0 0 0 1px rgba(10,10,10,0)"}}
+        [chart-2 {:width show-pass-percent :hint hint :finish show-score-percent}]]
        [:div#express-info.mx-2.box {:style {:margin-bottom :1em
                                             :margin-top    :-40px}}
         [express-add-dialog]

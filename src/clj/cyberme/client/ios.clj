@@ -8,7 +8,8 @@
             [cyberme.tool :as tool]
             [cyberme.db.core :as db]
             [clojure.string :as str]
-            [next.jdbc :as jdbc])
+            [next.jdbc :as jdbc]
+            [cyberme.cyber.dashboard :as dashboard])
   (:import (java.time LocalDateTime LocalDate)
            (java.time.format DateTimeFormatter)))
 
@@ -16,7 +17,7 @@
   "iOS Dashboard API
   在 handle-dashboard 的基础上添加额外信息：每周计划、每周学习和日报"
   [{:keys [day] :as params :or {day 7}}]
-  (let [{:keys [data message status]} (inspur/handle-dashboard params)
+  (let [{:keys [data message status]} (dashboard/handle-dashboard params)
         {week-plan :data} (week-plan/handle-get-week-plan)
         week-plan (or week-plan [])
         with-log-week-plan (mapv (fn [plan]

@@ -27,6 +27,7 @@
     [cyberme.cyber.task :as task]
     [clojure.tools.logging :as log]
     [cyberme.cyber.week-plan :as week]
+    [cyberme.cyber.dashboard :as dashboard]
     [cyberme.cyber.psych :as psych]
     [cyberme.cyber.book :as book]
     [cyberme.client.ios :as ios]
@@ -554,23 +555,7 @@
            :parameters  {:query (s/keys :opt-un [:global/user :global/secret
                                                  :todo/day])}
            :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (inspur/handle-dashboard query)))}}]
-
-   ["/ios-summary"                                          ;TODO 兼容性保留，适时移除
-    {:get {:summary     "iOS Summary API"
-           :description "包括 Fitness、TODO、Blue、Clean、每周学习、每天日报 等信息"
-           :parameters  {:query (s/keys :opt-un [:global/user :global/secret
-                                                 :todo/day])}
-           :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (ios/handle-ios-dashboard query)))}}]
-
-   ["/ioswidget"                                            ;TODO 兼容性保留，适时移除
-    {:get {:summary     "iOS Widget API"
-           :description "iOS 小组件信息，包括天气、TODO、打卡等"
-           :parameters  {:query (s/keys :opt-un [:global/user :global/secret
-                                                 :todo/day])}
-           :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (ios/handle-ios-widget query)))}}]
+                          (hr/response (dashboard/handle-dashboard query)))}}]
 
    ["/day-work"
     {:get  {:summary     "获取当日日报"

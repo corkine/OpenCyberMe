@@ -4,7 +4,7 @@
             [clojure.tools.logging :as log]
             [cyberme.config :as config]
             [clojure.string :as str])
-  (:import (java.time LocalDate)
+  (:import (java.time LocalDate ZoneOffset)
            (java.time.format DateTimeFormatter)
            (java.util Base64)
            (java.security MessageDigest)))
@@ -32,6 +32,20 @@
   (let [today (LocalDate/now)
         start-day (.minusDays today (- day 1))]
     (take day (iterate #(.plusDays % 1) start-day))))
+
+(defn week-first-sec
+  "获取周一凌晨的秒数"
+  []
+  (let [now (LocalDate/now)
+        today-day-of-week (.getValue (.getDayOfWeek now))
+        week-first ^LocalDate (.minusDays now (- today-day-of-week 1))]
+    (.toEpochSecond (.atStartOfDay week-first) ZoneOffset/UTC)))
+
+(defn today-morning-sec
+  "获取今天凌晨的秒数"
+  []
+  (let [now (LocalDate/now)]
+    (.toEpochSecond (.atStartOfDay now) ZoneOffset/UTC)))
 
 (defn encode-sha-b64
   "将明文进行 SHA1 和 Base64 加密"

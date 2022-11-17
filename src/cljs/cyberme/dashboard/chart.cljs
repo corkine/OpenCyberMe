@@ -119,10 +119,8 @@
 (defn progress-bar
   "根据 API 信息返回计算好的每周进度条指示，数据如下：
   :score {:2022-03-01
-          {:blue true
-           :fitness {:rest 2000 :active 300}
-           :todo {:total 27 :finished 27}}
-           :clean {:m1xx :m2xx :n1xx :n2xx}}
+          {:fitness {:rest 2000 :active 300}
+           :todo {:total 27 :finished 27}}}
            :today 23}
   返回的规则如下：
   pass-percent 返回本周过了多久，粒度为天，返回百分比字符串，对于周一返回 100%
@@ -151,36 +149,28 @@
         satisfied-each-day-score 8
         score-pass-all-f (* week-index each-day-score)
         score-pass-all (* (- week-index 1) each-day-score)
-        ;计算规则：blue 计 2 分，active 完成计 2 分，to-do 完成计 2 分，clean 完成计 2 分，score 计 2 分
+        ;计算规则：active 完成计 3 分，to-do 完成计 3 分，mindful 计 2 分
         compute-oneday (fn [day-str]
                          (let [{:keys [blue fitness todo clean today]} (get score day-str)
-                               is-blue? (boolean blue)
-                               ;运动能量大于目标值 && 消耗能量大于目标值
-                               finish-active!-1 (>= (or (:active fitness) 0) goal-active)
-                               finish-active!-2 (>= (- (+ (:rest fitness) (:active fitness))
-                                                       (:diet fitness)) goal-cut)
+                               finish-active! (>= (or (:active fitness) 0) goal-active)
+                               mind-5! (>= (or (:mindful fitness) 0) 5)
                                todo-all-done! (and (>= (:finished todo) (:total todo))
                                                    (not= (:total todo) 0))
                                clean-count (count (filter true? (vals clean)))
-                               score (+ (if is-blue? 0 2)
-                                        (* (or today 0) 0.02)
-                                        (if (and finish-active!-1 finish-active!-2) 2 0)
-                                        (if todo-all-done! 2 0)
-                                        (* clean-count 0.5))]
+                               score (+ (if mind-5! 2 0)
+                                        (if finish-active! 3 0)
+                                        (if todo-all-done! 3 0))]
                            score))
-        ;每周进度统计，包含 clean，blue，energy 和 today-score，to-do
+        ;每周进度统计
         compute-one-day-item (fn [day-str]
-                               (let [{:keys [blue fitness todo clean today]} (get score day-str)
-                                     ;运动能量大于目标值 && 消耗能量大于目标值
-                                     finish-active!-1 (>= (or (:active fitness) 0) goal-active)
-                                     finish-active!-2 (>= (- (+ (:rest fitness) (:active fitness))
-                                                             (:diet fitness)) goal-cut)
+                               (let [{:keys [fitness todo]} (get score day-str)
+                                     ;运动能量大于目标值
+                                     finish-active! (>= (or (:active fitness) 0) goal-active)
+                                     mind-5! (>= (or (:mindful fitness) 0) 5)
                                      todo-all-done! (and (>= (:finished todo) (:total todo))
                                                          (not= (:total todo) 0))]
-                                 {:clean  (every? true? (vals clean))
-                                  :blue   (boolean blue)
-                                  :energy (and finish-active!-1 finish-active!-2)
-                                  :today  (not= today 0)
+                                 {:active finish-active!
+                                  :mindful mind-5!
                                   :todo   todo-all-done!}))
         week-items (mapv compute-one-day-item week-list)
         week-items-f (mapv compute-one-day-item week-list-f)
