@@ -173,6 +173,30 @@
             :success-callback-event [[:app/scroll-to-result]]
             :failure-notice         true})
 
+(ajax-flow {:call                   :dashboard/plan+week-plan-item-move-log
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (:item-id %) "/update-log")
+            :is-post                true
+            :data                   :dashboard/plan+week-plan-item-move-log-data
+            :clean                  :dashboard/plan+week-plan-item-move-log-clean
+            :success-callback-event [[:dashboard/week-plan-range-with-search]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :dashboard/week-plan-item-move-log
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (:item-id %) "/update-log")
+            :is-post                true
+            :data                   :dashboard/week-plan-item-move-log-data
+            :clean                  :dashboard/week-plan-item-move-log-clean
+            :success-callback-event [[:dashboard/plant-week]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :dashboard/plan+week-plan-item-delete-log
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (first %) "/remove-log/" (second %))
+            :is-post                true
+            :data                   :dashboard/plan+week-plan-item-delete-log-data
+            :clean                  :dashboard/plan+week-plan-item-delete-log-clean
+            :success-callback-event [[:dashboard/week-plan-range-with-search]]
+            :failure-notice         true})
+
 (ajax-flow {:call                   :dashboard/week-plan-item-delete-log
             :uri-fn                 #(str "/cyber/week-plan/update-item/" (first %) "/remove-log/" (second %))
             :is-post                true

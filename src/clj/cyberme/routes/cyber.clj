@@ -542,7 +542,14 @@
             :description "IOS 健康 App 上传最近样本（HealthKit）"
             :parameters  {:body any?}
             :handler     (fn [{{data :body} :parameters}]
-                           (hr/response (ios/handle-ios-app-active-upload data)))}}]])
+                           (hr/response (ios/handle-ios-app-active-upload data)))}}]
+
+   ["/ios-body-mass"
+    {:post {:summary     "上传今日体重样本"
+            :description "IOS 健康 App 上传最近体重样本（HealthKit）"
+            :parameters  {:body any?}
+            :handler     (fn [{{data :body} :parameters}]
+                           (hr/response (ios/handle-ios-upload-body-mass data)))}}]])
 
 (s/def :day-work/info any?)
 

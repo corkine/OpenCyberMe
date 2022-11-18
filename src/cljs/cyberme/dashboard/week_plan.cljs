@@ -201,9 +201,13 @@
                      [menu {:id name :padding :25px
                             :actions
                             (if show-todo
-                              [["编辑" #(when-not go-diary-add-log ;仅在日记页面允许点击
+                              [["编辑" #(do
                                           (reset! update-log-now (assoc log :item-id item-id))
                                           (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
+                               ["移到最前" #(rf/dispatch [:dashboard/week-plan-item-move-log
+                                                          (merge log {:to-start true})])]
+                               ["移到最后" #(rf/dispatch [:dashboard/week-plan-item-move-log
+                                                          (merge log {:to-end true})])]
                                ["删除" #(rf/dispatch
                                           [:global/notice
                                            {:message  (str "是否要删除日志" name "?")

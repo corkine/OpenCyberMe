@@ -78,9 +78,11 @@
         {:keys [todo fitness express movie score work]} (:data recent)
         ;;FITNESS
         {:keys [active rest exercise diet mindful marvel-active marvel-mindful
+                body-mass-month body-mass-week body-mass-origin
                 goal-active goal-cut acc-active acc-mindful]
-         :or {exercise 0 mindful 0 marvel-active 0 marvel-mindful 0
-              acc-active 0 acc-mindful 0}} fitness
+         :or   {exercise        0 mindful 0 marvel-active 0 marvel-mindful 0
+                acc-active      0 acc-mindful 0
+                body-mass-month 0 body-mass-week 0 body-mass-origin 0}} fitness
         now-cost-energy (- (+ active rest) diet)
         ;;EXPRESS
         express (filterv #(not= (:status %) 0) express)
@@ -133,22 +135,22 @@
          [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "运动" :value (min (/ now-cost-energy goal-cut) (/ active goal-active))
                     :start "#EE0000" :stop "#EE9572"
-                    :hint  (simple-print {:active active
+                    :hint  (simple-print {:active      active
                                           :week-active marvel-active
-                                          :acc-active acc-active
-                                          :hint "Apple Watch 记录的每天活动卡路里消耗"})}]]
+                                          :acc-active  acc-active
+                                          :hint        "Apple Watch 记录的每天活动卡路里消耗"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "锻炼" :value (/ exercise 60)
                     :hint  (simple-print {:exercise exercise
-                                          :goal 60
-                                          :hint "Apple Watch 记录的每天锻炼分钟数"})}]]
+                                          :goal     60
+                                          :hint     "Apple Watch 记录的每天锻炼分钟数"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "冥想" :value (let [origin (/ mindful 5)] (if (= origin 0) 0.1 origin))
                     :start "#D8BFD8" :stop "#DDA0DD"
-                    :hint  (simple-print {:mindful mindful
+                    :hint  (simple-print {:mindful      mindful
                                           :week-mindful marvel-mindful
-                                          :acc-mindful acc-mindful
-                                          :hint "Apple Watch 记录的每天冥想分钟数"})}]]]
+                                          :acc-mindful  acc-mindful
+                                          :hint         "Apple Watch 记录的每天冥想分钟数"})}]]]
         [:div.is-flex.is-justify-content-space-around.is-flex-wrap-wrap.tablet-ml-3
          {:style {:margin-top :20px :margin-bottom :3px}}
          [:div.is-align-self-center.px-3 {:style {:margin-left :-10px :margin-right :-20px}}
@@ -170,13 +172,15 @@
               (let [{:keys [source time]} (get SignIn index)]
                 [:span.tag "#" " " (tool/datetime->time time)])])]]
          [:div.is-align-self-center.is-hidden-touch1.px-3
-          [:p.mt-2 "本周已锻炼 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} (int marvel-active) ] " 千卡"]
-          [:p.is-size-7.mb-3.has-text-weight-light "历史累计 " (int acc-active) " 千卡"]]
+          [:p.mt-2 "本周已减重 "
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}}
+            (gstring/format "%.1f" body-mass-week)] " Kg"]
+          [:p.is-size-7.mb-3.has-text-weight-light "历史累计 "
+           (gstring/format "%.1f" body-mass-origin) " Kg"]]
          [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
           [:p.mt-2 "本周已冥想 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} marvel-mindful ] " 分钟"]
-          [:p.is-size-7.mb-3.has-text-weight-light "历史累计 " (int acc-mindful)  " 分钟"]]]]
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} marvel-mindful] " Min"]
+          [:p.is-size-7.mb-3.has-text-weight-light "历史累计 " (int acc-mindful) " Min"]]]]
        [:div#week-info.mx-2.box {:style {:margin-bottom :1em
                                          :position      :relative
                                          :border-radius "6px 6px 0 0"}}
@@ -253,13 +257,13 @@
           [:<>
            [week/week-plan-add-dialog]
            [week/week-plan-modify-item-dialog :dashboard/plant-week]
-           #_[week/week-plan-log-add-dialog] ;强迫通过日记新建和修改记录
+           #_[week/week-plan-log-add-dialog]                ;强迫通过日记新建和修改记录
            [:div.mb-5
             ;每周计划卡片，包括本周计划和每周一学
             [:p
              [:span.has-text-weight-bold.is-family-code.dui-tips.mb-2
-              {:on-click     #(rf/dispatch [:app/show-modal :add-week-plan!])
-               :title "点击新建本周计划项"}
+              {:on-click #(rf/dispatch [:app/show-modal :add-week-plan!])
+               :title    "点击新建本周计划项"}
               "本周计划"]
              ;每周一学
              [:span " "]
@@ -329,10 +333,10 @@
                     (for [{:keys [title status list create_at] :as todo} data]
                       ^{:key create_at}
                       [:<>
-                       [:p.mt-1 {:style {:overflow :hidden
-                                         :text-overflow :ellipsis
-                                         :white-space :nowrap}
-                                 :title title
+                       [:p.mt-1 {:style    {:overflow      :hidden
+                                            :text-overflow :ellipsis
+                                            :white-space   :nowrap}
+                                 :title    title
                                  :on-click (partial toggle! create_at)}
                         [:span.tag.is-small.is-rounded.is-size-7.mr-2.is-white list]
                         [:span.is-size-7 (when (= status "completed")
@@ -361,9 +365,9 @@
                        data (filter #(not (str/includes? (:list %) "任务")) data)]
                    (for [{:keys [title status list create_at] :as todo} data]
                      ^{:key todo}
-                     [:p.mt-1 {:style {:overflow :hidden
+                     [:p.mt-1 {:style {:overflow      :hidden
                                        :text-overflow :ellipsis
-                                       :white-space :nowrap}
+                                       :white-space   :nowrap}
                                :title title}
                       [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
                       [:span.is-size-7 title]

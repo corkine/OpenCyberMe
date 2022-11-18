@@ -8,6 +8,7 @@
             [cyberme.tool :as tool]
             [cyberme.db.core :as db]
             [clojure.string :as str]
+            [cyberme.cyber.marvel :as marvel]
             [next.jdbc :as jdbc]
             [cyberme.cyber.dashboard :as dashboard])
   (:import (java.time LocalDateTime LocalDate)
@@ -89,3 +90,13 @@
   "iOS HealthKit Information Upload API"
   [logs]
   (fitness/handle-ios-app-active-upload logs))
+
+(defn handle-ios-upload-body-mass
+  "上传 BodyMass 数据"
+  [{:keys [date value]}]
+  (try
+    (marvel/set-body-mass date value)
+    {:message "上传成功" :status 1}
+    (catch Exception e
+      {:message (str "上传失败：" (.getMessage e))
+       :status -1})))

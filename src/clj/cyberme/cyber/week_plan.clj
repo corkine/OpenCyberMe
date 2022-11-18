@@ -206,8 +206,11 @@
   会构造 log {:id :name :description :progress-from :progress-to :update}
   会更新本周计划的 progress, logs, last-update 字段
 
+  to-start 移动到所有日志的顶部
+  to-end 移动到所有日志的底部
+
   如果有 goal-id，则将其添加到 Goal 的 log"
-  [item-id {:keys [id name progress-delta goal-id]
+  [item-id {:keys [id name progress-delta goal-id to-start to-end]
             :or   {id             (.toString (UUID/randomUUID))
                    name           "无标题项目"
                    progress-delta "0.0"}
@@ -215,7 +218,8 @@
   (try
     (jdbc/with-transaction
       [t db/*db*]
-      (let [progress-delta (Double/parseDouble (str progress-delta))
+      (let [log-input (dissoc log-input :to-start :to-end)
+            progress-delta (Double/parseDouble (str progress-delta))
             now (LocalDate/now)
             now-time (LocalDateTime/now)
             log-input (merge log-input
@@ -223,7 +227,7 @@
                               :name           name
                               :progress-delta progress-delta})
             update-input (or (:update log-input) "")
-            update-set (if (str/blank? update-input) now-time update-input)
+            update-set (if (or (str/blank? update-input) to-end) now-time update-input)
             items (-> (get-some-week t now) :info :plan)
             current-item (first (filterv #(= item-id (:id %)) items))]
         (if-not current-item
@@ -240,12 +244,21 @@
                                     {:progress-from progress
                                      :progress-to   progress-now
                                      :update        update-set})
+                    log-sort-fn (fn [a b] (compare (str (:update a)) (str (:update b))))
+                    item-log (if (and to-start (not (empty? logs)))
+                               (let [sorted-logs-now (sort log-sort-fn logs)
+                                     first-log (first sorted-logs-now)
+                                     first-log-time (try
+                                                      ;2022-11-16T14:27:10.73405
+                                                      (LocalDateTime/parse (:update first-log))
+                                                      (catch Exception e
+                                                        (log/error "[week-plan] can't parse log time " first-log e)
+                                                        (LocalDateTime/now)))
+                                     need-log-time (.minusSeconds first-log-time 10)]
+                                 (assoc item-log :update need-log-time))
+                               item-log)
                     current-item (merge current-item
-                                        {:logs        (sort (fn [a b]
-                                                              (let [au (str (:update a))
-                                                                    bu (str (:update b))]
-                                                                (compare au bu)))
-                                                            (conj logs item-log))
+                                        {:logs        (sort log-sort-fn (conj logs item-log))
                                          :progress    progress-now
                                          :last-update now-time})
                     all-items (mapv (fn [item]

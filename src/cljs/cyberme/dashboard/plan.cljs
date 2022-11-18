@@ -9,6 +9,7 @@
     [cljs-time.format :as format]
     [reagent.core :as r]
     [cyberme.util.tool :as tool]
+    [cyberme.util.menu :refer [toggle! menu]]
     [cyberme.dashboard.week-plan :as wp]
     [clojure.string :as str]))
 
@@ -87,7 +88,7 @@
                {:on-click (fn [_]
                             (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
                             (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
-               [:pre {:style {:height "100%"
+               [:pre {:style {:height      "100%"
                               :white-space "pre-wrap" :word-wrap "break-word"}}
                 [:i.fa.fa-quote-right {:style       {:float     "right"
                                                      :font-size "5em"
@@ -97,26 +98,39 @@
             (if (empty? logs)
               [:<>]
               [:div.column
-               [:pre {:style {:padding-bottom :10px :height "100%"
-                              :white-space "pre-wrap" :word-wrap "break-word"}}
-                #_[:i.fa.fa-file-o {:style       {:float     "right"
-                                                  :font-size "5em"
-                                                  :opacity   "0.04"}
-                                    :aria-hidden "true"}]
+               [:div {:style {:padding-bottom :10px :height "100%"
+                              :background-color :#f5f5f5
+                              :color :#4a4a4a
+                              :font-size :.875em
+                              :padding "1.25em 1.5em"
+                              :white-space    "pre-wrap"
+                              :word-wrap "break-word"}}
                 (for [{:keys [id name update description progress-delta] :as log} logs]
                   ^{:key id}
                   [:div.mb-2                                ;each log
                    [:p.mb-1                                 ;each log's body and entity
-                    [:span.ml-2.is-family-code.is-clickable
-                     {:style {:vertical-align :bottom}
-                      :on-click (fn [_]
-                                  (reset! wp/update-log-now (assoc log :item-id (:id item)))
-                                  (rf/dispatch [:app/show-modal :update-week-plan-log!]))
-                      :title (str "更新于：" update)} name]
+                    [:span.ml-2.is-family-code.is-clickable.is-unselectable
+                     {:style    {:vertical-align :bottom}
+                      :on-click (partial toggle! name)
+                      :title    (str "更新于：" update)} name]
+                    [menu {:id name :padding :25px
+                           :actions
+                           [["编辑" (fn [_]
+                                      (reset! wp/update-log-now (assoc log :item-id (:id item)))
+                                      (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
+                            ["移到最前" #(rf/dispatch [:dashboard/plan+week-plan-item-move-log
+                                                       (merge log {:to-start true})])]
+                            ["移到最后" #(rf/dispatch [:dashboard/plan+week-plan-item-move-log
+                                                       (merge log {:to-end true})])]
+                            ["删除" #(rf/dispatch
+                                       [:global/notice
+                                        {:message  (str "是否要删除日志" name "?")
+                                         :callback [[:dashboard/plan+week-plan-item-delete-log
+                                                     [(:id item) id]]]}])]]}]
                     [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]]
                    (when description
-                     [:pre {:style {:padding "0em 0 0 2em"
-                                    :opacity "0.5"
+                     [:pre {:style {:padding     "0em 0 0 2em"
+                                    :opacity     "0.5"
                                     :white-space "pre-wrap" :word-wrap "break-word"}}
                       [:span.is-text-grey description]])])]])]])]))
    [:nav.pagination.is-centered.is-justify-content-end.pt-5.mt-5
