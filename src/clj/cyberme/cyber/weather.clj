@@ -112,7 +112,7 @@
   [place]
   (let [{:keys [weather ^LocalDateTime update] :as origin}
         (get @weather-cache place nil)]
-    (cond (and weather update) ;白天
+    (cond (and weather update)                              ;白天
           (let [temp-info (diff-temp place false)
                 temp-future-info (diff-temp-tomorrow place)]
             (assoc origin :weather (str weather " +"
@@ -121,7 +121,7 @@
                                         "m")
                           :temp temp-info
                           :tempFuture temp-future-info))
-          :else ;晚上
+          :else                                             ;晚上
           {:tempFuture (diff-temp-tomorrow place)})))
 
 ;;;;;;;;;;;;;; INTERNAL API ;;;;;;;;;;;
@@ -153,8 +153,11 @@
   程序每 5 分钟运行一次，如果在时间范围内，则通知，否则不通知"
   ([ignore-time-now?]
    (let [now (LocalTime/now)
-         hour (.getHour now)]
-     (if (or ignore-time-now? (-> now (.getMinute) (< 5)))
+         hour (.getHour now)
+         minute (.getMinute now)]
+     (if (or ignore-time-now?
+             (and (<= 0 minute) (< minute 5))
+             (and (<= 25 minute) (< minute 30)))
        (let [token (edn-in [:weather :token])
              check-list (edn-in [:weather :check])]
          (doseq [check check-list]
@@ -177,8 +180,7 @@
 (defn backend-weather-routine []
   (while true
     (try
-      ;改为每半小时运行一次
-      (let [sleep-sec (* 5 30)]
+      (let [sleep-sec (* 5 60)]
         (try
           (log/debug "[weather-service] starting checking with server...")
           (weather-routine-once)
