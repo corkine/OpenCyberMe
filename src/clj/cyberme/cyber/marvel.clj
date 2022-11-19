@@ -80,7 +80,7 @@
                                   :last-record  body-mass-value
                                   :records      new-records}]
         (log/info "[marvel] set marvel to " new-marvel-body-mass)
-        (set-marvel (merge old-marvel new-marvel-body-mass))))))
+        (set-marvel (assoc old-marvel :body-mass new-marvel-body-mass))))))
 
 (defn dashboard-set-marvel
   "handle-dashboard 数据重映射，如果获取到的 :clean :HabitCountUntilNow 存在且大于 marvel :clean-max
