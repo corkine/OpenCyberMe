@@ -1,8 +1,7 @@
 (ns cyberme.cyber.marvel
-  (:require [cyberme.db.core :as db]
-            [clojure.tools.logging :as log]
-            [cyberme.tool :as tool]
-            [cuerdas.core :as str])
+  (:require [clojure.tools.logging :as log]
+            [cyberme.db.core :as db]
+            [cyberme.tool :as tool])
   (:import (java.time LocalDate LocalDateTime)))
 
 (def start-day (LocalDate/of 1996 3 3))
@@ -33,15 +32,17 @@
                :last-record Number}}
   返回格式：{:body-mass-week :body-mass-month :body-mass-origin}"
   ([marvel]
-   (let [{{:keys [start-origin start-month start-week
+   (let [{{:keys [start-origin start-day-30 start-month start-week
                   last-record records]
            :or   {start-origin 100.0
+                  start-day-30 100.0
                   start-month  100.0
                   start-week   100.0
                   last-record  100.0
                   records      {}}} :body-mass} marvel]
      {:body-mass-week   (- start-week last-record)
       :body-mass-month  (- start-month last-record)
+      :body-mass-day-30 (- start-day-30 last-record)
       :body-mass-origin (- start-origin last-record)}))
   ([] (find-body-mass (fetch-marvel))))
 
@@ -56,27 +57,26 @@
                            (log/error "[marvel] body-mass can't parse " body-mass-date-str e)
                            (LocalDateTime/now)))
         old-marvel (fetch-marvel)
-        {{:keys [start-origin start-month start-week
-                 last-record records]
+        {{:keys [start-origin start-month start-week last-record records]
           :or   {records {}}} :body-mass} old-marvel]
-    (let [new-records (assoc records (str body-mass-time) body-mass-value)
-          r-keys (sort (mapv #(LocalDateTime/parse %) (keys new-records)))
+    (let [new-records (assoc records (keyword (str body-mass-time)) body-mass-value)
+          r-keys (sort (mapv #(LocalDateTime/parse (name %)) (keys new-records)))
           start-origin (if (nil? start-origin)
                          (get new-records (str (first r-keys)))
                          start-origin)
           ;简化逻辑，每次记录都重置 start-month, start-week 和 last-record
           month-start (.atStartOfDay (LocalDate/of ^int (.getYear body-mass-time)
                                                    ^int (.getMonthValue body-mass-time) 1))
+          day-30-start (.minusDays body-mass-time 30)
           week-start (.atStartOfDay
                        (.minusDays (.toLocalDate body-mass-time)
                                    (- (.getValue (.getDayOfWeek body-mass-time)) 1)))
-          month-1 (first (drop-while #(.isBefore % month-start) r-keys))
-          week-1 (first (drop-while #(.isBefore % week-start) r-keys))
-          start-month (get new-records (str month-1))
-          start-week (get new-records (str week-1))]
+          first-after (fn [date-time] (first (drop-while #(.isBefore % date-time) r-keys)))
+          get-value (fn [date-time] (get new-records (keyword (str date-time))))]
       (let [new-marvel-body-mass {:start-origin start-origin
-                                  :start-month  start-month
-                                  :start-week   start-week
+                                  :start-day-30 (-> (first-after day-30-start) get-value)
+                                  :start-month  (-> (first-after month-start) get-value)
+                                  :start-week   (-> (first-after week-start) get-value)
                                   :last-record  body-mass-value
                                   :records      new-records}]
         (log/info "[marvel] set marvel to " new-marvel-body-mass)

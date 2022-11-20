@@ -78,11 +78,11 @@
         {:keys [todo fitness express movie score work]} (:data recent)
         ;;FITNESS
         {:keys [active rest exercise diet mindful marvel-active marvel-mindful
-                body-mass-month body-mass-week body-mass-origin
+                body-mass-day-30 body-mass-month body-mass-week body-mass-origin
                 goal-active goal-cut acc-active acc-mindful]
          :or   {exercise        0 mindful 0 marvel-active 0 marvel-mindful 0
                 acc-active      0 acc-mindful 0
-                body-mass-month 0 body-mass-week 0 body-mass-origin 0}} fitness
+                body-mass-month 0 body-mass-day-30 0 body-mass-week 0 body-mass-origin 0}} fitness
         now-cost-energy (- (+ active rest) diet)
         ;;EXPRESS
         express (filterv #(not= (:status %) 0) express)
@@ -172,9 +172,9 @@
               (let [{:keys [source time]} (get SignIn index)]
                 [:span.tag "#" " " (tool/datetime->time time)])])]]
          [:div.is-align-self-center.is-hidden-touch1.px-3
-          [:p.mt-2 "本周已减重 "
+          [:p.mt-2 "30 天减重 "
            [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}}
-            (gstring/format "%.1f" body-mass-week)] " Kg"]
+            (gstring/format "%.1f" body-mass-day-30)] " Kg"]
           [:p.is-size-7.mb-3.has-text-weight-light "历史累计 "
            (gstring/format "%.1f" body-mass-origin) " Kg"]]
          [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
