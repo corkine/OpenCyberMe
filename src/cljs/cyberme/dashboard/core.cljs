@@ -17,6 +17,8 @@
 
 (def default-score 0.1)
 
+(def exercise-goal 30)
+
 (def max-score-empty 0.9)
 
 (defn simple-print [data]
@@ -140,9 +142,9 @@
                                           :acc-active  acc-active
                                           :hint        "Apple Watch 记录的每天活动卡路里消耗"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "锻炼" :value (/ exercise 60)
+          [chart-1 {:title "锻炼" :value (/ exercise exercise-goal)
                     :hint  (simple-print {:exercise exercise
-                                          :goal     60
+                                          :goal     exercise-goal
                                           :hint     "Apple Watch 记录的每天锻炼分钟数"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
           [chart-1 {:title "冥想" :value (/ mindful 5)
