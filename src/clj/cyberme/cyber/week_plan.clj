@@ -210,7 +210,7 @@
   to-end 移动到所有日志的底部
 
   如果有 goal-id，则将其添加到 Goal 的 log"
-  [item-id {:keys [id name progress-delta goal-id to-start to-end]
+  [item-id {:keys [id name progress-delta goal-id to-start to-end date]
             :or   {id             (.toString (UUID/randomUUID))
                    name           "无标题项目"
                    progress-delta "0.0"}
@@ -220,7 +220,7 @@
       [t db/*db*]
       (let [log-input (dissoc log-input :to-start :to-end)
             progress-delta (Double/parseDouble (str progress-delta))
-            now (LocalDate/now)
+            now (if date (LocalDate/parse date) (LocalDate/now))
             now-time (LocalDateTime/now)
             log-input (merge log-input
                              {:id             id
@@ -284,12 +284,12 @@
        :status  -1})))
 
 (defn handle-remove-week-plan-item-log
-  "更新本周计划的项目记录：删除旧记录，删除后，本周项目进度撤回到原来的值"
-  [item-id log-id]
+  "更新某周计划的项目记录：删除旧记录，删除后，本周项目进度撤回到原来的值"
+  [item-id log-id hint-date]
   (try
     (jdbc/with-transaction
       [t db/*db*]
-      (let [now (LocalDate/now)
+      (let [now (if hint-date (LocalDate/parse hint-date) (LocalDate/now))
             now-time (LocalDateTime/now)
             items (-> (get-some-week t now) :info :plan)
             {:keys [logs progress]
@@ -323,7 +323,7 @@
   [item-id data]
   (try
     (if (nil? (:id data)) (throw (RuntimeException. (str "更新的记录没有 id 字段！"))))
-    (handle-remove-week-plan-item-log item-id (:id data))
+    (handle-remove-week-plan-item-log item-id (:id data) (:date data))
     (handle-add-week-plan-item-log item-id data)
     (catch Exception e
       (log/error "[week-plan] error: " (.getMessage e))

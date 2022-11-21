@@ -32,7 +32,8 @@
     [cyberme.cyber.book :as book]
     [cyberme.client.ios :as ios]
     [cyberme.cyber.disk :as disk]
-    [cyberme.cyber.goal :as goal])
+    [cyberme.cyber.goal :as goal]
+    [clojure.string :as str])
   (:import (java.time LocalDate)))
 
 (s/def :global/user string?)
@@ -698,6 +699,7 @@
 (s/def :week-plan/range-week int?)
 (s/def :week-plan/from int?)
 (s/def :week-plan/to int?)
+(s/def :week-plan/date string?)
 
 (def week-plan-route
   ;"其中获取本周计划使用 API /dashboard/plant-week，其余 API 参见此处"
@@ -764,11 +766,12 @@
    ["/update-item/:item-id/remove-log/:log-id"
     {:post {:summary     "更新本周计划项目：删除记录"
             :description "更新本周计划项目：删除记录"
-            :parameters  {:query (s/keys :opt-un [:global/user :global/secret])
+            :parameters  {:query (s/keys :opt-un [:global/user :global/secret :week-plan/date])
                           :path  {:item-id string? :log-id string?}}
-            :handler     (fn [{{{:keys [item-id log-id]} :path} :parameters}]
+            :handler     (fn [{{{:keys [item-id log-id]} :path
+                                {date :date}             :query} :parameters}]
                            (hr/response (week/handle-remove-week-plan-item-log
-                                          item-id log-id)))}}]])
+                                          item-id log-id (if (or (nil? date) (str/blank? date)) nil date))))}}]])
 
 (def books-route
   ["/books"

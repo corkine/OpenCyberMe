@@ -145,7 +145,7 @@
                                           :goal     60
                                           :hint     "Apple Watch 记录的每天锻炼分钟数"})}]]
          [:div {:style {:margin "-10px -30px -40px -30px"}}
-          [chart-1 {:title "冥想" :value (let [origin (/ mindful 5)] (if (= origin 0) 0.1 origin))
+          [chart-1 {:title "冥想" :value (/ mindful 5)
                     :start "#D8BFD8" :stop "#DDA0DD"
                     :hint  (simple-print {:mindful      mindful
                                           :week-mindful marvel-mindful
@@ -257,7 +257,8 @@
           [:<>
            [week/week-plan-add-dialog]
            [week/week-plan-modify-item-dialog :dashboard/plant-week]
-           #_[week/week-plan-log-add-dialog]                ;强迫通过日记新建和修改记录
+           [week/week-plan-log-add-dialog :dashboard/plant-week]
+           [week/week-plan-log-update-dialog :dashboard/plant-week]
            [:div.mb-5
             ;每周计划卡片，包括本周计划和每周一学
             [:p

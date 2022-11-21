@@ -129,7 +129,7 @@
                 [:span.icon.is-left {:style {:height :2.7em}}
                  [:i.fa.fa-star]]]]]
            [week/week-plan-add-dialog]
-           [week/week-plan-log-add-dialog]
+           [week/week-plan-log-add-dialog :dashboard/plant-week]
            [week/week-plan-modify-item-dialog :dashboard/plant-week]
            [week/week-plan-log-update-dialog :dashboard/plant-week]
            (when week-items

@@ -33,10 +33,10 @@
 (defn menu
   "必须传入 actions [string func] 下拉菜单项目
   可传入 padding 表示下拉菜单距离此项目的浮动后偏移"
-  [{:keys [id padding actions] :or {actions []}}]
+  [{:keys [id padding padding-left actions] :or {actions []}}]
   (let [showing? @(rf/subscribe [:context-menu-showing? id])]
     [(if showing? :div.dropdown.is-active :div.dropdown)
-     {:style {:float :left :top (or padding :40px)}}
+     {:style {:float :left :top (or padding :40px) :left (or padding-left :0px)}}
      [:div#dropdown-menu3.dropdown-menu
       {:role "menu"
        :on-click #(rf/dispatch [:hide-context-menu id])}

@@ -126,6 +126,14 @@
             :success-callback-event [[:dashboard/plant-week]]
             :failure-notice         true})
 
+(ajax-flow {:call                   :dashboard/plan+week-plan-delete-item
+            :uri-fn                 #(str "/cyber/week-plan/delete-item/" %)
+            :is-post                true
+            :data                   :dashboard/week-plan-delete-item-data
+            :clean                  :dashboard/week-plan-delete-item-clean
+            :success-callback-event [[:dashboard/week-plan-range-with-search]]
+            :failure-notice         true})
+
 (ajax-flow {:call                   :dashboard/week-plan-add-item
             :uri-fn                 #(str "/cyber/week-plan/add-item")
             :is-post                true
@@ -190,7 +198,8 @@
             :failure-notice         true})
 
 (ajax-flow {:call                   :dashboard/plan+week-plan-item-delete-log
-            :uri-fn                 #(str "/cyber/week-plan/update-item/" (first %) "/remove-log/" (second %))
+            :uri-fn                 #(str "/cyber/week-plan/update-item/" (first %)
+                                          "/remove-log/" (second %) "?date=" (get % 2))
             :is-post                true
             :data                   :dashboard/plan+week-plan-item-delete-log-data
             :clean                  :dashboard/plan+week-plan-item-delete-log-clean

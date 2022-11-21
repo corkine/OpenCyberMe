@@ -57,6 +57,7 @@
      "\uD83C\uDF0F 工作生涯日历"]]
    [wp/week-plan-modify-item-dialog :dashboard/week-plan-range-with-search]
    [wp/week-plan-log-update-dialog :dashboard/week-plan-range-with-search]
+   [wp/week-plan-log-add-dialog :dashboard/week-plan-range-with-search]
    (let [{{:keys [date result]} :data}
          @(rf/subscribe [:dashboard/week-plan-range-data])]
      (for [some-week date]                                  ;;所有周的数据
@@ -78,16 +79,24 @@
             [:span.ml-2.is-family-code.is-clickable.is-size-5
              {:style    {:vertical-align :middle}
               :title    (str "点击修改目标\n更新于：" last-update)
-              :on-click (fn [_]
-                          (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
-                          (rf/dispatch [:app/show-modal :modify-week-plan-item!]))} name]
+              :on-click #(toggle! (str "PLAN-" id))}
+             name]
+            [menu {:id (str "PLAN-" id) :padding :33px :padding-left :60px
+                   :actions
+                   [["新建日志" (fn [_]
+                                  (rf/dispatch [:week-plan-db-set :current-item (assoc item :date some-week)])
+                                  (rf/dispatch [:app/show-modal :add-week-plan-log!]))]
+                    ["编辑项目" (fn [_]
+                              (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
+                              (rf/dispatch [:app/show-modal :modify-week-plan-item!]))]
+                    ["删除项目" #(rf/dispatch [:global/notice
+                                               {:message  (str "是否要删除项目" name "?")
+                                                :callback [[:dashboard/plan+week-plan-delete-item id]]}])]]}]
             [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str progress "%")]]
+           ;左侧计划描述
            [:div.columns
             (when-not (str/blank? description)
-              [:div.column.is-clickable
-               {:on-click (fn [_]
-                            (rf/dispatch [:week-plan-db-set :modify-item (assoc item :date some-week)])
-                            (rf/dispatch [:app/show-modal :modify-week-plan-item!]))}
+              [:div.column
                [:pre {:style {:height      "100%"
                               :white-space "pre-wrap" :word-wrap "break-word"}}
                 [:i.fa.fa-quote-right {:style       {:float     "right"
@@ -95,6 +104,7 @@
                                                      :opacity   "0.04"}
                                        :aria-hidden "true"}]
                 description]])
+            ;右侧日志信息
             (if (empty? logs)
               [:<>]
               [:div.column
@@ -116,17 +126,20 @@
                     [menu {:id name :padding :25px
                            :actions
                            [["编辑" (fn [_]
-                                      (reset! wp/update-log-now (assoc log :item-id (:id item)))
+                                      (reset! wp/update-log-now (merge log {:item-id (:id item)
+                                                                            :date some-week}))
                                       (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
                             ["移到最前" #(rf/dispatch [:dashboard/plan+week-plan-item-move-log
-                                                       (merge log {:to-start true})])]
+                                                       (merge log {:to-start true
+                                                                   :date some-week})])]
                             ["移到最后" #(rf/dispatch [:dashboard/plan+week-plan-item-move-log
-                                                       (merge log {:to-end true})])]
+                                                       (merge log {:to-end true
+                                                                   :date some-week})])]
                             ["删除" #(rf/dispatch
                                        [:global/notice
                                         {:message  (str "是否要删除日志" name "?")
                                          :callback [[:dashboard/plan+week-plan-item-delete-log
-                                                     [(:id item) id]]]}])]]}]
+                                                     [(:id item) id some-week]]]}])]]}]
                     [:span.ml-2.is-size-7.is-family-code.is-clickable.mr-4 (str "+" progress-delta "%")]]
                    (when description
                      [:pre {:style {:padding     "0em 0 0 2em"

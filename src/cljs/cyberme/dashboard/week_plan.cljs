@@ -64,7 +64,7 @@
 (defn week-plan-log-add-dialog
   "添加本周计划项目日志，需要传入至少 name, category,
   可选 description, progress, id，其中 category 为 learn/work/fitness/diet"
-  []
+  [success-update]
   (let [may-next-log-todo-item @(rf/subscribe [:week-plan/may-next-finish-item-log])
         may-next-log-todo-item-title (:title may-next-log-todo-item)
         may-next-log-todo-item-date (:time may-next-log-todo-item)
@@ -90,13 +90,13 @@
                      goal-id (first (get goal-name-ids goal-name-index))
                      current-item @(rf/subscribe [:week-plan-db-query :current-item])
                      current-item-id (-> current-item :id)
-                     new-data {:item-id current-item-id :goal-id goal-id}]
+                     new-data {:item-id current-item-id :goal-id goal-id :date (:date current-item)}]
                  (rf/dispatch [:dashboard/week-plan-item-add-log
                                (merge new-data data)])))
             {:subscribe-ajax            [:dashboard/week-plan-item-add-log-data]
              :call-when-exit            [[:dashboard/week-plan-item-add-log-clean]]
              :call-when-success         [[:dashboard/week-plan-item-add-log-clean]
-                                         [:dashboard/plant-week]]
+                                         [success-update]]
              :origin-data               (if may-next-log-todo-item
                                           {:progress-delta "10.0"
                                            :name           (str (tool/week-?) "：" may-next-log-todo-item-title)
@@ -129,7 +129,7 @@
              :call-when-success         [[:dashboard/week-plan-item-update-log-clean]
                                          [success-update]]
              :origin-data               (if-let [update-log @update-log-now]
-                                          (select-keys update-log [:id :name :progress-delta
+                                          (select-keys update-log [:id :name :progress-delta :date
                                                                    :description :update :item-id])
                                           {})
              :origin-data-is-subscribed true})))
@@ -164,7 +164,8 @@
               {:style    {:vertical-align "-10%"}
                :title    (gstring/format "点击新建日志\n完成百分比 %d%%\n包含 %s 日志" progress (count logs))
                :on-click #(do
-                            (when go-diary-add-log          ;如果今天有日记，则在日记编辑页面弹窗，反之新建日记弹窗
+                            ;不再跳转，新建项目、新建日志、修改、移动和删除日志在任何地方都能直接操作
+                            #_(when go-diary-add-log          ;如果今天有日记，则在日记编辑页面弹窗，反之新建日记弹窗
                               (if @(rf/subscribe [:week-plan/today-diary-exist?])
                                 (rf/dispatch [:common/navigate! :diary-edit-by-date {:date (tool/today-str)}])
                                 (rf/dispatch [:common/navigate! :diary-new])))
@@ -199,23 +200,18 @@
                       {:on-click (partial toggle! name)}
                       name]
                      [menu {:id name :padding :25px
-                            :actions
-                            (if show-todo
-                              [["编辑" #(do
-                                          (reset! update-log-now (assoc log :item-id item-id))
-                                          (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
-                               ["移到最前" #(rf/dispatch [:dashboard/week-plan-item-move-log
-                                                          (merge log {:to-start true})])]
-                               ["移到最后" #(rf/dispatch [:dashboard/week-plan-item-move-log
-                                                          (merge log {:to-end true})])]
-                               ["删除" #(rf/dispatch
-                                          [:global/notice
-                                           {:message  (str "是否要删除日志" name "?")
-                                            :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]]
-                              [["删除" #(rf/dispatch
-                                          [:global/notice
-                                           {:message  (str "是否要删除日志" name "?")
-                                            :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]])}]])])])])]))]
+                            :actions ;Dashboard 和 Diary 界面现都支持编辑、移动和删除
+                            [["编辑" #(do
+                                        (reset! update-log-now (assoc log :item-id item-id))
+                                        (rf/dispatch [:app/show-modal :update-week-plan-log!]))]
+                             ["移到最前" #(rf/dispatch [:dashboard/week-plan-item-move-log
+                                                        (merge log {:to-start true})])]
+                             ["移到最后" #(rf/dispatch [:dashboard/week-plan-item-move-log
+                                                        (merge log {:to-end true})])]
+                             ["删除" #(rf/dispatch
+                                        [:global/notice
+                                         {:message  (str "是否要删除日志" name "?")
+                                          :callback [[:dashboard/week-plan-item-delete-log [item-id id]]]}])]]}]])])])])]))]
    ;;;;;;; 仅在日记界面展示：最近待办事项 ;;;;;;;;
    [:div.column.is-6.is-size-7
     (when show-todo
