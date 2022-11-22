@@ -351,28 +351,35 @@
                                        #(wp/week-plan-log-add-from-todo todo plan)])
                                     week-plans)}]])])]
                 ;非今日的待办事项
-                [:div.mb-4 {:style {:opacity 0.5}}
+                [:div.mb-4 #_{:style {:opacity 0.5}}
                  (cond (= day (keyword today))
-                       [:span.has-text-weight-bold.is-family-code "今天"]
+                       [:span.has-text-weight-bold.is-family-code.op7 "今天"]
                        (= day (keyword yesterday))
-                       [:span.has-text-weight-bold.is-family-code "昨天"]
+                       [:span.has-text-weight-bold.is-family-code.op7 "昨天"]
                        (= day (keyword tomorrow))
-                       [:span.has-text-weight-bold.is-family-code "明天"]
+                       [:span.has-text-weight-bold.is-family-code.op7 "明天"]
                        (= day (keyword tomorrow+1))
-                       [:span.has-text-weight-bold.is-family-code "后天"]
+                       [:span.has-text-weight-bold.is-family-code.op7 "后天"]
                        :else
                        [:<>
-                        [:span.has-text-weight-bold.is-family-code day]
-                        [:span.is-family-code.is-size-7.ml-1 (tool/day-kw->week day)]])
+                        [:span.has-text-weight-bold.is-family-code.op7 day]
+                        [:span.is-family-code.is-size-7.ml-1.op7 (tool/day-kw->week day)]])
                  (let [data (get todo day)
                        data (filter #(not (str/includes? (:list %) "任务")) data)]
                    (for [{:keys [title status list create_at] :as todo} data]
                      ^{:key todo}
-                     [:p.mt-1 {:style {:overflow      :hidden
-                                       :text-overflow :ellipsis
-                                       :white-space   :nowrap}
-                               :title title}
-                      [:span.tag.is-small.is-rounded.is-size-7.mr-2 list]
-                      [:span.is-size-7 title]
-                      [:span.is-size-7.has-text-weight-light.has-text-danger
-                       (if (not= status "completed") " ×")]]))])])]])]]]))
+                     [:<>
+                      [:p.mt-1.op7 {:style    {:overflow      :hidden
+                                               :text-overflow :ellipsis
+                                               :white-space   :nowrap}
+                                    :title    title
+                                    :on-click (partial toggle! create_at)}
+                       [:span.tag.is-small.is-rounded.is-size-7.mr-2.op7 list]
+                       [:span.is-size-7.op7 title]
+                       [:span.is-size-7.has-text-weight-light.has-text-danger.op7
+                        (if (not= status "completed") " ×")]]
+                      [menu {:id create_at :padding :1px :actions
+                             (mapv (fn [plan]
+                                     [(str "添加到 \"" (:name plan) "\"")
+                                      #(wp/week-plan-log-add-from-todo todo plan)])
+                                   week-plans)}]]))])])]])]]]))
