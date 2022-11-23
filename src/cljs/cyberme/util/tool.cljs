@@ -54,6 +54,7 @@
   ([] (week-? (t/time-now))))
 
 (defn day-kw->week
+  "将 :2022-01-01 转换为 周三 这样的字符串"
   ([day-kw]
    (day-kw->week day-kw false))
   ([day-kw with-date-prefix]

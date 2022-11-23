@@ -53,13 +53,16 @@
                                [:dashboard/plant-week]]
            :origin-data       {:category "learn" :progress "0.0"}}))
 
-(defn week-plan-log-add-from-todo [todo plan]
-  (let [{:keys [title time]} todo]
-    (rf/dispatch [:dashboard/week-plan-item-add-log-with-update-week
-                  {:name           (str (tool/week-?) "：" title)
-                   :progress-delta 10.0
-                   :description    (str "由 Microsoft TODO #" time " 添加")
-                   :item-id        (:id plan)}])))
+(defn week-plan-log-add-from-todo
+  "将 TODO 添加到待办事项，week-str 为 周四 这样的字符串"
+  ([todo plan week-str]
+   (let [{:keys [title time]} todo]
+     (rf/dispatch [:dashboard/week-plan-item-add-log-with-update-week
+                   {:name           (str week-str "：" title)
+                    :progress-delta 10.0
+                    :description    (str "由 Microsoft TODO #" time " 添加")
+                    :item-id        (:id plan)}])))
+  ([todo plan] (week-plan-log-add-from-todo todo plan (tool/week-?))))
 
 (defn week-plan-log-add-dialog
   "添加本周计划项目日志，需要传入至少 name, category,

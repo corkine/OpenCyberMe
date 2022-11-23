@@ -381,5 +381,6 @@
                       [menu {:id create_at :padding :1px :actions
                              (mapv (fn [plan]
                                      [(str "添加到 \"" (:name plan) "\"")
-                                      #(wp/week-plan-log-add-from-todo todo plan)])
+                                      #(wp/week-plan-log-add-from-todo
+                                         todo plan (tool/day-kw->week day))])
                                    week-plans)}]]))])])]])]]]))
