@@ -10,7 +10,8 @@
            (java.time.format DateTimeFormatter)))
 
 (defn- gen-star-pair-file [token]
-  (let [file-output (.toString (Paths/get (System/getProperty "user.dir") (into-array ["star.json"])))]
+  (let [file-output (.toString (Paths/get (System/getProperty "user.dir") (into-array ["star.json"])))
+        star-12 ["白羊座" "金牛座" "双子座" "巨蟹座" "狮子座" "处女座" "天秤座" "天蝎座" "射手座" "摩羯座" "水瓶座" "双鱼座"]]
     (spit file-output
           (json/generate-string
             (map
@@ -25,8 +26,10 @@
                     (println "fetched " boy girl "->" data)
                     (Thread/sleep 700)
                     data)))
-              (flatten (map (fn [item] (map (fn [item2] {:boy item :girl item2}) star-12))
-                            ["白羊座" "金牛座" "双子座" "巨蟹座" "狮子座" "处女座" "天秤座" "天蝎座" "射手座" "摩羯座" "水瓶座" "双鱼座"]))))))
+              (flatten (map (fn [item]
+                              (map (fn [item2] {:boy item :girl item2})
+                                   star-12))
+                            star-12))))))
   (let [file (.toString (Paths/get (System/getProperty "user.dir") (into-array ["star.json"])))
         new-file (str/replace file "star.json" "star_map.json")]
     (spit new-file
@@ -76,9 +79,9 @@
       (do
         (println "fetched from file...")
         (json/parse-string (slurp file) true))
-      (let [req (http/request {:url          "https://eolink.o.apispace.com/historydaily/api/v1/forward/HistoryDaily"
-                               :headers      {"X-APISpace-Token"   token
-                                              "Authorization-Type" "apikey"}})
+      (let [req (http/request {:url     "https://eolink.o.apispace.com/historydaily/api/v1/forward/HistoryDaily"
+                               :headers {"X-APISpace-Token"   token
+                                         "Authorization-Type" "apikey"}})
             resp @req]
         (let [data (-> resp :body (json/parse-string true) :data)]
           (spit file (json/generate-string data))
