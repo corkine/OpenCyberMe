@@ -35,8 +35,15 @@
 
 (defonce temp-cache (atom {}))
 
-(defn- diff-temp [place one-line?]
-  (if-let [cache (get-in @temp-cache [place :temp])]
+(defn- diff-temp
+  "根据 cache 计算相比较昨天的温度
+  cache 格式：{#object[java.time.LocalDate 0x723be7a0 \"2022-12-01\"]
+              {:origin {:date \"2022-12-01T00:00+08:00\", :max 1.0, :min -1.0, :avg -0.19},
+               :min -1.0,
+               :max 1.0,
+               :avg -0.19}"
+  [cache one-line?]
+  (if-not (nil? cache)
     (let [now (LocalDate/now)
           {ymin :min ymax :max yavg :avg :as y} (get cache (.minusDays now 1))
           {tmin :min tmax :max tavg :avg :as t} (get cache now)]
@@ -62,8 +69,15 @@
       ""
       nil)))
 
-(defn- diff-temp-tomorrow [place]
-  (if-let [cache (get-in @temp-cache [place :temp])]
+(defn- diff-temp-tomorrow
+  "根据 cache 计算相比较明天的温度
+  cache 格式：{#object[java.time.LocalDate 0x723be7a0 \"2022-12-01\"]
+              {:origin {:date \"2022-12-01T00:00+08:00\", :max 1.0, :min -1.0, :avg -0.19},
+               :min -1.0,
+               :max 1.0,
+               :avg -0.19}"
+  [cache]
+  (if-not (nil? cache)
     (let [now (LocalDate/now)
           {mmin :min mmax :max mavg :avg :as m} (get cache (.plusDays now 1))
           {tmin :min tmax :max tavg :avg :as t} (get cache now)]
@@ -113,8 +127,9 @@
   (let [{:keys [weather ^LocalDateTime update] :as origin}
         (get @weather-cache place nil)]
     (cond (and weather update)                              ;白天
-          (let [temp-info (diff-temp place false)
-                temp-future-info (diff-temp-tomorrow place)]
+          (let [cache (get-in @temp-cache [place :temp])
+                temp-info (diff-temp cache false)
+                temp-future-info (diff-temp-tomorrow cache)]
             (assoc origin :weather (str weather " +"
                                         (.toMinutes (Duration/between
                                                       update (LocalDateTime/now)))
