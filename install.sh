@@ -1,6 +1,6 @@
 echo "========================================================================="
 echo ""
-echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein done and set dev-config.edn well."
+echo "Init boot sequence, you should install git, postgresql, jdk, npm done and set dev-config.edn well."
 
 # 下载安装必须的软件包：git、jvm、npm
 # yum -y install git java-1.8.0-openjdk-devel.x86_64 npm
@@ -9,7 +9,7 @@ echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein don
 # chmod +x lein.sh
 # ./lein.sh
 
-# 下载安装 postgreSQL 14
+# 下载安装 postgresql 14
 # sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 # sudo yum install -y postgresql14-server
 # sudo /usr/pgsql-14/bin/postgresql-14-setup initdb
@@ -40,9 +40,9 @@ echo "Init boot sequence, you should install git, postgreSQL, jdk, npm, lein don
 # (migration)
 
 echo "1. Pull code from git"
-git pull
+git pull --rebase
 sleep 2
-if [ $1 = "frontend" ]
+if [ "$1" = "frontend" ]
 then
   echo "2. Release frontEnd resources"
   ./lein.sh shadow release app
@@ -53,12 +53,14 @@ then
   echo "4. Run backEnd app"
   echo "skip step 4..."
   sleep 5
-elif [ $1 = "backend" ]
+elif [ "$1" = "backend" ]
 then
   echo "2. Release frontEnd resources"
   echo "skip step 2..."
   sleep 2
   echo "3. Kill exist app"
+  # shellcheck disable=SC2046
+  # shellcheck disable=SC2009
   kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
   sleep 2
   echo "4. Run backEnd app"
@@ -69,6 +71,8 @@ else
   ./lein.sh shadow release app
   sleep 2
   echo "3. Kill exist app"
+  # shellcheck disable=SC2046
+  # shellcheck disable=SC2009
   kill $(ps axu | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}')
   sleep 2
   echo "4. Run backEnd app"
@@ -76,7 +80,9 @@ else
   sleep 5
 fi
 echo "5. Done deploy app"
-echo "server run on thread `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
+# shellcheck disable=SC2009
+# shellcheck disable=SC2006
+echo "server run on pid `ps aux | grep "leiningen.core.main run" | grep -v grep | awk '{print $2}'`"
 echo ""
 echo "========================================================================="
 
