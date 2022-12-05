@@ -169,7 +169,7 @@
         search-in-bar (or (.get params "q") "")
         _ (when-let [ele (.getElementById js/document "search-input")]
             (set! (.-value ele) search-in-bar))]
-    [:div
+    [:div#search-div
      [:div.hero.is-full-height.is-info
       [:div.hero-body.has-text-centered
        [:div.title.is-family-code.is-unselectable

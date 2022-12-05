@@ -177,7 +177,7 @@
   [:<>
    [top-point]
    [file/file-main]
-   [:footer.mt-6.mb-4 {:style {:position :absolute
+   [:footer.mt-6.mb-4 {:style {:position :relative
                                :bottom   0 :left 0 :right 0 :z-index -1}}
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
