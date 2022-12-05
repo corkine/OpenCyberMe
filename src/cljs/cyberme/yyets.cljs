@@ -99,6 +99,7 @@
                                :title    (str address "\n" passwd)
                                :on-click #(if (str/starts-with? (or address "") "http")
                                             (.open js/window address "_blank")
-                                            (.writeText (.-clipboard js/navigator) address))}
+                                            (do (.writeText (.-clipboard js/navigator) address)
+                                                (rf/dispatch [:global/notice {:message "已将地址复制到剪贴板"}])))}
                               way_cn])]])
                        ]]])])])]))])))

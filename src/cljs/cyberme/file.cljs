@@ -203,16 +203,16 @@
             [:i.fa.fa-upload]]]]]]
        [:div.control.has-icons-right.container
         [:input.input.is-rounded
-         {:type         "text" :placeholder "键入内容，回车搜索"
-          :defaultValue search-in-bar
-          :on-key-up    (fn [e]
-                          (let [search-input (.-value (.-target e))]
-                            ;按下 Enter 键，有输入内容且和当前数据不同，则执行搜索
-                            (when (and (= 13 (.-keyCode e))
-                                       search-input
-                                       (not= search-in-bar search-input))
-                              (rf/dispatch [:file/search-obj-set! [:q search-input]])
-                              (rf/dispatch [:file/trigger-url-search!]))))}]
+         {:type      "text" :placeholder "键入内容，回车搜索"
+          :value     search-in-bar
+          :on-change (fn [e]
+                       (let [search-input (.-value (.-target e))]
+                         ;按下 Enter 键，有输入内容且和当前数据不同，则执行搜索
+                         (when (and (= 13 (.-keyCode e))
+                                    search-input
+                                    (not= search-in-bar search-input))
+                           (rf/dispatch [:file/search-obj-set! [:q search-input]])
+                           (rf/dispatch [:file/trigger-url-search!]))))}]
         [:span.icon.is-small.is-right
          [:i.fa.fa-search.mr-3]]
         (let [hint @(rf/subscribe [:file/search-hint])
