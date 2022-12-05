@@ -1,4 +1,4 @@
-(ns cyberme.cyber.news
+(ns cyberme.media.news
   (:require [org.httpkit.client :as client]
             [org.httpkit.sni-client :as sni-client]
             [hickory.select :refer [select child first-child tag] :as s]

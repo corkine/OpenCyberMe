@@ -1,21 +1,17 @@
 (ns cyberme.cyber.inspur
-  (:require [org.httpkit.client :as client]
-            [cheshire.core :as json]
-            [clojure.tools.logging :as log]
+  (:require [cheshire.core :as json]
             [clojure.string :as str]
-            [cyberme.db.core :as db]
-            [taoensso.carmine :as car :refer (wcar)]
-            [cyberme.config :refer [edn-in edn]]
-            [cyberme.cyber.slack :as slack]
-            [cyberme.cyber.week-plan :as week-plan]
-            [cyberme.cyber.todo :as todo]
+            [clojure.tools.logging :as log]
+            [cyberme.config :refer [edn-in]]
             [cyberme.cyber.clean :as clean]
             [cyberme.cyber.fitness :as fitness]
-            [cyberme.cyber.express :as express]
-            [cyberme.cyber.mini4k :as mini4k]
-            [cyberme.tool :as tool]
-            [cyberme.cyber.weather :as weather])
-  (:import (java.time LocalDateTime LocalDate DayOfWeek LocalTime Duration)
+            [cyberme.cyber.slack :as slack]
+            [cyberme.cyber.todo :as todo]
+            [cyberme.cyber.weather :as weather]
+            [cyberme.db.core :as db]
+            [org.httpkit.client :as client]
+            [taoensso.carmine :as car])
+  (:import (java.time DayOfWeek Duration LocalDate LocalDateTime LocalTime)
            (java.time.format DateTimeFormatter)
            (java.util UUID)))
 

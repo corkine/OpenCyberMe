@@ -28,11 +28,12 @@
 (def basic-share-search-url
   "https://share.mazhangjing.com/zh-CN/")
 
-(def file-cn->k {"书籍"   :book
-                 "磁盘"   :disk
-                 "短链接" :short
-                 "私有云" :onedrive-cn
-                 "公有云" :onedrive})
+(def file-cn->k {"书籍"     :book
+                 "磁盘"     :disk
+                 "短链接"   :short
+                 "人人影视" :yyets
+                 "私有云"   :onedrive-cn
+                 "公有云"   :onedrive})
 
 (def all-kind (keys file-cn->k))
 
@@ -108,6 +109,7 @@
       (rf/dispatch (case (get file-cn->k type :book)
                      :book [:book/search search-obj]
                      :disk [:disk/search search-obj]
+                     :yyets [:yyets/search search-obj]
                      :short [:short/search search-obj]
                      :onedrive-cn [:file/open-url [basic-cloud-search-url q]]
                      :onedrive [:file/open-url [basic-share-search-url nil]]
@@ -131,6 +133,14 @@
             :clean          :disk/search-clean
             :failure-notice true})
 
+;人人影视搜索
+(ajax-flow {:call           :yyets/search
+            :is-post        true
+            :uri-fn         #(str "/cyber/movie/yyets/search/" (:q %))
+            :data           :yyets/search-data
+            :clean          :yyets/search-clean
+            :failure-notice true})
+
 ;短链搜索
 (ajax-flow {:call           :short/search
             :uri-fn         #(str "/cyber/short/search/" (:q %))
@@ -150,6 +160,7 @@
     (rf/dispatch [:disk/search-clean])
     (rf/dispatch [:book/search-clean])
     (rf/dispatch [:short/search-clean])
+    (rf/dispatch [:yyets/search-clean])
     db))
 
 (defn file-main []
@@ -235,12 +246,38 @@
             search-type (get file-cn->k search-type :book)
             {:keys [data]} @(rf/subscribe [(case search-type
                                              :short :short/search-data
+                                             :yyets :yyets/search-data
                                              :disk :disk/search-data
                                              :book/search-data)])]
         (if (empty? data)
           [:div.ml-2.pt-3 (if (nil? data) "" "没有相关的搜索结果 (；′⌒`)。")]
           [:<>
            (case search-type
+             :yyets
+             (for [{:keys [resource_id cnname enname aliasname]} data]
+               ^{:key resource_id}
+               [:<>
+                [:div.box {:style {:box-shadow "0 .5em 1em -.125em rgba(10,10,10,.05),0 0 0 1px rgba(10,10,10,.01)"
+                                   :margin     "5px 0 5px 0"}}
+                 [:div {:style {:float "right" :margin "1em 1em 0 0"}}
+                  [:i.fa.fa-film.mr-2 {:aria-hidden "true"}]]
+                 [:p.ml-1
+                  [:span.tag.is-light.mr-2 resource_id]
+                  [:span.mr-1.is-clickable
+                   {:on-click #(rf/dispatch [:common/navigate! :yyets-resource {:id resource_id} nil])}
+                   cnname]]
+                 (cond (and (not (str/blank? enname))
+                            (not (str/blank? aliasname)))
+                       [:p.mt-1.ml-1.is-size-7.has-text-grey
+                        [:span aliasname]
+                        [:span " - "]
+                        [:span enname]]
+                       (str/blank? enname)
+                       [:p.mt-1.ml-1.is-size-7.has-text-grey
+                        [:span aliasname]]
+                       (str/blank? aliasname)
+                       [:p.mt-1.ml-1.is-size-7.has-text-grey
+                        [:span enname]])]])
              :short
              (for [{:keys [keyword redirectURL note updateTime id]} data]
                ^{:key (str keyword id)}

@@ -18,6 +18,7 @@
     [cyberme.diary.request :as req-diary]
     [cyberme.dashboard.request :as req-dash]
     [cyberme.diary.request :as req-daily]
+    [cyberme.yyets :as yyets]
     [cyberme.place.new :as place-new]
     [cyberme.place.edit :as place-edit]
     [cyberme.good.package-new :as package-new]
@@ -200,7 +201,7 @@
                    [:p.control.has-icons-left
                     [:input#search-bar.input.is-info.is-small.is-rounded
                      {:type      "text" :placeholder "搜索"
-                      :title     (str "搜索任意内容，语法：book/file/short/cloud/diary [keyword..]")
+                      :title     (str "搜索任意内容，语法：book/file/short/cloud/diary/movie [keyword..]")
                       :on-key-up (fn [e]
                                    (if (= 13 (.-keyCode e))
                                      (when-let [search (.-value (.-target e))]
@@ -211,6 +212,8 @@
                                                (rf/dispatch [:common/navigate! :file nil {:q kw :type "磁盘" :clean true}])
                                                (str/starts-with? search "s")
                                                (rf/dispatch [:common/navigate! :file nil {:q kw :type "短链接" :clean true}])
+                                               (str/starts-with? search "m")
+                                               (rf/dispatch [:common/navigate! :file nil {:q kw :type "人人影视" :clean true}])
                                                (str/starts-with? search "c")
                                                (rf/dispatch [:common/navigate! :file nil {:q kw :type "私有云" :clean true}])
                                                (str/starts-with? search "d")
@@ -297,6 +300,14 @@
 (defn init! []
   (start-router!)
   (js/setInterval (fn [_] (rf/dispatch [:dashboard/sync-all])) (* 1000 60 10))
+  (set! (.-onkeydown js/document)
+        (fn [event]
+          (let [is-ctrl? (.-ctrlKey event)
+                keyCode (.-keyCode event)]
+            (when (and is-ctrl? (= keyCode 83))
+              (when-let [element (.getElementById js/document "search-bar")]
+                (.select element))
+              false))))
   (set! (.-onpaste js/document)
         (fn [event]
           (let [target (.-clipboardData event)

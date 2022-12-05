@@ -16,7 +16,7 @@
     [cyberme.cyber.task :as task]
     [cyberme.cyber.inspur :as inspur]
     [cyberme.config :refer [edn]]
-    [cyberme.cyber.mini4k :as mini4k]
+    [cyberme.media.mini4k :as mini4k]
     [cyberme.cyber.weather :as weather])
   (:gen-class)
   (:import (java.time LocalDateTime)

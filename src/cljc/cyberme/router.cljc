@@ -62,17 +62,17 @@
     (merge {:name :plan}
            #?(:cljs {:view        #'core/plan-page
                      :controllers [{:parameters {:query file-share/diary-key}
-                                    :start (fn [{query :query}]
-                                             (rf/dispatch [:user/fetch-from-local])
-                                             (let [[from to] (if (and (:from query) (:to query))
-                                                               (let [from (js/parseInt (:from query))
-                                                                     from (if (< from 0) 0 from)
-                                                                     to (js/parseInt (:to query))
-                                                                     to (if (<= to from) (+ from 4) to)]
-                                                                 [from to]) [0 4])
-                                                   all-obj (merge query {:from from :to to})]
-                                               (rf/dispatch [:week-plan/search-obj-reset! all-obj])
-                                               (rf/dispatch [:dashboard/week-plan-range-with-search])))}]}))]
+                                    :start      (fn [{query :query}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (let [[from to] (if (and (:from query) (:to query))
+                                                                    (let [from (js/parseInt (:from query))
+                                                                          from (if (< from 0) 0 from)
+                                                                          to (js/parseInt (:to query))
+                                                                          to (if (<= to from) (+ from 4) to)]
+                                                                      [from to]) [0 4])
+                                                        all-obj (merge query {:from from :to to})]
+                                                    (rf/dispatch [:week-plan/search-obj-reset! all-obj])
+                                                    (rf/dispatch [:dashboard/week-plan-range-with-search])))}]}))]
 
    ["/work"
     (merge {:name :work}
@@ -188,9 +188,19 @@
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local]))}]}))]
 
+   ["/yyets/resource/:id"
+    (merge {:name :yyets-resource}
+           #?(:cljs {:view        #'core/yyets-resource-page
+                     :controllers [{:parameters {:path [:id]}
+                                    :start      (fn [{{id :id} :path}]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  (rf/dispatch [:yyets/resource id]))
+                                    :stop       (fn [_]
+                                                  (rf/dispatch [:yyets/resource-clean]))}]}))]
+
    ["/psych-exp"
     (merge {:name :psych-exp}
-           #?(:cljs {:view #'core/psy-exp-page
+           #?(:cljs {:view        #'core/psy-exp-page
                      :controllers [{:start (fn [_]
                                              (rf/dispatch [:user/fetch-from-local]))}]}))]
 
@@ -215,7 +225,7 @@
     (merge {:name :psych-exp-gist}
            #?(:cljs {:view        #'core/psy-exp-detail-page
                      :controllers [{:parameters {:path [:gist-id] :query [:debug]}
-                                    :start      (fn [{{debug :debug}   :query
+                                    :start      (fn [{{debug :debug}     :query
                                                       {gist-id :gist-id} :path}]
                                                   (let [exp-id (str "gist-" gist-id)]
                                                     (if (= "true" debug)

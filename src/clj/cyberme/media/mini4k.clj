@@ -1,4 +1,4 @@
-(ns cyberme.cyber.mini4k
+(ns cyberme.media.mini4k
   (:require [cyberme.db.core :as db]
             [org.httpkit.client :as client]
             [org.httpkit.sni-client :as sni-client]

@@ -8,12 +8,10 @@
     [cyberme.cyber.clean :as clean]
     [cyberme.cyber.dashboard :as dashboard]
     [cyberme.cyber.diary :as diary]
-    [cyberme.cyber.disk :as disk]
     [cyberme.cyber.express :as express]
     [cyberme.cyber.fitness :as fitness]
     [cyberme.cyber.goal :as goal]
     [cyberme.cyber.inspur :as inspur]
-    [cyberme.cyber.mini4k :as mini4k]
     [cyberme.cyber.note :as note]
     [cyberme.cyber.psych :as psych]
     [cyberme.cyber.slack :as slack]
@@ -21,6 +19,9 @@
     [cyberme.cyber.todo :as todo]
     [cyberme.cyber.track :as track]
     [cyberme.cyber.week-plan :as week]
+    [cyberme.media.mini4k :as mini4k]
+    [cyberme.media.disk :as disk]
+    [cyberme.media.yyets :as yyets]
     [cyberme.middleware.formats :as formats]
     [reitit.coercion.spec :as spec-coercion]
     [reitit.ring.coercion :as coercion]
@@ -373,7 +374,17 @@
             :parameters {:path  {:id int?}
                          :query (with-token)}
             :handler    (fn [{{path :path} :parameters}]
-                          (hr/response (mini4k/handle-delete-movie path)))}}]])
+                          (hr/response (mini4k/handle-delete-movie path)))}}]
+   ["/yyets/search/:q"
+    {:post {:summary    "搜索字幕组资源"
+            :parameters {:path {:q any?}}
+            :handler    (fn [{{path :path} :parameters}]
+                          (hr/response (yyets/handle-search path)))}}]
+   ["/yyets/resource/:id"
+    {:get {:summary    "获取字幕组资源"
+           :parameters {:path {:id any?}}
+           :handler    (fn [{{path :path} :parameters}]
+                         (hr/response (yyets/handle-resource (:id path))))}}]])
 
 (def notice-route
   ["/notice"

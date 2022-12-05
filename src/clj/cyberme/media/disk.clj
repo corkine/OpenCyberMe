@@ -1,4 +1,4 @@
-(ns cyberme.cyber.disk
+(ns cyberme.media.disk
   "设计约束：磁盘文件路径不可冲突，多个磁盘默认挂载同一电脑不同路径，如果路径冲突插入操作被看做更新，且 info->disk 信息被重写"
   (:require [clojure.tools.logging :as log]
             [cyberme.db.core :as db]

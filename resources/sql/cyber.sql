@@ -232,6 +232,18 @@ from movie
 where update_at > (current_date - (:day || ' day')::interval)
 order by update_at desc;
 
+------------------------ yyets ------------------------
+-- :name yyets-resource :? :1
+select data
+from yyets where resource_id = :id
+limit 1;
+-- :name yyets-search-basic :? :*
+select resource_id, cnname, enname, aliasname from yyets
+where yyets.cnname ilike ('%' || :search || '%')
+           or yyets.enname ilike ('%' || :search || '%')
+                   or yyets.aliasname ilike ('%' || :search || '%')
+limit 100;
+
 ------------------------ days ----------------------
 -- :name today :? :1
 select *

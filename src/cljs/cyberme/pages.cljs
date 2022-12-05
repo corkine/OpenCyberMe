@@ -6,6 +6,7 @@
     [markdown.core :refer [md->html]]
     [cyberme.util.events]
     [cyberme.about :refer [log about-page]]
+    [cyberme.yyets :as yyets]
     [cyberme.place.filter :as place-filter]
     [cyberme.place.core :as place]
     [cyberme.work.core :as work]
@@ -292,6 +293,15 @@
      [:span.title.mr-5.ml-5.mb-6.is-family-code "CyberMe Psychology System"]
      [:span.subtitle.mb-3.has-text-weight-bold "高效 · 专业 · 易用"]
      [:span.subtitle.mb-3.is-size-6.is-capitalized "实验设计联系：corkine@outlook.com"]]]])
+
+(defn yyets-resource-page []
+  [:<>
+   [top-point]
+   [:div.container>div.content
+    [yyets/resource-page]]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
 (defn psy-exp-detail-page []
   [:<>

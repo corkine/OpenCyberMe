@@ -1,16 +1,15 @@
 (ns cyberme.cyber.todo
-  (:require [org.httpkit.client :as client]
-            [cheshire.core :as json]
-            [clojure.tools.logging :as log]
-            [cyberme.db.core :as db]
+  (:require [cheshire.core :as json]
             [clojure.set :as set]
-            [clojure.java.io :as io]
-            [cyberme.config :refer [edn edn-in]]
+            [clojure.tools.logging :as log]
+            [cuerdas.core :as str]
+            [cyberme.config :refer [edn-in]]
             [cyberme.cyber.slack :as slack]
+            [cyberme.db.core :as db]
+            [cyberme.media.news :as news]
             [cyberme.tool :as tool]
-            [cyberme.cyber.news :as news]
-            [cuerdas.core :as str])
-  (:import (java.time LocalDateTime LocalDate LocalTime)
+            [org.httpkit.client :as client])
+  (:import (java.time LocalDate LocalDateTime)
            (java.time.format DateTimeFormatter)))
 
 ;访问 mazhangjing.com/todologin 登录微软账户，然后其回调 mazhangjing.com/todocheck

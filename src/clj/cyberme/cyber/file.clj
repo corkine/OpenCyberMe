@@ -1,4 +1,5 @@
 (ns cyberme.cyber.file
+  "阿里云 OSS 模块"
   (:require [cyberme.tool :refer [bucket]]
             [cyberme.config :refer [edn-in]]
             [cyberme.oss :as oss]
