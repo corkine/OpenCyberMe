@@ -16,7 +16,7 @@
     [conman.core :as conman]
     [cyberme.db.core :as db]
     [cyberme.cyber.track :as track]
-    [cyberme.cyber.mini4k :as mi]
+    [cyberme.media.mini4k :as mi]
     [cyberme.cyber.slack :as slack]
     [cyberme.db.core :as db])
   (:import (java.util UUID)))

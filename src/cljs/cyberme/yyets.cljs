@@ -17,6 +17,11 @@
   (fn [db [_ [season fmt]]]
     (assoc-in db [:yyets/select season] fmt)))
 
+(rf/reg-sub
+  :yyets/select-kind
+  (fn [db [_ season]]
+    (get-in db [:yyets/select season] nil)))
+
 (rf/reg-event-db
   :yyets/session-open-toggle!
   (fn [db [_ session]]
@@ -24,15 +29,17 @@
       (assoc db :yyets/open-session ((if (contains? old session) disj conj) old session)))))
 
 (rf/reg-sub
-  :yyets/select-kind
-  (fn [db [_ season]]
-    (get-in db [:yyets/select season] nil)))
-
-(rf/reg-sub
   :yyets/is-session-open?
   (fn [db [_ session-cn]]
     (contains? (get db :yyets/open-session #{})
                session-cn)))
+
+(rf/reg-event-db
+  :yyets/remove-temp-data!
+  (fn [db _]
+    (-> db
+        (dissoc :yyets/open-session)
+        (dissoc :yyets/select))))
 
 (defn resource-page []
   (let [res-data @(rf/subscribe [:yyets/resource-data])

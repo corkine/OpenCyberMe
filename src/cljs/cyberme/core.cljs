@@ -217,7 +217,10 @@
                                                (str/starts-with? search "c")
                                                (rf/dispatch [:common/navigate! :file nil {:q kw :type "私有云" :clean true}])
                                                (str/starts-with? search "d")
-                                               (rf/dispatch [:common/navigate! :diary nil (cyberme.diary.core/clean-search-input kw)]))))))}]
+                                               (rf/dispatch [:common/navigate! :diary nil (cyberme.diary.core/clean-search-input kw)]))
+                                         (js/setTimeout (fn [_] (when-let [ele (.getElementById js/document "search-bar")]
+                                                                  (set! (.-value ele) "")))
+                                                        1000)))))}]
                     [:span.icon.is-left
                      [:i.fa.fa-search {:aria-hidden "true"}]]]]
                   [:div.navbar-item.is-hoverable.mx-0

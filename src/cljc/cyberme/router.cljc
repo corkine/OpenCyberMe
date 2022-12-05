@@ -196,7 +196,8 @@
                                                   (rf/dispatch [:user/fetch-from-local])
                                                   (rf/dispatch [:yyets/resource id]))
                                     :stop       (fn [_]
-                                                  (rf/dispatch [:yyets/resource-clean]))}]}))]
+                                                  (rf/dispatch [:yyets/resource-clean])
+                                                  (rf/dispatch [:yyets/remove-temp-data!]))}]}))]
 
    ["/psych-exp"
     (merge {:name :psych-exp}
@@ -259,4 +260,6 @@
                                                       ;如果由搜索栏触发，这里有 clean 字段，等同于第一次加载，清空并重新构造 search-obj
                                                       (rf/dispatch [:file/reset-search-obj-if-outdated! query])
                                                       (rf/dispatch [:file/search query]))
-                                                    (rf/dispatch [:file/search-clean])))}]}))]])
+                                                    (rf/dispatch [:file/search-clean])))
+                                    :stop (fn [_]
+                                            (rf/dispatch [:file/search-clean]))}]}))]])

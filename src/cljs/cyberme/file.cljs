@@ -11,6 +11,7 @@
             [cyberme.util.upload :as upload]
             [cyberme.file-share :refer [file-query-range]]
             [goog.string :as gstring]
+            [reagent.core :as r]
             [re-frame.core :as rf]))
 
 (def basic-book-cloud-path
@@ -165,7 +166,9 @@
 
 (defn file-main []
   (let [params (-> (js/URL. (.-location js/window)) (.-searchParams))
-        search-in-bar (or (.get params "q") "")]
+        search-in-bar (or (.get params "q") "")
+        _ (when-let [ele (.getElementById js/document "search-input")]
+            (set! (.-value ele) search-in-bar))]
     [:div
      [:div.hero.is-full-height.is-info
       [:div.hero-body.has-text-centered
@@ -202,10 +205,10 @@
            [:span.file-icon
             [:i.fa.fa-upload]]]]]]
        [:div.control.has-icons-right.container
-        [:input.input.is-rounded
+        [:input#search-input.input.is-rounded
          {:type      "text" :placeholder "键入内容，回车搜索"
-          :value     search-in-bar
-          :on-change (fn [e]
+          :defaultValue search-in-bar
+          :on-key-up (fn [e]
                        (let [search-input (.-value (.-target e))]
                          ;按下 Enter 键，有输入内容且和当前数据不同，则执行搜索
                          (when (and (= 13 (.-keyCode e))
