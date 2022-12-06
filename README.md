@@ -2,7 +2,7 @@
 
 一个 C/S 架构的 Web 应用，使用 clojure 和 clojurescript 搭建，用于高效、正确、可扩展的实现各种想法，提供对应服务。
 
-<img src="demos/screenshorts/cyber.jpg" width="500px" style="margin-left: 0px" alt="CyberMe">
+<img src="demos/screenshots/cyber.jpg" width="500px" style="margin-left: 0px" alt="CyberMe">
 
 [![ClojureCI](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml/badge.svg)](https://github.com/corkine/cyberMe/actions/workflows/clojure.yml) [![CircleCI](https://circleci.com/gh/corkine/cyberMe/tree/cyber-me.svg?style=svg&circle-token=793142488339016f1a9498b5b432c020629a96d7)](https://circleci.com/gh/corkine/cyberMe/tree/cyber-me) [![codecov](https://codecov.io/gh/corkine/cyberMe/branch/cyber-me/graph/badge.svg?token=W3119RL5SM)](https://codecov.io/gh/corkine/cyberMe) ![FOSSA](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcorkine%2FcyberMe.svg?type=small)
 
@@ -32,21 +32,21 @@
 
 后台定时从美剧网站查询感兴趣的美剧更新信息，存储到数据库并通知更新到 Web 界面或 iPhone Slack 频道。
 
-后端服务 `src/clj/cyberme/cyber/mini4k.clj`
+后端服务 `src/clj/cyberme/media/mini4k.clj`
 
 前端组件 `src/cljs/cyberme/dashboard/core.cljs` 提供美剧订阅录入表单和最近更新剧集展示。
 
 ### 喷嚏图卦新闻通知服务
 
-<img src="demos/screenshorts/news.jpg" width="270px" alt="Notice">
+<img src="demos/screenshots/news.jpg" width="270px" alt="Notice">
 
 后台在特定时间段抓取当日的“喷嚏图卦”，推送到 Slack 频道。
 
-后端服务 `src/clj/cyberme/cyber/news.clj`
+后端服务 `src/clj/cyberme/media/news.clj`
 
 ### 天气定期预报和预警服务
 
-<img src="demos/screenshorts/notice.jpg" width="270px" alt="Notice">
+<img src="demos/screenshots/notice.jpg" width="270px" alt="Notice">
 
 后台定时获取彩云天气 API 并提供配置文件地点天气信息，推送到 Slack 频道，并提供 API 以供查询
 
@@ -54,7 +54,7 @@
 
 ### GPS 数据上报和轨迹追踪服务
 
-<img src="demos/screenshorts/track.jpg" width="470px" alt="Track">
+<img src="demos/screenshots/track.jpg" width="470px" alt="Track">
 
 后台提供 API 从 iPhone 等设备采集 GPS 信息，联动百度鹰眼和百度地图进行位置解析和记录上报（根据配置），以绘制活动轨迹。
 
@@ -104,7 +104,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 每日生活提醒和习惯保持服务
 
-<img src="demos/screenshorts/dashboard.png" width="500px"  alt="Diary Show">
+<img src="demos/screenshots/dashboard.png" width="500px"  alt="Diary Show">
 
 后台提供 API 从 Apple Watch 和 iOS 健康应用通过自动化快捷指令上传饮食、站立、健身、心率和运动数据，进行按周计分，最长坚持计算并提供 Scriptable 小组件、Flutter APP 以及前端 Web 界面展示。
 
@@ -114,7 +114,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### HCM 打卡、加班和工时自动化服务
 
-<img src="demos/screenshorts/work.png" width="500px"  alt="Work">
+<img src="demos/screenshots/work.png" width="500px"  alt="Work">
 
 后台定时从 HCM 获取打卡信息，并提供 API 以提供加班时长查询、工作时长计算、统计和打卡提醒功能（以及一个实验性质的自动化服务，依赖移动设备在特定时间段执行自动化服务，后台定时查询其任务是否派发，如果失败提供通知功能）。
 
@@ -124,7 +124,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 物品管理服务
 
-<img src="demos/screenshorts/goods_show.png" width="500px"  alt="Goods">
+<img src="demos/screenshots/goods_show.png" width="500px"  alt="Goods">
 
 后端提供物品、位置、打包的增删改查服务，有 Web APP 和 Flutter APP 两个界面。
 
@@ -150,7 +150,7 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ### 日记服务
 
-<img src="demos/screenshorts/diary_list.png" width="500px" alt="Diary List">
+<img src="demos/screenshots/diary_list.png" width="500px" alt="Diary List">
 
 后端提供日记的增删改和灵活查询服务，基于阿里云 OSS 的图片存储服务，有 Web APP 和 Flutter APP 两个界面。
 ``
@@ -158,21 +158,61 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图``片拖拽上传等功能。
 
-### Calibre 书籍、磁盘文件、短链接搜索和同步服务
+### 统一搜索服务
 
-<img src="demos/screenshorts/book_search.png" width="500px" alt="Calibre">
+Ctrl + S 触发顶部搜索框，按照语法规则进行搜索。
 
-<img src="demos/screenshorts/disk_search.png" width="500px" alt="Disk Search">
+#### Calibre 书籍搜索服务
 
-后台维护 Calibre 书库（由 OneDrive 同步）、多个存储磁盘文件系统的元数据，对于书籍，可通过前端界面搜索书籍、更新书籍元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。对于磁盘文件，可通过前端界面搜索和查看路径、文件和文件夹信息。对于短链接，提供搜索查询服务。
+<img src="demos/screenshots/book_search.png" width="500px" alt="Calibre">
 
-后端服务 `src/clj/cyberme/cyber/book.clj` `src/clj/cyberme/cyber/disk.clj`
+后台维护 Calibre 书库（由 OneDrive 同步）元数据，对于书籍，可通过前端界面搜索书籍、更新书籍元数据，跳转到豆瓣读书、OneDrive 资源页、下载和预览 PDF 文件。
+
+后端服务 `src/clj/cyberme/cyber/book.clj`
 
 前端界面 `src/cljs/cyberme/file.cljs`
 
-> 本仓库仅包含后端服务代码和前端 Web App 代码，Flutter 客户端实现参见这里：[CyberMe 客户端](https://github.com/corkine/cyber-me-client)
+#### 磁盘文件元数据搜索服务
+
+<img src="demos/screenshots/disk_search.png" width="500px" alt="Disk Search">
+
+后台维护多个存储磁盘文件系统的元数据，对于磁盘文件，可通过前端界面搜索和查看路径、文件和文件夹信息。
+
+后端服务 `src/clj/cyberme/media/disk.clj`
+
+前端界面 `src/cljs/cyberme/file.cljs`
+
+#### go.mazhangjing.com 短链接查询服务
+
+对于短链接，提供搜索查询服务。
+
+后端服务 `src/clj/cyberme/media/disk.clj`
+
+前端界面 `src/cljs/cyberme/file.cljs`
+
+#### yyets 人人影视资源检索服务
+
+<img src="demos/screenshots/yyets_search.png" width="500px" alt="YYETS Search">
+
+<img src="demos/screenshots/yyets_resource.png" width="500px" alt="YYETS Download">
+
+数据库来自[此项目](https://yyets.dmesg.app/)。
+
+后端服务 `src/clj/cyberme/media/yyets.clj`
+
+前端界面 `src/cljs/cyberme/file.clj`
+
+## Scripts & Client
 
 > 一些配合 CyberMe 使用的本地脚本(使用 clj-run 或 babashka)，比如上传 Calibre 数据库文件、磁盘元信息参见 /demos/scripts/README.md
+
+另参见： [iOS Client by Swift](https://github.com/corkine/cyberMeSwift)
+
+另参见： [Android Client by Flutter](https://github.com/corkine/cyberMeFlutter)
+
+另参见： [FontEnd Client by ClojureScript](https://github.com/corkine/cyberMe) | [OpenSource Version](https://github.com/corkine/openCyberMe)
+
+另参见： [BackEnd Server by Clojure](https://github.com/corkine/cyberMe) | [OpenSource Version](https://github.com/corkine/openCyberMe)
 
 ## Running
     
