@@ -174,38 +174,77 @@
 (defn do-need-work
   "根据国家规定返回当前是否要工作的信息 2022
   Reference: http://www.gov.cn/zhengce/content/2020-11/25/content_5564127.htm
-  Reference: http://www.gov.cn/zhengce/content/2021-10/25/content_5644835.htm"
+  Reference: http://www.gov.cn/zhengce/content/2021-10/25/content_5644835.htm
+  Reference: http://www.gov.cn/zhengce/content/2022-12/08/content_5730844.htm"
   [^LocalDateTime time]
-  (let [time (if (nil? time) (LocalDateTime/now) time)
-        of22 #(.atStartOfDay (LocalDate/of 2022 ^int %1 ^int %2))
-        in (fn [time [hint & d]]
-             (cond (= hint :each)
-                   (some
-                     #(.isEqual (.toLocalDate time)
-                                (.toLocalDate (of22 (first %) (second %))))
-                     (partition 2 (vec d)))
-                   (= hint :range)
-                   (and (not (.isBefore time (of22 (first d) (second d))))
-                        (.isBefore time (.plusDays (of22 (nth d 2) (last d)) 1)))
-                   (= hint :weekend)
-                   (let [week (.getDayOfWeek time)]
-                     (or (= DayOfWeek/SATURDAY week)
-                         (= DayOfWeek/SUNDAY week)))
-                   :else (throw (RuntimeException. "错误的匹配"))))]
-    (cond
-      (in time [:range 1 1, 1 3]) false
-      (in time [:range 1 31, 2 6]) false
-      (in time [:each 1 29, 1 30]) true
-      (in time [:range 4 3, 4 5]) false
-      (in time [:each 4 2]) true
-      (in time [:range 4 30, 5 4]) false
-      (in time [:each 4 24, 5 7]) true
-      (in time [:range 6 3, 6 5]) false
-      (in time [:range 9 10, 9 12]) false
-      (in time [:range 10 1, 10 7]) false
-      (in time [:each 10 8, 10 9]) true
-      (in time [:weekend]) false
-      :else true)))
+  (let [time (or time (LocalDateTime/now))
+        year (.getYear time)
+        at-year (fn [year] (fn [month day]
+                             (.atStartOfDay (LocalDate/of ^long year ^int month ^int day))))
+        in (fn [at-date]
+             (fn [time [hint & d]]
+               (cond (= hint :each)
+                     (some
+                       #(.isEqual (.toLocalDate time)
+                                  (.toLocalDate (at-date (first %) (second %))))
+                       (partition 2 (vec d)))
+                     (= hint :range)
+                     (and (not (.isBefore time (at-date (first d) (second d))))
+                          (.isBefore time (.plusDays (at-date (nth d 2) (last d)) 1)))
+                     (= hint :weekend)
+                     (let [week (.getDayOfWeek time)]
+                       (or (= DayOfWeek/SATURDAY week)
+                           (= DayOfWeek/SUNDAY week)))
+                     :else (throw (RuntimeException. "错误的匹配")))))]
+    (case year
+      2023
+      (let [when-match (in (at-year 2023))]
+        (cond
+          (when-match time [:range 1 1, 1 2]) false
+          (when-match time [:range 1 21, 1 27]) false
+          (when-match time [:each 1 28, 1 29]) true
+          (when-match time [:each 4 5]) false
+          (when-match time [:range 4 29, 5 3]) false
+          (when-match time [:each 4 23, 5 6]) true
+          (when-match time [:range 6 22, 6 24]) false
+          (when-match time [:each 6 25]) true
+          (when-match time [:range 9 29, 10 6]) false
+          (when-match time [:range 10 7, 10 8]) true
+          (when-match time [:weekend]) false
+          :else true))
+      2022
+      (let [when-match (in (at-year 2022))]
+        (cond
+          (when-match time [:range 1 1, 1 3]) false
+          (when-match time [:range 1 31, 2 6]) false
+          (when-match time [:each 1 29, 1 30]) true
+          (when-match time [:range 4 3, 4 5]) false
+          (when-match time [:each 4 2]) true
+          (when-match time [:range 4 30, 5 4]) false
+          (when-match time [:each 4 24, 5 7]) true
+          (when-match time [:range 6 3, 6 5]) false
+          (when-match time [:range 9 10, 9 12]) false
+          (when-match time [:range 10 1, 10 7]) false
+          (when-match time [:each 10 8, 10 9]) true
+          (when-match time [:weekend]) false
+          :else true))
+      2021
+      (let [when-match (in (at-year 2021))]
+        (cond
+          (when-match time [:range 1 1, 1 3]) false
+          (when-match time [:range 2 11, 2 17]) false
+          (when-match time [:each 2 7, 2 20]) true
+          (when-match time [:range 4 3, 4 5]) false
+          (when-match time [:range 5 1, 5 5]) false
+          (when-match time [:each 4 25, 5 8]) true
+          (when-match time [:range 6 12, 6 14]) false
+          (when-match time [:range 9 19, 9 21]) false
+          (when-match time [:each 9 18]) true
+          (when-match time [:range 10 1, 10 7]) false
+          (when-match time [:each 9 26, 10 9]) true
+          (when-match time [:weekend]) false
+          :else true))
+      false)))
 
 (defn lt-now [] (LocalTime/now))
 
