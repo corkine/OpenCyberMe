@@ -181,7 +181,8 @@
            (gstring/format "%.1f" body-mass-origin) " Kg"]]
          [:div.is-align-self-center.is-hidden-touch1.px-3 {:style {:margin-left :-10px}}
           [:p.mt-2 "本周已冥想 "
-           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}} marvel-mindful] " Min"]
+           [:span.is-size-4.is-family-code {:style {:vertical-align "-4%"}}
+            (gstring/format "%.1f" marvel-mindful)] " Min"]
           [:p.is-size-7.mb-3.has-text-weight-light "历史累计 " (int acc-mindful) " Min"]]]]
        [:div#week-info.mx-2.box {:style {:margin-bottom :1em
                                          :position      :relative
