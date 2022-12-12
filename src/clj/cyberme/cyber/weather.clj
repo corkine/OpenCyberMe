@@ -20,6 +20,9 @@
         (str/includes? in "在室内休息休息吧")
         (str/replace in "，在室内休息休息吧" "，室内活动最佳")
 
+        (str/includes? in "。还在加班么？注意休息哦")
+        (str/replace in "。还在加班么？注意休息哦" "")
+
         (str/includes? in "出门还是带把伞吧")
         "附近正在下雨，记得带伞"
 
@@ -180,14 +183,14 @@
            (let [locale-map (edn-in [:weather :map check])
                  locale (:locale locale-map)
                  name (:name locale-map)]
-             (cond (= hour 7)
-                   (if-let [weather (check-weather token check locale true)]
+             (cond #_(= hour 7)
+                   #_(if-let [weather (check-weather token check locale true)]
                      (slack/notify (str name ": " weather) "SERVER"))
-                   (and (> hour 7) (<= hour 20))
+                   (and (> hour 6) (<= hour 23))
                    (if-let [weather (check-weather token check locale false)]
                      (do (set-weather-cache! check weather)
-                         (slack/notify (str name ": " weather) "PIXEL")
-                         (when (will-notice-warn? weather)
+                         #_(slack/notify (str name ": " weather) "PIXEL")
+                         #_(when (will-notice-warn? weather)
                            (slack/notify (str name ": " weather) "SERVER"))))
                    :else
                    (unset-weather-cache! check))))))))
@@ -220,6 +223,9 @@
 ;                 :wind 风速和风向 :cloudrate 云量 :air_quality 空气质量 :pressure 气压 :dswrf ??
 ;                 :description 一句话总结，此总结为当天总结, 比如 未来24小时多云
 (comment
+  (check-weather (edn-in [:weather :token])
+                 :na-tie (:locale (edn-in [:weather :map :na-tie]))
+                 false)
   (set-weather-cache! :na-tie
                       (check-weather (edn-in [:weather :token])
                                      :na-tie (:locale (edn-in [:weather :map :na-tie]))
