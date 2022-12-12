@@ -1,4 +1,5 @@
 (ns cyberme.cyber.clean
+  "清洁和 Blue 统计模块，已废弃"
   (:require [cyberme.db.core :as db]
             [clojure.tools.logging :as log]
             [cyberme.cyber.fitness :as fitness])

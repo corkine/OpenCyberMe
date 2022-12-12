@@ -1,17 +1,17 @@
 (ns cyberme.client.ios
-  (:require [cyberme.cyber.todo :as todo]
+  "iOS 客户端 API 模块"
+  (:require [clojure.string :as str]
+            [clojure.tools.logging :as log]
+            [cyberme.cyber.dashboard :as dashboard]
             [cyberme.cyber.fitness :as fitness]
             [cyberme.cyber.inspur :as inspur]
-            [cyberme.cyber.weather :as weather]
-            [clojure.tools.logging :as log]
-            [cyberme.cyber.week-plan :as week-plan]
-            [cyberme.tool :as tool]
-            [cyberme.db.core :as db]
-            [clojure.string :as str]
             [cyberme.cyber.marvel :as marvel]
-            [next.jdbc :as jdbc]
-            [cyberme.cyber.dashboard :as dashboard])
-  (:import (java.time LocalDateTime LocalDate)
+            [cyberme.cyber.todo :as todo]
+            [cyberme.cyber.weather :as weather]
+            [cyberme.cyber.week-plan :as week-plan]
+            [cyberme.db.core :as db]
+            [cyberme.tool :as tool])
+  (:import (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)))
 
 (defn handle-ios-dashboard

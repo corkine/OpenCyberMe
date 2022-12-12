@@ -1,4 +1,5 @@
 (ns cyberme.cyber.fitness
+  "HealthKit 健身数据管理（包括快捷指令和 iOS HealthKit API）"
   (:require [cyberme.db.core :as db]
             [cheshire.core :as json]
             [clojure.tools.logging :as log]

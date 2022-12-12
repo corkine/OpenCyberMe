@@ -1,15 +1,15 @@
 (ns cyberme.cyber.diary
-  (:require [cyberme.db.core :as db]
+  "日记、植物浇水和周计划汇总 API（周计划另参见 week_plan.clj）"
+  (:require [clojure.string :as str]
             [clojure.tools.logging :as log]
-            [next.jdbc :as jdbc]
             [cyberme.cyber.inspur :as inspur]
-            [cyberme.tool :as tool]
-            [hugsql.core :as hug]
             [cyberme.cyber.week-plan :as week]
-            [clojure.string :as str])
+            [cyberme.db.core :as db]
+            [cyberme.tool :as tool]
+            [next.jdbc :as jdbc])
   (:import
-    (java.time.format DateTimeFormatter)
-    (java.time LocalDate LocalDateTime)))
+    (java.time LocalDate LocalDateTime)
+    (java.time.format DateTimeFormatter)))
 
 (comment
   ;Note

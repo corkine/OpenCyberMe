@@ -1,4 +1,5 @@
 (ns cyberme.cyber.inspur
+  "HCM 模块"
   (:require [cheshire.core :as json]
             [clojure.string :as str]
             [clojure.tools.logging :as log]

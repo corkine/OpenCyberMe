@@ -1,4 +1,5 @@
 (ns cyberme.cyber.weather
+  "彩云天气模块"
   (:require [cheshire.core :as json]
             [clojure.string :as str]
             [clojure.tools.logging :as log]
@@ -104,7 +105,7 @@
 
 (defn put-temp-cache [place response]
   ;temperature_08h_20h ;temperature_20h_32h
-  (if-let [temp (-> response :result :daily :temperature)]
+  (if-let [temp (-> response :result :daily :temperature_08h_20h)]
     (let [today-temp (first temp)
           tomorrow-temp (second temp)
           today (LocalDate/now)

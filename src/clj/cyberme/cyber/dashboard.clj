@@ -1,4 +1,5 @@
 (ns cyberme.cyber.dashboard
+  "前端和 Flutter 大屏 API"
   (:require [cyberme.cyber.express :as express]
             [cyberme.cyber.fitness :as fitness]
             [cyberme.cyber.inspur :as inspur]

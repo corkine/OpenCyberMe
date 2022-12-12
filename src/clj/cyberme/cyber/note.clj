@@ -1,4 +1,5 @@
 (ns cyberme.cyber.note
+  "快速笔记模块"
   (:require [cyberme.db.core :as db])
   (:import (java.time LocalDateTime Duration)))
 

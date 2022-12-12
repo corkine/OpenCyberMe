@@ -1,4 +1,5 @@
 (ns cyberme.cyber.book
+  "Calibre 书籍管理 API"
   (:require [cyberme.db.core :as db]
             [next.jdbc :as jdbc]
             [clojure.tools.logging :as logger]
