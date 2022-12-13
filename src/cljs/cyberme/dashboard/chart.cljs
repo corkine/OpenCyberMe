@@ -1,6 +1,7 @@
 (ns cyberme.dashboard.chart
   (:require [cljs-time.core :as t]
             [cljs-time.format :as format]
+            [clojure.string :as str]
             [cyberme.util.echarts :refer [ECharts EChartsM EChartsR]]
             [goog.string :as gstring]))
 
@@ -192,3 +193,121 @@
        :show-pass-percent  (if today-all-finished? pass-percent-f pass-percent)
        :show-score-percent (if today-all-finished? finish-percent-f finish-percent)
        :week-items         (if today-all-finished? week-items-f week-items)})))
+
+#_(defn fit-diary-todo-plan-chart [now show-today data]
+  (let [now (or now (t/time-now))
+        year (t/year now)
+        month (t/month now)
+        today (t/day now)
+        after-noon? (> (t/hour now) 12)
+        last_day (t/last-day-of-the-month now)
+        date-format #(gstring/format "%02d-%02d-%02d" year month %)
+        calendar-range (gstring/format "%02d-%02d" year month)
+        date-key #(keyword (date-format %))
+        status-fn #(if-not (->> % date-key (get data) :work-day) "休" "")
+        plan-fn #(let [{:keys [exist failed success pending]} (->> % date-key (get data) :policy)]
+                   (cond (not exist) ""
+                         (and (= pending 0) (not= success 0)) (if (> success 1) "成" "可")
+                         (not= pending 0) "候"
+                         ;(and (not= failed 0) (= pending 0)) "败"
+                         :else "策"))
+        day-list (range 1 (+ 1 (t/day last_day)))
+        month-list (mapv (fn [d]
+                           [(date-format d)
+                            (if (and (= d today) show-today) (str "今 " d) d)
+                            (status-fn d)
+                            (plan-fn d)]) day-list)
+        work-list (mapv (fn [d]
+                          (let [{hour :work-hour} (get data (date-key d))]
+                            [(date-format d)
+                             hour])) day-list)]
+    [EChartsM
+     {:style {:width "500px" :height "340px"}
+      :option
+      {:tooltip   {:formatter (clj->js (fn [param]
+                                         (let [pa (js->clj param)
+                                               dd (get pa "data")
+                                               {:keys [check-start check-end work-hour]}
+                                               (get data (keyword (first dd)))
+                                               start-time (second (str/split (:time check-start) "T"))
+                                               end-time (second (str/split (:time check-end) "T"))
+                                               exist-end? (not= end-time start-time)]
+                                           (cond (and check-start check-end exist-end?)
+                                                 (str "<b>工作时长：</b>" work-hour " 小时"
+                                                      "<br>"
+                                                      "<b>首次打卡</b>：" start-time
+                                                      "<br>"
+                                                      "<b>末次打卡</b>：" end-time)
+                                                 check-start
+                                                 (str "<b>工作时长：</b>" work-hour " 小时"
+                                                      "<br>"
+                                                      "<b>首次打卡</b>：" start-time)
+                                                 (not= work-hour 0.0)
+                                                 (str "<b>工作时长：</b>" work-hour " 小时")
+                                                 :else (str "")))))}
+       :visualMap {:show        true
+                   :min         0
+                   :max         13
+                   :calculable  true
+                   :right       "10%"
+                   :top         "1%"
+                   :inRange     {:color   ["#dbdbdb" "#dddddd" "#d2d2d2" "#5f5f5f" "#5f5f5f"]
+                                 :opacity [0 0.6]}
+                   :controller  {:inRange    {:opacity [0 0.6]
+                                              :color   ["#dbdbdb" "#dddddd" "#d2d2d2" "#5f5f5f"]}
+                                 :outOfRange {:color "#ccc"}}
+                   :seriesIndex [0]
+                   :orient      "vertical"}
+       :calendar  [{:left       "1%"
+                    :top        "15%"
+                    :cellSize   [50 50]
+                    :splitLine  {:show false}
+                    :itemStyle  {:color       "#fff"
+                                 :borderColor "#ccc"
+                                 :borderWidth 0}
+                    :yearLabel  {:show false}
+                    :orient     "vertical"
+                    :dayLabel   {:firstDay 1
+                                 :nameMap  "cn"}
+                    :monthLabel {:show false}
+                    :range      calendar-range}]
+       :series    [{:type             "heatmap"
+                    :name             "工作时长"
+                    :coordinateSystem "calendar"
+                    :data             work-list}
+                   {:type             "scatter"
+                    :coordinateSystem "calendar"
+                    :symbolSize       0
+                    :label            {:show      true
+                                       :formatter (clj->js (fn [p]
+                                                             (let [data (get (js->clj p) "data")]
+                                                               (str (second data) "\n"))))
+                                       :color     "#000"}
+                    :data             month-list}
+                   {:type             "scatter"
+                    :coordinateSystem "calendar"
+                    :symbolSize       0
+                    :label            {:show       true
+                                       :formatter  (clj->js (fn [p]
+                                                              (let [data (get (js->clj p) "data")]
+                                                                (if-not (str/blank? (nth data 3))
+                                                                  (str "\n\n" (nth data 2) "    ")
+                                                                  (str "\n\n" (nth data 2) "")))))
+                                       :color      "#a00"
+                                       :fontSize   11
+                                       :fontWeight 700}
+                    :data             month-list}
+                   {:type             "scatter"
+                    :coordinateSystem "calendar"
+                    :symbolSize       0
+                    :label            {:show       true
+                                       :formatter  (clj->js (fn [p]
+                                                              (let [data (get (js->clj p) "data")]
+                                                                (if-not (str/blank? (nth data 2))
+                                                                  (str "\n\n" "     " (nth data 3))
+                                                                  (str "\n\n" "" (nth data 3))))))
+                                       :color      "rgb(79, 148, 220)"
+                                       :fontSize   11
+                                       :fontWeight 700
+                                       }
+                    :data             month-list}]}}]))

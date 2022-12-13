@@ -153,10 +153,29 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 <img src="demos/screenshots/diary_list.png" width="500px" alt="Diary List">
 
 后端提供日记的增删改和灵活查询服务，基于阿里云 OSS 的图片存储服务，有 Web APP 和 Flutter APP 两个界面。
+
+**DayOne Integration：支持导入 DayOne 压缩包日记 JSON 数据并将图片上传到 OSS。**
+
+<img src="demos/screenshots/dayone.png" width="200px" alt="DayOne Support">
+
 ``
 后端服务 `src/clj/cyberme/cyber/diary.clj` `src/clj/cyberme/cyber/file.clj`
 
 前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图``片拖拽上传等功能。
+
+### 体重、正念、运动和锻炼管理
+
+管理来自 iOS 客户端的 Apple Health 数据，并进行统计，在 Web 界面、iOS Widget 和 iOS、Flutter App 进行展示，包括 30 天体重管理，正念、运动和锻炼管理。
+
+**HealthKit Integration：支持导出和写入 Apple Health 健康数据（需要 iOS 客户端）。**
+
+![](https://static2.mazhangjing.com/cyber/202210/53c2bcf4_图片.png)
+
+``
+后端服务 `src/clj/cyberme/cyber/fitness.clj` `src/clj/cyberme/client/ios.clj`
+
+前端组件 `src/cljs/cyberme/dashboard/`
+``
 
 ### 统一搜索服务
 
@@ -207,6 +226,8 @@ Ctrl + S 触发顶部搜索框，按照语法规则进行搜索。
 > 一些配合 CyberMe 使用的本地脚本(使用 clj-run 或 babashka)，比如上传 Calibre 数据库文件、磁盘元信息参见 /demos/scripts/README.md
 
 另参见： [iOS Client by Swift](https://github.com/corkine/cyberMeSwift)
+
+![](https://static2.mazhangjing.com/20221124/2cf8_Snipaste_2022-11-24_10-20-21.png)
 
 另参见： [Android Client by Flutter](https://github.com/corkine/cyberMeFlutter)
 

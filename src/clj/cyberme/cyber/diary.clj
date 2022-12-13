@@ -6,8 +6,12 @@
             [cyberme.cyber.week-plan :as week]
             [cyberme.db.core :as db]
             [cyberme.tool :as tool]
+            [cyberme.cyber.file :as file]
+            [cheshire.core :as json]
             [next.jdbc :as jdbc])
   (:import
+    (java.io File)
+    (java.nio.file Path Paths)
     (java.time LocalDate LocalDateTime)
     (java.time.format DateTimeFormatter)))
 
@@ -334,3 +338,82 @@
     (catch Exception e
       {:message (format "更新当日学习失败。 %s" e)
        :status  0})))
+
+;;;;;;;;;;;;; DAY ONE IMPORTER ;;;;;;;;;;;;;
+;数据格式：
+(comment
+  {:metadata {:version string?}
+   :entries  [{:isPinned      boolean?
+               :starred       boolean?
+               :isAllDay      boolean?
+               :weather?      {:weatherServiceName    "Forecast.io"
+                               :conditionsDescription "Clear"
+                               :visibilityKM          double?
+                               :relativeHumidity      int?
+                               :weatherCode           "clear"
+                               :temperatureCelsius    double?}
+               :creationDate  "2017-09-13T14:38:14Z"
+               :modifiedDate  "2017-09-13T14:38:14Z"
+               :timeZone      "Asia/Shanghai"
+               :tags?         [string?]
+               :richText?     string?                         ;兼容字段
+               :text          string?                         ;换行有的用 \n 有的用 \r\n
+               ;其中的 ![](dayone-moment://2C9694443FAE45FEBE2774B180217005)
+               ;对应 photo 的 identifier 字段，而 photo 的 md5 和 type 对应文件名
+               :uuid          string?
+               :duration      int?
+               :location?     {:region             {:center {:longitude double?
+                                                             :latitude  double?}
+                                                    :radius int?}
+                               :localityName       string?
+                               :country            string?
+                               :longitude          double?
+                               :administrativeArea string?
+                               :placeName          string?
+                               :latitude           double?}
+               :userActivity? {:activityName string?}
+               :photos?       [{:orderInEntry      int?
+                                :creationDevice    string?
+                                :duration          int?
+                                :favorite          boolean?
+                                :type              "jpeg"
+                                :identifier        uuid?
+                                :exposureBiasValue int?
+                                :height            double?
+                                :width             double?
+                                :md5               string?
+                                :isSketch          boolean?}]}]})
+(defn formatted-day-one-data
+  "从 DayOne 导出的 zip 压缩包中解析数据，将图片上传到 OSS 并更新文本"
+  [dir]
+  (let [dir (or dir "C:\\Users\\mazhangjing\\Downloads\\12-12-2022_11-49-下午")
+        json-filename "Journal.json"
+        photos-dirname "photos"]
+    (let [dir-path (Paths/get dir (into-array [""]))
+          json-path (.resolve dir-path json-filename)
+          photos-path (.resolve dir-path photos-dirname)
+          photo-file (fn [{:keys [md5 type]}]
+                       (.toFile (.resolve photos-path (str md5 "." type))))
+          photo-file-map (fn [photos]
+                           (reduce (fn [agg {:keys [identifier] :as photo}]
+                                     (assoc agg identifier (photo-file photo))) {} photos))
+          find-all-moment-or-nil #(re-seq #"\!\[\]\(dayone-moment:.*?\)" %)
+          handle-upload (fn [^File f] (:data (file/handle-upload (.getName f) f)))]
+      (let [json-data (-> (slurp (.toString json-path)) (json/parse-string true) :entries)]
+        (mapv
+          (fn [{:keys [photos text] :as diary}]
+            (let [pm (photo-file-map (or photos []))
+                  moment-and-ossUrl
+                  (mapv
+                    (fn [moment-url]
+                      (let [identifier (second (re-find #"//(\w+)" moment-url))
+                            target-file (get pm identifier)]
+                        (if target-file [moment-url (handle-upload target-file)] nil)))
+                    (-> text (find-all-moment-or-nil)))
+                  moment-and-ossUrl (filter (comp not nil?) moment-and-ossUrl)
+                  replaced-text                             ;处理过图片的 Markdown 文本
+                  (reduce (fn [text mo] (str/replace text (first mo) (format "![](%s)" (last mo))))
+                          text moment-and-ossUrl)]
+              (-> (dissoc diary :richText)
+                  (assoc :text replaced-text))))
+          json-data)))))
