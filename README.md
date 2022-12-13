@@ -158,10 +158,9 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 <img src="demos/screenshots/dayone.png" width="200px" alt="DayOne Support">
 
-``
 后端服务 `src/clj/cyberme/cyber/diary.clj` `src/clj/cyberme/cyber/file.clj`
 
-前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图``片拖拽上传等功能。
+前端组件 `src/cljs/cyberme/diary` 提供日记的列表、单向展示，Markdown 编辑，图片拖拽上传等功能。
 
 ### 体重、正念、运动和锻炼管理
 
@@ -171,11 +170,9 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 ![](https://static2.mazhangjing.com/cyber/202210/53c2bcf4_图片.png)
 
-``
 后端服务 `src/clj/cyberme/cyber/fitness.clj` `src/clj/cyberme/client/ios.clj`
 
 前端组件 `src/cljs/cyberme/dashboard/`
-``
 
 ### 统一搜索服务
 
