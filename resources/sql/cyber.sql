@@ -364,6 +364,9 @@ where :label = any((info->>'labels')::text[]);
 -- :name insert-diary :! :1
 insert into diary (title, content, info)
 values (:title, :content, :info);
+-- :name insert-diary-full :! :1
+insert into diary (title, content, info, create_at, update_at)
+values (:title, :content, :info, :create_at, :update_at);
 -- :name update-diary :! :1
 update diary set title = :title,
                  content = :content,

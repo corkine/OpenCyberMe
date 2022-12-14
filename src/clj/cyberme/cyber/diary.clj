@@ -12,7 +12,7 @@
   (:import
     (java.io File)
     (java.nio.file Path Paths)
-    (java.time LocalDate LocalDateTime)
+    (java.time LocalDate LocalDateTime ZonedDateTime)
     (java.time.format DateTimeFormatter)))
 
 (comment
@@ -217,7 +217,9 @@
             update-action
             (db/update-diary t {:title   title
                                 :content content
-                                :info    (assoc info :is-sec? (str/ends-with? (or title "") "__"))
+                                :info    (if (str/ends-with? (or title "") "__")
+                                           (assoc info :is-sec? true)
+                                           (dissoc info :is-sec?))
                                 :id      id})]
         (if-let [score (:score info)]
           {:message "更新成功并成功更新每日分数"
@@ -340,24 +342,25 @@
        :status  0})))
 
 ;;;;;;;;;;;;; DAY ONE IMPORTER ;;;;;;;;;;;;;
-;数据格式：
-(comment
+(defn formatted-day-one-data
+  "从 DayOne 导出的 zip 压缩包中解析数据，将图片调换为 OSS URL 并更新文本
+
   {:metadata {:version string?}
    :entries  [{:isPinned      boolean?
                :starred       boolean?
                :isAllDay      boolean?
-               :weather?      {:weatherServiceName    "Forecast.io"
-                               :conditionsDescription "Clear"
+               :weather?      {:weatherServiceName    'Forecast.io'
+                               :conditionsDescription 'Clear'
                                :visibilityKM          double?
                                :relativeHumidity      int?
-                               :weatherCode           "clear"
+                               :weatherCode           'clear'
                                :temperatureCelsius    double?}
-               :creationDate  "2017-09-13T14:38:14Z"
-               :modifiedDate  "2017-09-13T14:38:14Z"
-               :timeZone      "Asia/Shanghai"
+               :creationDate  '2017-09-13T14:38:14Z'
+               :modifiedDate  '2017-09-13T14:38:14Z'
+               :timeZone      'Asia/Shanghai'
                :tags?         [string?]
-               :richText?     string?                         ;兼容字段
-               :text          string?                         ;换行有的用 \n 有的用 \r\n
+               :richText?     string?                       ;兼容字段
+               :text          string?                       ;换行有的用 \n 有的用 \r\n
                ;其中的 ![](dayone-moment://2C9694443FAE45FEBE2774B180217005)
                ;对应 photo 的 identifier 字段，而 photo 的 md5 和 type 对应文件名
                :uuid          string?
@@ -376,15 +379,14 @@
                                 :creationDevice    string?
                                 :duration          int?
                                 :favorite          boolean?
-                                :type              "jpeg"
+                                :type              'jpeg'
                                 :identifier        uuid?
                                 :exposureBiasValue int?
                                 :height            double?
                                 :width             double?
                                 :md5               string?
-                                :isSketch          boolean?}]}]})
-(defn formatted-day-one-data
-  "从 DayOne 导出的 zip 压缩包中解析数据，将图片上传到 OSS 并更新文本"
+                                :isSketch          boolean?}]}]}
+  "
   [dir]
   (let [dir (or dir "C:\\Users\\mazhangjing\\Downloads\\12-12-2022_11-49-下午")
         json-filename "Journal.json"
@@ -396,24 +398,80 @@
                        (.toFile (.resolve photos-path (str md5 "." type))))
           photo-file-map (fn [photos]
                            (reduce (fn [agg {:keys [identifier] :as photo}]
-                                     (assoc agg identifier (photo-file photo))) {} photos))
-          find-all-moment-or-nil #(re-seq #"\!\[\]\(dayone-moment:.*?\)" %)
-          handle-upload (fn [^File f] (:data (file/handle-upload (.getName f) f)))]
-      (let [json-data (-> (slurp (.toString json-path)) (json/parse-string true) :entries)]
-        (mapv
-          (fn [{:keys [photos text] :as diary}]
-            (let [pm (photo-file-map (or photos []))
-                  moment-and-ossUrl
-                  (mapv
-                    (fn [moment-url]
-                      (let [identifier (second (re-find #"//(\w+)" moment-url))
-                            target-file (get pm identifier)]
-                        (if target-file [moment-url (handle-upload target-file)] nil)))
-                    (-> text (find-all-moment-or-nil)))
-                  moment-and-ossUrl (filter (comp not nil?) moment-and-ossUrl)
-                  replaced-text                             ;处理过图片的 Markdown 文本
-                  (reduce (fn [text mo] (str/replace text (first mo) (format "![](%s)" (last mo))))
-                          text moment-and-ossUrl)]
-              (-> (dissoc diary :richText)
-                  (assoc :text replaced-text))))
-          json-data)))))
+                                     (assoc agg identifier (photo-file photo))) {} photos))]
+      (mapv
+        (fn [{:keys [photos text] :as diary}]
+          (let [pm (photo-file-map (or photos []))
+                moment->ossUrl
+                (filter (comp not nil?)
+                        (mapv
+                          (fn [moment-url]
+                            (when-let [target-file ^File (get pm (second (re-find #"//(\w+)" moment-url)))]
+                              [moment-url (format "![](https://static2.mazhangjing.com/dayone/%s)"
+                                                  (.getName target-file))]))
+                          (re-seq #"\!\[\]\(dayone-moment:.*?\)" text)))
+                replaced-text                               ;处理过图片的 Markdown 文本
+                (reduce (fn [text [mo oss]] (str/replace text mo oss)) text moment->ossUrl)]
+            (-> (dissoc diary :richText)
+                (assoc :text replaced-text))))
+        (-> (slurp (.toString json-path)) (json/parse-string true) :entries)))))
+
+(defn convert-day-one-json->db
+  "将 day one 数据提交到数据库，处理逻辑：
+  text 日记文本在上一步替换照片为 OSS URL 后，在这一步删除 \r，并且视图从第一行提取标题，如果提取
+  成功，则删除标题，其余作为正文，反之使用 DayOne #2022-01-01 作为标题，分别作为 title 和 content 插入。
+  tag 添加 DayOne 标签，作为 info->labels 插入。
+  creationDate 作为 create_at 插入。
+  modifiedDate 作为 update_at 插入。
+  除了文本 text、标签 tag 的其余 json 字段作为 info->dayone-origin 插入。
+
+  diary 数据格式：
+  id, title, content, info {day: 2022-04-20, score: 90, labels: [工作]}, create_at, update_at
+
+  select count(*) from diary;
+
+  select * from diary
+  order by info -> 'day' desc limit 10;
+
+  select count(*) from diary
+  where info -> 'dayone-origin' is not null;
+
+  select * from diary
+  where info -> 'dayone-origin' is null;
+
+  delete from diary
+  where info -> 'dayone-origin' is not null;
+  "
+  [dayone]
+  (mapv (fn [{:keys [text creationDate modifiedDate tags]
+              :or {text ""
+                   creationDate "2023-01-01T15:00:00Z"
+                   modifiedDate (ZonedDateTime/now)
+                   tags []} :as day-item}]
+          (let [date (.toLocalDateTime (ZonedDateTime/parse creationDate))
+                date2 (.toLocalDateTime (ZonedDateTime/parse modifiedDate))
+                simple-date (.format date (DateTimeFormatter/ofPattern "yyyyMMdd"))
+                info-date (.format date (DateTimeFormatter/ofPattern "yyyy-MM-dd"))
+                text (str/replace text #"\r" "")
+                text-lines (str/split text #"\n")
+                first-line-of-text (first text-lines)
+                may-be-title? (< 1 (count first-line-of-text) 20)]
+            {:title     (if may-be-title? (-> first-line-of-text
+                                              (str/replace "# " "")
+                                              (str/replace "#" ""))
+                                          (str "DayOne #" simple-date))
+             :content   (if may-be-title? (str/join "\n" (rest text-lines))
+                                          text)
+             :create_at date
+             :update_at date2
+             :info      {:day           info-date
+                         :dayone-origin (-> day-item (dissoc :tags) (dissoc :text))
+                         :labels        (conj tags "DayOne")}})) dayone))
+
+(comment
+  (mapv :title (convert-day-one-json->db (formatted-day-one-data nil)))
+  (doseq [diary (convert-day-one-json->db (formatted-day-one-data nil))]
+    (db/insert-diary-full diary)))
+
+
+
