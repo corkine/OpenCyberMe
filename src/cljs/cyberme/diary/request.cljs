@@ -85,7 +85,8 @@
             :clean                  :diary/delete-current-data-clean
             :success-callback-event [[:diary/delete-current-data-clean]
                                      [:diary/current-data-clean]
-                                     [:common/navigate! :diary nil {:draft true}]]
+                                     [:common/navigate! :diary nil {:draft true}]
+                                     [:dashboard/draft-diary-add -1]]
             :failure-notice         true})
 
 (ajax-flow {:call                   :diary/delete-current-refresh-draft
@@ -95,7 +96,8 @@
             :clean                  :diary/delete-current-data-clean
             :success-callback-event [[:diary/delete-current-data-clean]
                                      [:diary/current-data-clean]
-                                     [:diary/list-draft]]
+                                     [:diary/list-draft]
+                                     [:dashboard/draft-diary-add -1]]
             :failure-notice         true})
 
 ;新建日记，成功和失败提示，成功刷新列表页
@@ -116,5 +118,6 @@
             :clean                  :diary/new-data-clean
             :success-notice         true
             :success-callback-event [[:diary/new-data-clean]
+                                     [:dashboard/draft-diary-add 1]
                                      [:common/navigate! :diary nil {:draft true}]]
             :failure-notice         true})
