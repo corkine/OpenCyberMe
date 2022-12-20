@@ -128,6 +128,14 @@
     [:p.footer-content.has-text-centered.has-text-grey
      (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
 
+(defn diary-draft-new-page []
+  [:<>
+   [top-point]
+   [diary/diary-draft-new-page]
+   [:footer.mt-6.mb-4
+    [:p.footer-content.has-text-centered.has-text-grey
+     (str "© 2016-2022 " "Marvin Studio." " All Right Reserved.")]]])
+
 (defn diary-view-page []
   [:<>
    [top-point]

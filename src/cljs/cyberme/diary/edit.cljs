@@ -12,7 +12,7 @@
             [re-frame.core :as rf]
             [reagent.core :as r]))
 
-(defn edit-page [{:keys [id title content info]
+(defn edit-page [{:keys [id title content info is-draft?]
                   :or   {title "未命名日记" content ""}
                   :as   old} first-show-preview]
   [:div
@@ -20,7 +20,9 @@
    (let [week-items @(rf/subscribe [:dashboard/week-plan])
          week-items (when (or (nil? id)
                               (is-diary-this-week? (diary-date old)))
-                      week-items)]
+                      week-items)
+         draft-origin (get-in old [:info :is-draft?])
+         is-draft? (if-not (nil? draft-origin) draft-origin is-draft?)]
      (r/with-let
        [show-preview (r/atom (or first-show-preview false))
         title (r/atom title)
@@ -81,12 +83,19 @@
               (if preview? "编辑" "预览")]
              (if (nil? id)
                [:button.button.is-danger.mr-2
-                {:on-click #(rf/dispatch [:diary/new
-                                          {:title   @title
-                                           :content @content
-                                           :info    {:day    @date
-                                                     :labels (libs/s->l @tags-in)
-                                                     :score  (js/parseInt @score)}}])}
+                {:on-click #(rf/dispatch
+                              (if is-draft?
+                                [:diary/new-draft
+                                 {:title   @title
+                                  :content @content
+                                  :info    {:day    @date
+                                            :is-draft? true}}]
+                                [:diary/new
+                                 {:title   @title
+                                  :content @content
+                                  :info    {:day    @date
+                                            :labels (libs/s->l @tags-in)
+                                            :score  (js/parseInt @score)}}]))}
                 "新建"]
                [:button.button.is-danger.mr-2
                 {:on-click (fn [_]
@@ -101,33 +110,34 @@
                                                              :score (js/parseInt @score))})]))}
                 "保存"])]]
            ;标签和评分框
-           [:div.columns {:style {:margin-left "-8px"}}
-            [:div.column.py-0
-             [:div.control.has-icons-left
-              [:input.input.is-light
-               (merge
-                 {:value       tags-in-str
-                  :on-change   #(reset! tags-in (.. % -target -value))
-                  :style       {:box-shadow    "none"
-                                :border-radius 0
-                                :border-color  :transparent}
-                  :placeholder (if preview? "没有标签" "输入标签，逗号隔开")}
-                 (if preview? {:readOnly "readOnly"} {}))]
-              [:span.icon.is-left {:style {:height :2.7em}}
-               [:i.fa.fa-tags]]]]
-            [:div.column.py-0
-             #_[:div.control.has-icons-left
+           (when-not is-draft?
+             [:div.columns {:style {:margin-left "-8px"}}
+              [:div.column.py-0
+               [:div.control.has-icons-left
                 [:input.input.is-light
                  (merge
-                   {:value       score-str
-                    :on-change   #(reset! score (.. % -target -value))
+                   {:value       tags-in-str
+                    :on-change   #(reset! tags-in (.. % -target -value))
                     :style       {:box-shadow    "none"
                                   :border-radius 0
                                   :border-color  :transparent}
-                    :placeholder (if preview? "没有评分" "输入评分")}
+                    :placeholder (if preview? "没有标签" "输入标签，逗号隔开")}
                    (if preview? {:readOnly "readOnly"} {}))]
                 [:span.icon.is-left {:style {:height :2.7em}}
-                 [:i.fa.fa-star]]]]]
+                 [:i.fa.fa-tags]]]]
+              [:div.column.py-0
+               #_[:div.control.has-icons-left
+                  [:input.input.is-light
+                   (merge
+                     {:value       score-str
+                      :on-change   #(reset! score (.. % -target -value))
+                      :style       {:box-shadow    "none"
+                                    :border-radius 0
+                                    :border-color  :transparent}
+                      :placeholder (if preview? "没有评分" "输入评分")}
+                     (if preview? {:readOnly "readOnly"} {}))]
+                  [:span.icon.is-left {:style {:height :2.7em}}
+                   [:i.fa.fa-star]]]]])
            [week/week-plan-add-dialog]
            [week/week-plan-log-add-dialog :dashboard/plant-week]
            [week/week-plan-modify-item-dialog :dashboard/plant-week]
@@ -169,9 +179,13 @@
            (if (and (not (nil? id)) preview?)
              [:div.is-clickable.is-size-7
               {:on-click #(rf/dispatch [:global/notice
-                                        {:message  "确定删除此日记吗，此操作不可恢复！"
-                                         :callback [[:diary/delete-current id]
-                                                    [:common/navigate! :diary]]}])
+                                        {:message  (if is-draft?
+                                                     "确定删除此日记草稿吗，此操作不可恢复！"
+                                                     "确定删除此日记吗，此操作不可恢复！")
+                                         :callback [[(if is-draft?
+                                                       :diary/delete-current-navigate-to-draft
+                                                       :diary/delete-current-navigate-to-list)
+                                                     id]]}])
                :style    {:opacity     0.9
                           :padding-top "30px"
                           :margin-left "12px"

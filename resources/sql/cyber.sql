@@ -328,12 +328,14 @@ group by date(start at time zone 'Asia/Shanghai'), category
 order by date(start at time zone 'Asia/Shanghai') desc;
 
 ---------------------- Diary -------------------
--- :name all-diary :? :*
-select * from diary
-order by (info->>'day')::date desc, create_at desc
-limit 100;
 -- :name range-diary :? :*
 select * from diary
+where 1=1
+/*~ (if (:is-draft? params) */
+and coalesce((info->>'is-draft?')::bool, false) = true
+/*~*/
+and coalesce((info->>'is-draft?')::bool, false) = false
+/*~ ) ~*/
 order by (info->>'day')::date desc, create_at desc
 limit :take
 offset :drop;
@@ -345,9 +347,14 @@ where 1=1
 --~ (if (:month params) (str "and date_part('month',(info->>'day')::date) = :month::int"))
 --~ (if (:from params) (str "and (info->>'day')::date >= :from::date"))
 --~ (if (:to params) (str "and (info->>'day')::date <= :to::date"))
+/*~ (if (:is-draft? params) */
+and coalesce((info->>'is-draft?')::bool, false) = true
+/*~*/
+and coalesce((info->>'is-draft?')::bool, false) = false
+/*~ ) ~*/
 order by (info->>'day')::date desc, create_at desc
 limit :take
-    offset :drop;
+offset :drop;
 -- :name diaries-range :? :*
 select * from diary
 where ((info->>'day')::date >= :start) and ((info->>'day')::date <= :end)

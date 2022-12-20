@@ -128,24 +128,40 @@ keyword1 keyword2")
     [:div.hero-body
      [:div.columns
       [:div.column.is-6.is-family-code
-       [:p.mb-4.mt-2 [:span.title "起居注"]
+       [:p.mb-4.mt-2
+        [:span.title.is-clickable
+         {:on-click #(do
+                       (rf/dispatch [:diary/search-obj-reset! {}])
+                       (rf/dispatch [:diary/trigger-url-search! true]))} "日记"]
         [:span.dui-tips
-         {:data-tooltip "点击查看语法帮助"}
+         {:data-tooltip "语法帮助"}
          [:a {:on-click #(rf/dispatch [:global/notice
                                        {:pre-message help-message}])
 
-              :style    {:cursor         :pointer
-                         :font-size      :10px
-                         :margin-left    :5px
-                         :margin-right   :10px
-                         :vertical-align :80%}}
-          [:i.material-icons {:style {:font-size :15px
-                                      :color     :white}} "help_outline"]]]
-        [:span.dui-tips
-         {:data-tooltip "写一篇新日记"}
+              :style    {:cursor       :pointer
+                         :font-size    :10px
+                         :margin-left  :5px
+                         :margin-right :10px}}
+          [:i.fa.fa-question-circle-o {:style {:font-size      :20px
+                                               :vertical-align :50%
+                                               :color          :white}}]]]
+        [:span.dui-tips.mr-3
+         {:data-tooltip "写新日记"}
          [:a {:on-click #(rf/dispatch [:common/navigate! :diary-new])}
-          [:i.material-icons {:style {:font-size :30px
-                                      :color     :white}} "fiber_new"]]]]
+          [:i.fa.fa-sticky-note {:style {:font-size      :20px
+                                         :vertical-align :50%
+                                         :color          :white}}]]]
+        [:span.subtitle.is-clickable
+         {:on-click #(do
+                       (rf/dispatch [:diary/search-obj-reset! {:draft true}])
+                       (rf/dispatch [:diary/trigger-url-search! true]))} "草稿"]
+        [:span.dui-tips
+         {:data-tooltip "写新想法"}
+         [:a {:on-click #(rf/dispatch [:common/navigate! :diary-draft-new])}
+          [:i.fa.fa-thumb-tack {:style {:font-size      :15px
+                                        :margin-left    :5px
+                                        :vertical-align :30%
+                                        :color          :white}}]]]]
        [:p
         [:span
          {:style {:padding-right "5px"
@@ -159,17 +175,17 @@ keyword1 keyword2")
           [:p.control.has-icons-left
            {:style {:width :258px} :title search-message}
            [:input.input.is-success.is-small.is-rounded
-            {:type      "text" :placeholder "搜索日记"
+            {:type          "text" :placeholder "搜索日记"
              :default-value search-in-bar
-             :on-key-up (fn [e]
-                          (if (= 13 (.-keyCode e))
-                            (when-let [search (.-value (.-target e))]
-                              (do
-                                (rf/dispatch [:diary/search-obj-reset!
-                                              (merge (clean-search-input search)
-                                                     {:from 1 :to 10})])
-                                ;每次搜索都可以返回到上一次结果
-                                (rf/dispatch [:diary/trigger-url-search! true])))))}]
+             :on-key-up     (fn [e]
+                              (if (= 13 (.-keyCode e))
+                                (when-let [search (.-value (.-target e))]
+                                  (do
+                                    (rf/dispatch [:diary/search-obj-reset!
+                                                  (merge (clean-search-input search)
+                                                         {:from 1 :to 10})])
+                                    ;每次搜索都可以返回到上一次结果
+                                    (rf/dispatch [:diary/trigger-url-search! true])))))}]
            [:span.icon.is-left
             [:i.fa.fa-search {:aria-hidden "true"}]]]]])]]]])
 
@@ -180,7 +196,8 @@ keyword1 keyword2")
         first-content-url (if (and first-content-url
                                    (str/includes? first-content-url "static2.mazhangjing.com"))
                             (str first-content-url oss-process)
-                            first-content-url)]
+                            first-content-url)
+        is-draft? (:is-draft? info)]
     [:div.box.columns.mt-5 {:style (if first-content-url
                                      {:background
                                       (gstring/format "%s,url(%s)"
@@ -221,7 +238,17 @@ keyword1 keyword2")
            ^{:key label}
            [:a.ml-1 [:span.tag.is-rounded (str "# " label)]])]
         [:p {:style {:margin-left :-7px :margin-top :10px}}
-         [:a.ml-1]])]]))
+         [:a.ml-1]])
+      (if is-draft?
+        [:div.is-clickable.is-size-7
+         {:on-click #(rf/dispatch [:global/notice
+                                   {:message  "确定删除此日记草稿吗，此操作不可恢复！"
+                                    :callback [[:diary/delete-current-refresh-draft id]]}])
+          :style    {:opacity 0.5
+                     :margin  "-40px 0 -20px 0"
+                     :color   "red"
+                     :width   "5em"}}
+         [:i.fa.fa-trash-o] " 删除"])]]))
 
 (defn diary-page
   "Diary 主页展示"
@@ -295,4 +322,10 @@ keyword1 keyword2")
   []
   [:div.container>div.content.mt-5
    [edit/edit-page]])
+
+(defn diary-draft-new-page
+  "Diary 新建草稿页面"
+  []
+  [:div.container>div.content.mt-5
+   [edit/edit-page {:title "未命名草稿" :is-draft? true}]])
 

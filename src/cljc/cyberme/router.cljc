@@ -110,7 +110,10 @@
                                              [from to]) [1 10])
                                all-obj (merge query {:from from :to to})]
                            (rf/dispatch [:diary/search-obj-reset! all-obj])
-                           (rf/dispatch [:diary/list all-obj]))
+                           (rf/dispatch [(if (= (:draft query) "true")
+                                           :diary/list-draft
+                                           :diary/list)
+                                         all-obj]))
                          ;确保有 Goals 数据
                          (rf/dispatch [:goal/ensure-recent-goals!])
                          ;FOR WEEK-PLAN 直接访问日记时，不显示周计划
@@ -119,6 +122,15 @@
    ["/diary-new"
     (merge {:name :diary-new}
            #?(:cljs {:view        #'core/diary-new-page
+                     :controllers [{:parameters {:query []}
+                                    :start      (fn [_]
+                                                  (rf/dispatch [:user/fetch-from-local])
+                                                  ;确保有 Goals 数据
+                                                  (rf/dispatch [:goal/ensure-recent-goals!]))}]}))]
+
+   ["/diary-draft-new"
+    (merge {:name :diary-draft-new}
+           #?(:cljs {:view        #'core/diary-draft-new-page
                      :controllers [{:parameters {:query []}
                                     :start      (fn [_]
                                                   (rf/dispatch [:user/fetch-from-local])
@@ -261,5 +273,5 @@
                                                       (rf/dispatch [:file/reset-search-obj-if-outdated! query])
                                                       (rf/dispatch [:file/search query]))
                                                     (rf/dispatch [:file/search-clean])))
-                                    :stop (fn [_]
-                                            (rf/dispatch [:file/search-clean]))}]}))]])
+                                    :stop       (fn [_]
+                                                  (rf/dispatch [:file/search-clean]))}]}))]])

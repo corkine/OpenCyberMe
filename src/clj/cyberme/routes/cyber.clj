@@ -561,9 +561,10 @@
      :get  {:summary     "获取最近的所有日记"
             :description "日记包括 title content info create_at update_at id 信息
             其中 from to 表示开始和结束的条数，默认 from 从 0 开始，默认 to 为 100"
-            :parameters  {:query (with-token :opt [:from int? :to int?])}
+            :parameters  {:query (with-token :opt [:from int? :to int? :is-draft? boolean?])}
             :handler     (fn [{{query :query} :parameters auth :auth-info}]
-                           (hr/response (diary/handle-diaries-limit (merge query auth))))}
+                           (hr/response (diary/handle-diaries-limit (dissoc (merge query auth)
+                                                                            :is-draft?))))}
      :post {:summary     "获取特定查询参数日记"
             :description "查询参数包括：from, to(用于分页),
             from-year, to-year, from-month, to-month, year, month(过滤查询)
@@ -571,7 +572,19 @@
             :parameters  {:query (with-token)
                           :body  any?}
             :handler     (fn [{{body :body} :parameters auth :auth-info}]
-                           (hr/response (diary/handle-diaries-query (merge body auth))))}}]
+                           (hr/response (diary/handle-diaries-query (dissoc (merge body auth)
+                                                                            :is-draft?))))}}]
+   ["/diaries-draft"
+    {:tags #{"我的日记"}
+     :post {:summary     "获取特定查询参数草稿日记"
+            :description "查询参数包括：from, to(用于分页),
+            from-year, to-year, from-month, to-month, year, month(过滤查询)
+            origin, search, tag(搜索原始关键字和搜索关键字)"
+            :parameters  {:query (with-token)
+                          :body  any?}
+            :handler     (fn [{{body :body} :parameters auth :auth-info}]
+                           (hr/response (diary/handle-diaries-query (assoc (merge body auth)
+                                                                      :is-draft? true))))}}]
    ["/diary-new"
     {:tags #{"我的日记"}
      :post {:summary     "新建日记"

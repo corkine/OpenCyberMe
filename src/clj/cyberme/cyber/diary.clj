@@ -6,6 +6,7 @@
             [cyberme.cyber.week-plan :as week]
             [cyberme.db.core :as db]
             [cyberme.tool :as tool]
+            [hugsql.core :as hug]
             [cyberme.cyber.file :as file]
             [cheshire.core :as json]
             [next.jdbc :as jdbc])
@@ -55,10 +56,12 @@
 
 (defn handle-diaries-limit
   "获取最近的日记，按照范围获取，from 最小值为 1"
-  [{:keys [from to is-super?] :or {from 1 to 100}}]
+  [{:keys [from to is-super? is-draft?] :or {from 1 to 100}}]
   (try
     {:message (format "获取日记从 %d 到 %d 条成功" from to)
-     :data    (let [all (db/range-diary {:drop (- from 1) :take (+ (- to from) 1)})]
+     :data    (let [all (db/range-diary {:drop      (- from 1)
+                                         :take      (+ (- to from) 1)
+                                         :is-draft? is-draft?})]
                 (if is-super? all (filterv #(-> % :info :is-sec? not) all)))
      :status  1}
     (catch Exception e
@@ -66,55 +69,57 @@
 
 (defn handle-diaries-query
   "获取最近的日记，按照范围获取，from 最小值为 1"
-  [{:keys [from to search tag year month from-year from-month to-year to-month is-super?]
+  [{:keys [from to search tag year month from-year from-month to-year to-month is-super? is-draft?]
     :or   {from 1 to 100}}]
   (try
     {:message (format "获取日记从 %d 到 %d 条成功" from to)
      :data    (let [all
                     (db/find-diary
-                      {:drop   (- from 1)
-                       :take   (+ (- to from) 1)
+                      {:drop      (- from 1)
+                       :take      (+ (- to from) 1)
+                       :is-draft? is-draft?
                        ;目前只搜索第一个关键词
-                       :search (if (vector? search)
-                                 (first search)
-                                 search)
+                       :search    (if (vector? search)
+                                    (first search)
+                                    search)
                        ;tag 标签目前不搜索，其需要对 JSON 的字段进行模糊匹配
                        ;后期抽取为单独的表
-                       :tag    (when tag
-                                 (if (vector? tag)
-                                   (str/replace (first tag) "#" "")
-                                   (str/replace tag "#" "")))
-                       :year   year
-                       :month  month
-                       :from   (cond (and from-year from-month)
-                                     (format "%s-%s-%s" from-year from-month 1)
-                                     from-year
-                                     (format "%s-%s-%s" from-year 1 1)
-                                     from-month
-                                     (format "%s-%s-%s" (.getYear (LocalDate/now)) from-month 1))
-                       :to     (let [to-year1 (when to-year (Integer/parseInt to-year))
-                                     to-month1 (when to-month (Integer/parseInt to-month))]
-                                 (cond (and to-year1 to-month1)
-                                       (format "%s-%s-%s" to-year1 to-month1
-                                               (.getDayOfMonth
-                                                 (.minusDays
-                                                   (.plusMonths (LocalDate/of to-year1 to-month1
-                                                                              1) 1) 1)))
-                                       to-year1
-                                       (format "%s-%s-%s" to-year1 12
-                                               (.getDayOfMonth
-                                                 (.minusDays
-                                                   (.plusMonths (LocalDate/of to-year1 12 1) 1) 1)))
-                                       to-month1
-                                       (let [year (.getYear (LocalDate/now))]
-                                         (format "%s-%s-%s" year to-month1
-                                                 (.getDayOfMonth
-                                                   (.minusDays
-                                                     (.plusMonths (LocalDate/of year to-month1
-                                                                                1) 1) 1))))))})]
+                       :tag       (when tag
+                                    (if (vector? tag)
+                                      (str/replace (first tag) "#" "")
+                                      (str/replace tag "#" "")))
+                       :year      year
+                       :month     month
+                       :from      (cond (and from-year from-month)
+                                        (format "%s-%s-%s" from-year from-month 1)
+                                        from-year
+                                        (format "%s-%s-%s" from-year 1 1)
+                                        from-month
+                                        (format "%s-%s-%s" (.getYear (LocalDate/now)) from-month 1))
+                       :to        (let [to-year1 (when to-year (Integer/parseInt to-year))
+                                        to-month1 (when to-month (Integer/parseInt to-month))]
+                                    (cond (and to-year1 to-month1)
+                                          (format "%s-%s-%s" to-year1 to-month1
+                                                  (.getDayOfMonth
+                                                    (.minusDays
+                                                      (.plusMonths (LocalDate/of to-year1 to-month1
+                                                                                 1) 1) 1)))
+                                          to-year1
+                                          (format "%s-%s-%s" to-year1 12
+                                                  (.getDayOfMonth
+                                                    (.minusDays
+                                                      (.plusMonths (LocalDate/of to-year1 12 1) 1) 1)))
+                                          to-month1
+                                          (let [year (.getYear (LocalDate/now))]
+                                            (format "%s-%s-%s" year to-month1
+                                                    (.getDayOfMonth
+                                                      (.minusDays
+                                                        (.plusMonths (LocalDate/of year to-month1
+                                                                                   1) 1) 1))))))})]
                 (if is-super? all (filterv #(-> % :info :is-sec? not) all)))
      :status  1}
     (catch Exception e
+      (.printStackTrace e)
       {:message (str "按照范围获取最近的日记失败" (.getMessage e)) :status 0})))
 
 (defn handle-diary-by-id
@@ -471,7 +476,9 @@
 (comment
   (mapv :title (convert-day-one-json->db (formatted-day-one-data nil)))
   (doseq [diary (convert-day-one-json->db (formatted-day-one-data nil))]
-    (db/insert-diary-full diary)))
+    (db/insert-diary-full diary))
+  (hug/def-sqlvec-fns "sql/cyber.sql")
+  )
 
 
 

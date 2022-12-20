@@ -23,4 +23,4 @@
 
 (def diary-key
   [:search :origin :tag :from-year :to-year :from-month :to-month :year :month
-   :from :to])
+   :from :to :draft])

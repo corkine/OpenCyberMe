@@ -21,6 +21,13 @@
             :clean          :diary/list-data-clean
             :failure-notice true})
 
+(ajax-flow {:call           :diary/list-draft
+            :uri-fn         #(str "/cyber/diaries-draft")
+            :is-post        true
+            :data           :diary/list-data
+            :clean          :diary/list-data-clean
+            :failure-notice true})
+
 ;获取某一日记，失败提示
 (ajax-flow {:call           :diary/current-by-id
             :uri-fn         #(str "/cyber/diary/by-id/" %)
@@ -61,7 +68,7 @@
             :failure-notice         true})
 
 ;删除某一日记，失败提示，成功跳转回列表页
-(ajax-flow {:call                   :diary/delete-current
+(ajax-flow {:call                   :diary/delete-current-navigate-to-list
             :uri-fn                 #(str "/cyber/diary/by-id/" % "/delete")
             :is-post                true
             :data                   :diary/delete-current-data
@@ -69,6 +76,26 @@
             :success-callback-event [[:diary/delete-current-data-clean]
                                      [:diary/current-data-clean]
                                      [:common/navigate! :diary]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :diary/delete-current-navigate-to-draft
+            :uri-fn                 #(str "/cyber/diary/by-id/" % "/delete")
+            :is-post                true
+            :data                   :diary/delete-current-data
+            :clean                  :diary/delete-current-data-clean
+            :success-callback-event [[:diary/delete-current-data-clean]
+                                     [:diary/current-data-clean]
+                                     [:common/navigate! :diary nil {:draft true}]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :diary/delete-current-refresh-draft
+            :uri-fn                 #(str "/cyber/diary/by-id/" % "/delete")
+            :is-post                true
+            :data                   :diary/delete-current-data
+            :clean                  :diary/delete-current-data-clean
+            :success-callback-event [[:diary/delete-current-data-clean]
+                                     [:diary/current-data-clean]
+                                     [:diary/list-draft]]
             :failure-notice         true})
 
 ;新建日记，成功和失败提示，成功刷新列表页
@@ -80,4 +107,14 @@
             :success-notice         true
             :success-callback-event [[:diary/new-data-clean]
                                      [:common/navigate! :diary]]
+            :failure-notice         true})
+
+(ajax-flow {:call                   :diary/new-draft
+            :uri-fn                 #(str "/cyber/diary-new")
+            :is-post                true
+            :data                   :diary/new-data
+            :clean                  :diary/new-data-clean
+            :success-notice         true
+            :success-callback-event [[:diary/new-data-clean]
+                                     [:common/navigate! :diary nil {:draft true}]]
             :failure-notice         true})
