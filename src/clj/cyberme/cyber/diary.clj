@@ -54,6 +54,15 @@
   ;            :sql-func               db/delete-current}))
   )
 
+(defn handle-draft-diary-count
+  "获取日记草稿个数"
+  []
+  (try
+    (:count (db/count-diary-draft))
+    (catch Exception e
+      (.printStackTrace e)
+      0)))
+
 (defn handle-diaries-limit
   "获取最近的日记，按照范围获取，from 最小值为 1"
   [{:keys [from to is-super? is-draft?] :or {from 1 to 100}}]

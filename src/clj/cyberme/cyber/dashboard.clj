@@ -1,12 +1,14 @@
 (ns cyberme.cyber.dashboard
   "前端和 Flutter 大屏 API"
-  (:require [cyberme.cyber.express :as express]
-            [cyberme.cyber.fitness :as fitness]
-            [cyberme.cyber.inspur :as inspur]
-            [cyberme.cyber.marvel :refer [dashboard-set-marvel]]
-            [cyberme.cyber.todo :as todo]
-            [cyberme.media.mini4k :as mini4k]
-            [cyberme.tool :as tool]))
+  (:require
+    [cyberme.cyber.diary :as diary]
+    [cyberme.cyber.express :as express]
+    [cyberme.cyber.fitness :as fitness]
+    [cyberme.cyber.inspur :as inspur]
+    [cyberme.cyber.marvel :refer [dashboard-set-marvel]]
+    [cyberme.cyber.todo :as todo]
+    [cyberme.media.mini4k :as mini4k]
+    [cyberme.tool :as tool]))
 
 
 (def fake-blue {:UpdateTime           ""
@@ -43,6 +45,7 @@
   :work {:NeedWork :OffWork :NeedMorningCheck :WorkHour :SignIn{:source :time}
          :Policy{:exist :pending :success :failed :policy-count}}
   :today 98
+  :diary {:draft-count 0}
   :score {:2022-03-01
            {:blue true
             :fitness {:rest 2000 :active 300 :diet 300}
@@ -70,6 +73,7 @@
                 :express (express/recent-express)
                 :movie   (mini4k/recent-update {:day day})
                 :work    (inspur/get-hcm-hint {})           ;不再计算 Policy 数据
+                :diary   {:draft-count (diary/handle-draft-diary-count)}
                 ;(assoc :Policy (inspur/policy-oneday (inspur/local-date)))
                 :score   (reduce #(assoc % (keyword %2)
                                            {

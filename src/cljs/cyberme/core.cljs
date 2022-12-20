@@ -132,11 +132,11 @@
             #(if-let [err (va/validate! @%1 [[:day va/required] [:time va/required] [:confirm va/required]])]
                (reset! %2 err)
                (rf/dispatch [:dashboard/set-clean @%1]))
-            {:subscribe-ajax    [:dashboard/set-clean-data]
-             :call-when-exit    [[:dashboard/set-clean-data-clean]]
-             :call-when-success [[:dashboard/set-clean-data-clean]
-                                 [:dashboard/recent]]
-             :origin-data       origin-data
+            {:subscribe-ajax            [:dashboard/set-clean-data]
+             :call-when-exit            [[:dashboard/set-clean-data-clean]]
+             :call-when-success         [[:dashboard/set-clean-data-clean]
+                                         [:dashboard/recent]]
+             :origin-data               origin-data
              :origin-data-is-subscribed true})))
 
 ;添加 Clean 信息
@@ -187,7 +187,14 @@
                   :style {:font-variant "all-small-caps"}}
                  [:div.navbar-start
                   [nav-link "/" "Dashboard" :dashboard]
-                  [nav-link "/diary" "Diary" :diary]
+                  #_[nav-link "/diary" "Diary" :diary]
+                  (let [count @(rf/subscribe [:dashboard/draft-diary-count])
+                        display-count (if (= count 0) "" (str count))]
+                    [:a.navbar-item
+                     {:class (when (= :diary @(rf/subscribe [:common/page])) :is-active)}
+                     [:span {:on-click #(rf/dispatch [:common/navigate! :diary])} "Diary"]
+                     [:span {:on-click #(rf/dispatch [:common/navigate! :diary nil {:draft true}])
+                             :style {:margin "0 0 8px 3px" :font-size "12px"}} display-count]])
                   [nav-link "/plan" "Plan" :plan]
                   [nav-link "/goal" "Goal" :goal]
                   [nav-link "/library" "Library" :file]

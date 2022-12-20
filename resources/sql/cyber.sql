@@ -328,6 +328,9 @@ group by date(start at time zone 'Asia/Shanghai'), category
 order by date(start at time zone 'Asia/Shanghai') desc;
 
 ---------------------- Diary -------------------
+-- :name count-diary-draft :? :1
+select count(*) as count from diary
+where coalesce((info->>'is-draft?')::bool, false) = true;
 -- :name range-diary :? :*
 select * from diary
 where 1=1

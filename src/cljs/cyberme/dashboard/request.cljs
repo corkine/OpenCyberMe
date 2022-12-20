@@ -33,6 +33,12 @@
             :clean          :dashboard/recent-data-clean
             :failure-notice true})
 
+(rf/reg-sub
+  :dashboard/draft-diary-count
+  (fn [db _]
+    (or (get-in db [:dashboard/recent-data :data :diary :draft-count])
+        0)))
+
 ;核心数据查询：是否有当日 clean 记录决定记录对话框参数
 (rf/reg-sub
   :clean/add-dialog-data
