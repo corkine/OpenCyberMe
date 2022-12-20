@@ -36,8 +36,10 @@
 (rf/reg-sub
   :dashboard/draft-diary-count
   (fn [db _]
-    (or (get-in db [:dashboard/recent-data :data :diary :draft-count])
-        0)))
+    (if-let [dashboard-info (get-in db [:dashboard/recent-data :data :diary :draft-count])]
+      dashboard-info
+      (count (filter #(get-in % [:info :is-draft?])
+                     (get-in db [:diary/list-data :data]))))))
 
 (rf/reg-event-db
   :dashboard/draft-diary-add
@@ -111,12 +113,12 @@
             :failure-notice         true})
 
 ;周计划范围接口：获取最近几周的周计划（倒序排列）
-(ajax-flow {:call                   :dashboard/week-plan-range
-            :uri-fn                 #(let [{:keys [from to]} %]
-                                       (str "/cyber/week-plan/list-items?from=" from "&to=" to))
-            :data                   :dashboard/week-plan-range-data
-            :clean                  :dashboard/week-plan-range-clean
-            :failure-notice         true})
+(ajax-flow {:call           :dashboard/week-plan-range
+            :uri-fn         #(let [{:keys [from to]} %]
+                               (str "/cyber/week-plan/list-items?from=" from "&to=" to))
+            :data           :dashboard/week-plan-range-data
+            :clean          :dashboard/week-plan-range-clean
+            :failure-notice true})
 
 (rf/reg-event-db
   :dashboard/week-plan-range-with-search
