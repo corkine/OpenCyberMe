@@ -11,6 +11,7 @@
                  [com.cognitect/transit-clj "1.0.324"]
                  [com.google.javascript/closure-compiler-unshaded "v20200504" :scope "provided"]
                  [conman "0.9.1"]
+                 [etaoin "1.0.39"]
                  [cprop "0.1.17"]
                  [day8.re-frame/http-fx "0.2.2"]
                  [expound "0.8.7"]

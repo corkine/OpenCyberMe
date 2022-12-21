@@ -22,6 +22,7 @@
     [cyberme.media.mini4k :as mini4k]
     [cyberme.media.disk :as disk]
     [cyberme.media.yyets :as yyets]
+    [cyberme.auto.hcm :as auto]
     [cyberme.middleware.formats :as formats]
     [reitit.coercion.spec :as spec-coercion]
     [reitit.ring.coercion :as coercion]
@@ -244,6 +245,13 @@
            :parameters  {:query (with-token :req [:token string?])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (inspur/handle-set-cache query)))}}]
+
+   ["/set_token_auto"
+    {:get {:summary     "自动写入 HCM Token"
+           :description "写入默认的 Token 信息"
+           :parameters  {:query (with-token)}
+           :handler     (fn [_]
+                          (hr/response (auto/handle-set-token)))}}]
 
    ["/overtime_bot_conf"
     {:get {:summary "加班机器人配置信息（废弃）" :handler not-impl}}]
