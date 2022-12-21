@@ -118,10 +118,10 @@
                     :body    (format "{\"employee_id\":\"\",\"date\":\"%s\"}" time)
                     :headers {"Cookie" (str "token=\"" token "\"")}}))
 
-(defn notice-expired-async []
+(defn notice-expired-async [note]
   (if (let [now (.getHour (LocalTime/now))] (and (>= now 0) (<= now 5)))
     (log/error "[HCM] HCM Token 过期，可能是系统正在维护")
-    (future (slack/notify "HCM Token 过期！" "SERVER"))))
+    (future (slack/notify (str "HCM Token 过期！" note) "SERVER"))))
 
 (defn get-hcm-info
   "根据 Token 和时间从 HCM 服务器解析获取签到数据，返回 {:data :message}
@@ -139,13 +139,13 @@
         (let [token (if (str/blank? token)
                       (let [cache-token (:token (fetch-cache))
                             _ (when-not cache-token
-                                (notice-expired-async)
+                                (notice-expired-async "原因：Token 过期")
                                 (throw (RuntimeException. "HCM Token 过期且没有 Token 参数传入！")))]
                         cache-token) token)
               {:keys [status body] :as full-resp} (call-hcm time token)
               _ (when (not= status 200)
                   (do (log/info "[hcm-request] response: " full-resp)
-                      (notice-expired-async)
+                      (notice-expired-async "原因：请求非 200")
                       (throw (RuntimeException. "服务器未正确返回数据，可能是登录过期"))))
               info {:data    (json/parse-string body true)
                     :message "获取 HCM INFO 数据成功"
