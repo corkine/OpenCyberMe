@@ -9,24 +9,25 @@
 
 (defn run-webdriver-fetch-token
   #_{:url         "https://inspur.hcmcloud.cn/"
-   :user        "YOUR PHONE NUMBER"
-   :pass        "YOUR PASSWORD"
-   :driver      "WHERE THE chromedriver EXISTS"
-   :bin         ""
-   :cyber-token "CYBERME TOKEN"
-   :cyber-url   "CYBERME TOKEN URL"
-   :debug       false}
+     :user        "YOUR PHONE NUMBER"
+     :pass        "YOUR PASSWORD"
+     :driver      "WHERE THE chromedriver EXISTS"
+     :bin         ""
+     :cyber-token "CYBERME TOKEN"
+     :cyber-url   "CYBERME TOKEN URL"
+     :debug       false}
   [config]
   (log/info "[auto:hcm:info] staring chrome now...")
   (let [driver ((if (:debug config)
                   e/chrome
                   e/chrome-headless)
-                {:dev
-                 {:perf
-                  {:level      :info
-                   :network?   true
-                   :interval   1000
-                   :categories [:devtools.network]}} :path-driver (:driver config)})]
+                {:args        ["--no-sandbox"]
+                 :path-driver (:driver config)
+                 :dev         {:perf
+                               {:level      :info
+                                :network?   true
+                                :interval   1000
+                                :categories [:devtools.network]}}})]
     (log/info "[auto:hcm:info] visiting url")
     (e/go driver (:url config))
     (e/wait-visible driver {:id :tel})
@@ -68,10 +69,10 @@
         (if-let [token (run-webdriver-fetch-token config)]
           (inspur/handle-set-cache {:token token})
           {:message "设置 Token 失败！"
-           :status -1})))
+           :status  -1})))
     (catch Exception e
       (.printStackTrace e)
       {:message (str "设置 Token 失败！" (.getMessage e))
-       :status -1})))
+       :status  -1})))
 
 
