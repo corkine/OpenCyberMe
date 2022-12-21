@@ -20,9 +20,12 @@ clj-runner 是一个根据 .clj 脚本文件头行判断如何执行此文件的
 
 一个用来在特定目录下寻找 Calibre 元数据文件 metadata.db 并将其加密上传到 CyberMe 以供搜索的脚本。
 
-## files-metadata-upload.clj
+## files_metadata_upload.clj
 
 一个用来将特定磁盘所有文件元数据加密上传到 CyberMe 以供搜索的脚本。
+
+## hcm_token.clj
+自动调用 chrome webdriver 登录 HCM 并获取 Header 的 token。
 
 ## zendao.js
 
