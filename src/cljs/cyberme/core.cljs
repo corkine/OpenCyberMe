@@ -189,12 +189,13 @@
                   [nav-link "/" "Dashboard" :dashboard]
                   #_[nav-link "/diary" "Diary" :diary]
                   (let [count @(rf/subscribe [:dashboard/draft-diary-count])
-                        display-count (if (= count 0) "" (str count))]
+                        display-count (if (= count 0) "+" (str count))]
                     [:a.navbar-item
                      {:class (when (= :diary @(rf/subscribe [:common/page])) :is-active)}
                      [:span {:on-click #(rf/dispatch [:common/navigate! :diary])} "Diary"]
-                     [:span {:on-click #(rf/dispatch [:common/navigate! :diary nil {:draft true}])
-                             :style {:margin "0 0 8px 3px" :font-size "12px"}} display-count]])
+                     [:span.hover-link
+                      {:on-click #(rf/dispatch [:common/navigate! :diary nil {:draft true}])
+                       :style    {:margin "0 0 8px 3px" :font-size "12px"}} display-count]])
                   [nav-link "/plan" "Plan" :plan]
                   [nav-link "/goal" "Goal" :goal]
                   [nav-link "/library" "Library" :file]
