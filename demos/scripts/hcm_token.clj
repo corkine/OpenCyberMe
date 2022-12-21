@@ -1,4 +1,4 @@
-;clojure -Sdeps '{:paths [".."] :deps {etaoin/etaoin {:mvn/version,"1.0.39"}}}' -M -m hcm-token
+;clojure -Sdeps '{:paths ["."] :deps {etaoin/etaoin {:mvn/version,"1.0.39"}}}' -M -m hcm-token
 (ns hcm-token
   (:require
     [clj-http.client :as c]
