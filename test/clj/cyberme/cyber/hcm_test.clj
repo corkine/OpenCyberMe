@@ -219,7 +219,7 @@
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 200 :body (json/generate-string {})})
                     inspur/notice-expired-async (fn [_] (set :notice :done))
                     inspur/hcm-info-from-cache (fn [_] nil)
-                    inspur/set-hcm-cache (fnn #(set :cache :done))]
+                    inspur/set-hcm-cache (fn [& _] (set :cache :done))]
         (let [_ (clean!)
               {:keys [message status]}
               (inspur/get-hcm-info {:time (LocalDateTime/now) :token "good token"})]
@@ -252,7 +252,7 @@
               _ (println message status)]
           (is (= status 1))
           (is (got :cache :done))
-          (is (non :notice :set)))))
+          (is (non :notice :done)))))
 
     (testing "get-hcm-info with default token but hcm expired"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 400 :body (json/generate-string {})})
@@ -265,7 +265,7 @@
               (inspur/get-hcm-info {:time (LocalDateTime/now)})]
           (is (= status 0))
           (is (non :cache :done))
-          (is (got :notice :set)))))
+          (is (got :notice :done)))))
 
     (testing "get-hcm-info with default token but token not-find"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 200 :body (json/generate-string {})})
@@ -278,7 +278,7 @@
               (inspur/get-hcm-info {:time (LocalDateTime/now)})]
           (is (= status 0))
           (is (non :cache :done))
-          (is (got :notice :set)))))))
+          (is (got :notice :done)))))))
 
 (deftest handle-serve-auto
   (let [a (atom {})
