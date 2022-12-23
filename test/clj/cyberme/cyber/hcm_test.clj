@@ -217,7 +217,7 @@
 
     (testing "get-hcm-info with right token"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 200 :body (json/generate-string {})})
-                    inspur/notice-expired-async #(set :notice :done)
+                    inspur/notice-expired-async (fn [_] (set :notice :done))
                     inspur/hcm-info-from-cache (fn [_] nil)
                     inspur/set-hcm-cache (fnn #(set :cache :done))]
         (let [_ (clean!)
@@ -229,7 +229,7 @@
 
     (testing "get-hcm-info with invalid token"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 400 :body nil})
-                    inspur/notice-expired-async #(set :notice :done)
+                    inspur/notice-expired-async (fn [_] (set :notice :done))
                     inspur/hcm-info-from-cache (fn [_] nil)
                     inspur/set-hcm-cache #(set :cache :done "set cache done." :done)]
         (let [_ (clean!)
@@ -242,7 +242,7 @@
 
     (testing "get-hcm-info with default token success"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 200 :body (json/generate-string {})})
-                    inspur/notice-expired-async #(set :notice :set)
+                    inspur/notice-expired-async (fn [_] (set :notice :done))
                     inspur/hcm-info-from-cache (fn [_] nil)
                     inspur/set-hcm-cache (fnn #(set :cache :done))
                     inspur/fetch-cache (fn [] {:token "123"})]
@@ -256,7 +256,7 @@
 
     (testing "get-hcm-info with default token but hcm expired"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 400 :body (json/generate-string {})})
-                    inspur/notice-expired-async #(set :notice :set)
+                    inspur/notice-expired-async (fn [_] (set :notice :done))
                     inspur/hcm-info-from-cache (fn [_] nil)
                     inspur/set-hcm-cache (fnn #(set :cache :done))
                     inspur/fetch-cache (fn [] {:token "123"})]
@@ -269,7 +269,7 @@
 
     (testing "get-hcm-info with default token but token not-find"
       (with-redefs [inspur/call-hcm (fn [_ _] {:status 200 :body (json/generate-string {})})
-                    inspur/notice-expired-async #(set :notice :set)
+                    inspur/notice-expired-async (fn [_] (set :notice :done))
                     inspur/hcm-info-from-cache (fn [_] nil)
                     inspur/set-hcm-cache (fnn #(set :cache :done))
                     inspur/fetch-cache (fn [] {:token nil})]
