@@ -331,7 +331,7 @@
                       [:span.has-text-weight-normal.is-size-7.has-text-danger.is-clickable
                        {:on-click #(do (rf/dispatch [:global/notice {:message  "已经完成日报吗？"
                                                                      :callback [:dashboard/day-work-edit "已完成日报"]}])
-                                       (.open js/window "http://10.110.88.102/pro/effort-calendar.html#app=my" "_blank"))}
+                                       (.open js/window "http://cd.icn.local/effort-calendar.html#app=my" "_blank"))}
                        "没有日报"])
                     ;今日的待办事项项目
                     (for [{:keys [title status list create_at] :as todo} data]
