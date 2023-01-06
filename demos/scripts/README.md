@@ -25,7 +25,16 @@ clj-runner 是一个根据 .clj 脚本文件头行判断如何执行此文件的
 一个用来将特定磁盘所有文件元数据加密上传到 CyberMe 以供搜索的脚本。
 
 ## hcm_token.clj
+
 自动调用 chrome webdriver 登录 HCM 并获取 Header 的 token。
+
+## inspur_learn.clj
+
+一个自动完成每周一学的脚本，配合 Chrome 和 ChromeDriver 使用。
+
+## zendao_auto.clj
+
+一个自动将 CyberMe 中的当日 Microsoft TODO 待办事项 - 工作列表部分写入禅道日报系统字段的脚本，配合 Chrome 和 ChromeDriver 使用。
 
 ## zendao.js
 
