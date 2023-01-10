@@ -19,6 +19,7 @@
 (def redirect-url "https://mazhangjing.com/todocheck")
 (def list-url "https://graph.microsoft.com/v1.0/me/todo/lists")
 (def task-in-list-url "https://graph.microsoft.com/v1.0/me/todo/lists/%s/tasks")
+(def outlook-rail-check-url "https://graph.microsoft.com/v1.0/me/messages?$search=%2212306@rails.com.cn%22")
 
 (defonce cache (atom {}))
 
@@ -173,6 +174,96 @@
           (do (log/info "[todo-sync] not find at, use rt to refresh at")
               (refresh-code refresh-token))
           :else (sync-server-to-db access-token))))
+
+(defn parse-rail-data
+  "提取 12306 邮件的车票信息"
+  [input id]
+  (let [[_ orderNo year month day hour minute start end trainNo siteNo checkNo]
+        (re-find #"订单号码\W([A-Z0-9]+)\W.*?(\d{4})年(\d{2})月(\d{2})日(\d{2}):(\d{2})开，(.*?)站-(.*?站)，(.*?)次列车,(.*?)，.*?检票口(.*?)，"
+                 (str/replace (or input "") "\r\n" ""))]
+    (if (or (nil? orderNo) (nil? year) (nil? month) (nil? day) (nil? hour) (nil? minute) (nil? start) (nil? end) (nil? trainNo))
+      (let [[_ orderNo year month day hour minute start end trainNo siteNo]
+            (re-find #"订单号码\W([A-Z0-9]+)\W.*?(\d{4})年(\d{2})月(\d{2})日(\d{2}):(\d{2})开，(.*?)站-(.*?站)，(.*?)次列车,(.*?)，"
+                     (str/replace (or input "") "\r\n" ""))]
+        (if (or (nil? orderNo) (nil? year) (nil? month) (nil? day) (nil? hour) (nil? minute) (nil? start) (nil? end) (nil? trainNo))
+          {:originData   input
+           :fallbackData (if (> (count input) 150) (.substring input 103 150) input)
+           :id           id})
+        {:orderNo    orderNo
+         :date       (LocalDateTime/of (Integer/parseInt year) (Integer/parseInt month) (Integer/parseInt day)
+                                       (Integer/parseInt hour) (Integer/parseInt minute))
+         :start      start
+         :end        end
+         :trainNo    trainNo
+         :siteNo     siteNo
+         :originData input
+         :id         id})
+      {:orderNo    orderNo
+       :date       (LocalDateTime/of (Integer/parseInt year) (Integer/parseInt month) (Integer/parseInt day)
+                                     (Integer/parseInt hour) (Integer/parseInt minute))
+       :start      start
+       :end        end
+       :trainNo    trainNo
+       :siteNo     siteNo
+       :checkNo    checkNo
+       :originData input
+       :id         id})))
+
+(defn parsed-rail-data->str
+  "将结构化信息转换为一句话信息"
+  [{:keys [id orderNo date start end trainNo siteNo checkNo originData fallbackData]}]
+  (if fallbackData
+    fallbackData
+    (if checkNo
+      (format "%s %s->%s %s %s 在 %s 检票。" (DateTimeFormatter/ofPattern "HH:ss" date)
+              start end
+              trainNo siteNo checkNo)
+      (format "%s %s->%s %s %s。" (DateTimeFormatter/ofPattern "HH:ss" date)
+              start end
+              trainNo siteNo))))
+
+(defn list-rail-tickets
+  "获取最近的车票信息"
+  [access-token]
+  (try
+    (let [req (client/request {:url     outlook-rail-check-url
+                               :method  :get
+                               :headers {"Authorization" (str "Bearer " access-token)}
+                               :timeout (edn-in [:todo :timeout-ms])})
+          {:keys [status body] :as all} @req]
+      (if (= status 200)
+        (let [{data :value} (json/parse-string body true)
+              ;:value -> :id, :createDateTime, :sentDateTime, :subject, :bodyPreview
+              ;尊敬的 x先生：您好！您于2023年xx月xx日在中国铁路客户服务中心网站(12306.cn) 成功购买了1张车票，
+              ;票款共计xxx.00元，订单号码 E72104xxxx 。 所购车票信息如下：1.马章竞，20xx年0x月0x日xx:xx开，
+              ;xx站-xx站，G123次列车,6车xxA号，二等座，成人票，票价xxx.0元，检票口xxB，电子客票。
+              ;:isRead, :isDraft, :webLink, :body {:contentType, :content},
+              ;:sender {:emailAddress {:name, :address}}
+              ;:from {:emailAddress {:name, :address}}
+              data (mapv #(parse-rail-data (:bodyPreview %) (:id %)) data)]
+          data)
+        (do (log/warn "[12306] error because req failed: " all)
+            [])))
+    (catch Exception e
+      (log/warn "[12306] error because method failed: " (.getMessage e))
+      [])))
+
+;TODO Token 和 RefreshToken 设置 Mail.read 权限
+;TODO 调用创建待办事项接口创建事项
+;https://learn.microsoft.com/zh-cn/graph/api/todotasklist-post-tasks?view=graph-rest-1.0&tabs=http
+;1. 获取所有列表，找到列表id
+;https://graph.microsoft.com/v1.0/me/to,do/lists
+;:value [{:id :displayName}]
+;2. 获取列表最近事项，查看是否存在
+;GET /me/to,do/lists/{todoTaskListId}/tasks
+;:value [{:title :id}]
+;3. 如果不存在，则创建
+;POST /me/to,do/lists/{todoTaskListId}/tasks
+;:title :categories ["Important"] :importance [:low :normal :high] :status
+;:completedDateTime :dueDateTime :createDateTime :lastModifiedDateTime :bodyLastModifiedDateTime :reminderDateTime
+;recurrence :id
+
+;TODO 写到数据库中，iOS Widget 展示
 
 (defn backend-todo-service []
   (while true
