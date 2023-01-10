@@ -6,7 +6,8 @@
             [cyberme.cyber.fitness :as fitness]
             [cyberme.cyber.inspur :as inspur]
             [cyberme.cyber.marvel :as marvel]
-            [cyberme.cyber.todo :as todo]
+            [cyberme.cyber.graph :as todo]
+            [cyberme.info.ticket :as ticket]
             [cyberme.cyber.weather :as weather]
             [cyberme.cyber.week-plan :as week-plan]
             [cyberme.db.core :as db]
@@ -45,8 +46,8 @@
               (not (str/includes? (or (-> (db/today) :info :day-work) "") "已完成"))
               false)]
         {:message message
-         :status status
-         :data (assoc-in with-week-learn-data [:work :NeedDiaryReport] need-diary-report?)}))))
+         :status  status
+         :data    (assoc-in with-week-learn-data [:work :NeedDiaryReport] need-diary-report?)}))))
 
 (defn handle-ios-widget
   "iOS Widget API"
@@ -54,6 +55,7 @@
   (let [{:keys [OffWork NeedMorningCheck WorkHour SignIn]} (inspur/handle-serve-hint {:token token})
         ;summary (handle-serve-summary {:useAllData true :kpi kpi :token token})
         todo (todo/handle-today {:focus false :showCompleted true})
+        tickets (ticket/handle-fetch-today-tickets)
         ;{:active, :rest, :diet, :goal-active, :goal-cut}
         fitness (fitness/today-active)
         w (weather/get-weather-cache (or (keyword id) :na-tie))]
@@ -82,6 +84,7 @@
                                    :isFinished (= "completed" (:status item))
                                    :create_at  (:create_at item)})
                                 (todo/sort-todo (:tasks todo))) [])
+     :tickets         tickets
      :needDiaryReport (not (inspur/have-finish-daily-report-today?))
      :needPlantWater  true
      :updateAt        (int (/ (System/currentTimeMillis) 1000))}))
@@ -99,4 +102,4 @@
     {:message "上传成功" :status 1}
     (catch Exception e
       {:message (str "上传失败：" (.getMessage e))
-       :status -1})))
+       :status  -1})))

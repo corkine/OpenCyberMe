@@ -8,7 +8,7 @@
     [clojure.tools.cli :refer [parse-opts]]
     [clojure.tools.logging :as log]
     [mount.core :as mount]
-    [cyberme.cyber.todo :as todo]
+    [cyberme.cyber.graph :as graph]
     [cyberme.cyber.express :as express]
     [clojure.java.io :as io]
     [cheshire.core :as json]
@@ -55,10 +55,10 @@
 
 (defn backup-token []
   (try
-    (let [todo-cache @todo/cache
+    (let [graph-cache @graph/cache
           hcm-cache @inspur/token-cache]
       (with-open [w (io/writer "cache.json" :append false)]
-        (.write w (json/generate-string {:todo todo-cache
+        (.write w (json/generate-string {:graph graph-cache
                                          :hcm hcm-cache})))
       (log/info "[backup-cache] saving cache to cache.json done."))
     (catch Exception e
@@ -72,7 +72,7 @@
   (try
     (let [data (slurp "cache.json")
           data-j (json/parse-string data true)]
-      (reset! todo/cache (or (:todo data-j) {}))
+      (reset! graph/cache (or (:graph data-j) {}))
       (reset! inspur/token-cache (or (:hcm data-j) {}))
       (log/info "[read-cache] reading cache from cache.json done."))
     (catch Exception e
@@ -86,7 +86,11 @@
                   (when (contains? enable-services :todo)
                     (future
                       (Thread/sleep 2000)
-                      (todo/backend-todo-service)))
+                      (graph/backend-todo-service)))
+                  (when (contains? enable-services :ticket)
+                    (future
+                      (Thread/sleep 2000)
+                      (graph/backend-mail-tickets-service)))
                   (when (contains? enable-services :express)
                     (future
                       (Thread/sleep 2000)

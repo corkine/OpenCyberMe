@@ -18,7 +18,7 @@
             :service-id "baidu_service"
             :allow-devices ["device_name_here"]}
  :movie {:sleep-seconds 1800}
- :enable-service1 [:express :todo :movie]
+ :enable-service1 [:express :todo :movie :ticket]
  :test-user "test_user"
  :test-pass "test_secret"
  :is-test true

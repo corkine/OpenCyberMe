@@ -7,7 +7,7 @@
             [cyberme.cyber.clean :as clean]
             [cyberme.cyber.fitness :as fitness]
             [cyberme.cyber.slack :as slack]
-            [cyberme.cyber.todo :as todo]
+            [cyberme.cyber.graph :as todo]
             [cyberme.cyber.weather :as weather]
             [cyberme.db.core :as db]
             [org.httpkit.client :as client]

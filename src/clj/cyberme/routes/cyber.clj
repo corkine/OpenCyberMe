@@ -16,7 +16,8 @@
     [cyberme.cyber.psych :as psych]
     [cyberme.cyber.slack :as slack]
     [cyberme.cyber.task :as task]
-    [cyberme.cyber.todo :as todo]
+    [cyberme.cyber.graph :as graph]
+    [cyberme.info.ticket :as ticket]
     [cyberme.cyber.track :as track]
     [cyberme.cyber.week-plan :as week]
     [cyberme.media.mini4k :as mini4k]
@@ -119,13 +120,13 @@
             登录并且回调此接口并设置 AccessToken 和 RefreshToken。"
            :parameters  {:query (with-token :opt [:code string?])}
            :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (todo/handle-set-code query)))}}]
+                          (hr/response (graph/handle-set-code query)))}}]
    ["/sync"
     {:get {:summary     "强制同步数据"
            :description "不应该直接调用此接口，此接口等同于内部线程自行同步更新方法调用。"
            :parameters  {:query (with-token)}
            :handler     (fn [{{_ :query} :parameters}]
-                          (hr/response (todo/handle-focus-sync)))}}]
+                          (hr/response (graph/handle-focus-sync)))}}]
    ["/today"
     {:get {:summary     "Microsoft TODO 服务"
            :description "如果使用 focus，则始终先去 MS Server 获取数据并保存到数据库
@@ -140,26 +141,42 @@
             "
            :parameters  {:query (with-token :opt [:focus boolean? :showCompleted boolean?])}
            :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (todo/handle-today query)))}}]
+                          (hr/response (graph/handle-today query)))}}]
    ["/list"
     {:get {:summary     "获取某列表待办事项"
            :description "列表必填，最近天数不填默认为 7 天"
            :parameters  {:query (with-token :req [:listName string?] :opt [:day int?])}
            :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (todo/handle-list query)))}}]
+                          (hr/response (graph/handle-list query)))}}]
 
    ["/recent"
     {:get {:summary     "获取最近待办事项"
            :description "所有列表，结果按照天数分组，天数不填默认为 7 天"
            :parameters  {:query (with-token :opt [:day int?])}
            :handler     (fn [{{query :query} :parameters}]
-                          (hr/response (todo/handle-recent query)))}}]
+                          (hr/response (graph/handle-recent query)))}}]
 
    ["/work-today"
     {:get {:summary     "获取当日的工作事项"
            :description "获取当日的工作事项"
            :parameters  {:query (with-token)}
-           :handler     (fn [_] (hr/response (todo/handle-work-today)))}}]])
+           :handler     (fn [_] (hr/response (graph/handle-work-today)))}}]])
+
+(def tickets-route
+  ["/ticket"
+   {:tags #{"12306车票"}}
+   ["/sync"
+    {:get {:summary     "强制获取 GRAPH Mail 中的车票邮件"
+           :description "不应该直接调用此接口，此接口等同于内部线程自行同步更新方法调用。"
+           :parameters  {:query (with-token)}
+           :handler     (fn [{{_ :query} :parameters}]
+                          (hr/response (graph/handle-focus-sync-mail-tickets)))}}]
+   ["/today"
+    {:get {:summary     "获取今日车票"
+           :description "获取当日的车票信息"
+           :parameters  {:query (with-token :opt [:focus boolean?])}
+           :handler     (fn [{{query :query} :parameters}]
+                          (hr/response (ticket/handle-fetch-today-tickets)))}}]])
 
 (def check-route
   ["/check"
@@ -818,6 +835,7 @@
   (conj
     basic-route
     to-do-route
+    tickets-route
     check-route
     auto-route
     express-route

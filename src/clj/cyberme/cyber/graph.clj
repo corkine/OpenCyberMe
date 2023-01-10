@@ -1,12 +1,13 @@
-(ns cyberme.cyber.todo
+(ns cyberme.cyber.graph
   "Microsoft TODO 模块"
   (:require [cheshire.core :as json]
             [clojure.set :as set]
             [clojure.tools.logging :as log]
-            [cuerdas.core :as str]
+            [clojure.string :as str]
             [cyberme.config :refer [edn-in]]
             [cyberme.cyber.slack :as slack]
             [cyberme.db.core :as db]
+            [cyberme.info.ticket :as ticket]
             [cyberme.media.news :as news]
             [cyberme.tool :as tool]
             [org.httpkit.client :as client])
@@ -263,7 +264,20 @@
 ;:completedDateTime :dueDateTime :createDateTime :lastModifiedDateTime :bodyLastModifiedDateTime :reminderDateTime
 ;recurrence :id
 
-;TODO 写到数据库中，iOS Widget 展示
+(defn mail-check-routine []
+  (let [{:keys [access-token refresh-token]} (fetch-cache)]
+    (cond (and (nil? access-token) (nil? refresh-token))
+          (do
+            (slack/notify "GRAPH Token 过期！" "SERVER")
+            (log/info "[mail-sync] no at and rt in cache, pls login mazhangjing.com/todologin to set code"))
+          (nil? access-token)
+          (do (log/info "[mail-sync] not find at, use rt to refresh at")
+              (refresh-code refresh-token))
+          :else
+          (let [tickets (list-rail-tickets access-token)]
+            (when-not (empty? tickets)
+              (println "[mail-sync] saving tickets count " (count tickets))
+              ((ticket/handle-set-tickets tickets) tickets))))))
 
 (defn backend-todo-service []
   (while true
@@ -280,11 +294,29 @@
       (catch Exception e
         (log/info "[todo-service] todo-service routine failed: " (.getMessage e))))))
 
+(defn backend-mail-tickets-service []
+  (while true
+    (try
+      (let [sleep-sec (* 60 60)]
+        (try
+          (log/debug "[graph-service] starting check mail tickets with ms-server...")
+          (mail-check-routine)
+          (log/debug "[graph-service] end check mail tickets with ms-server, try to sleep sec: " sleep-sec)
+          (catch Exception e
+            (log/info "[graph-service] sync with check mail tickets with ms-server failed: " (.getMessage e))))
+        (Thread/sleep (* 1000 sleep-sec)))
+      (catch Exception e
+        (log/info "[graph-service] mail-tickets-service routine failed: " (.getMessage e))))))
+
 (defn handle-set-code [{:keys [code]}]
   (set-code code))
 
 (defn handle-focus-sync []
   (todo-sync-routine)
+  {:message "Sync Done." :status 1})
+
+(defn handle-focus-sync-mail-tickets []
+  (mail-check-routine)
   {:message "Sync Done." :status 1})
 
 (defn handle-today

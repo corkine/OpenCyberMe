@@ -14,7 +14,7 @@
     [clojure.string :as str]
     [cyberme.auth :as auth]
     [conman.core :as conman]
-    [cyberme.cyber.todo :as todo])
+    [cyberme.cyber.graph :as todo])
   (:import (java.util UUID)))
 
 (defn parse-json [body]
