@@ -22,6 +22,8 @@
 (def task-in-list-url "https://graph.microsoft.com/v1.0/me/todo/lists/%s/tasks")
 (def outlook-rail-check-url "https://graph.microsoft.com/v1.0/me/messages?$search=%2212306@rails.com.cn%22")
 
+;;;;;;;;;; GRAPH SERVICE ;;;;;;;;
+
 (defonce cache (atom {}))
 
 (defn set-cache [at rt]
@@ -52,12 +54,12 @@
 (defn set-code [code]
   (let [req (client/request {:url         token-url
                              :method      :post
-                             :form-params {"client_id"     (edn-in [:todo :client-id])
-                                           "scope"         (edn-in [:todo :scope])
+                             :form-params {"client_id"     (edn-in [:graph :client-id])
+                                           "scope"         (edn-in [:graph :scope])
                                            "code"          code
                                            "redirect_uri"  redirect-url
                                            "grant_type"    "authorization_code"
-                                           "client_secret" (edn-in [:todo :secret])}})
+                                           "client_secret" (edn-in [:graph :secret])}})
         {:keys [status body] :as all} @req]
     (if (= status 200)
       (let [{:keys [access_token refresh_token] :as body-s}
@@ -76,11 +78,11 @@
 (defn refresh-code [refresh-token]
   (let [req (client/request {:url         token-url
                              :method      :post
-                             :form-params {"client_id"     (edn-in [:todo :client-id])
-                                           "scope"         (edn-in [:todo :scope])
+                             :form-params {"client_id"     (edn-in [:graph :client-id])
+                                           "scope"         (edn-in [:graph :scope])
                                            "redirect_uri"  redirect-url
                                            "grant_type"    "refresh_token"
-                                           "client_secret" (edn-in [:todo :secret])
+                                           "client_secret" (edn-in [:graph :secret])
                                            "refresh_token" refresh-token}})
         {:keys [status body] :as all} @req]
     (if (= status 200)
@@ -89,6 +91,8 @@
         (log/info "[todo-set-code] done set token by refresh-code to cache."))
       (log/warn "[todo-set-code] todo server call refresh return error: " all))))
 
+;;;;;;;;;; TO_DO SERVICE ;;;;;;;;
+
 (defn list-task
   "根据 TODO 列表 ID 和访问 Token 获取此列表下所有的任务"
   [{:keys [displayName id]} access-token]
@@ -96,7 +100,7 @@
     (let [req (client/request {:url     (format task-in-list-url id)
                                :method  :get
                                :headers {"Authorization" (str "Bearer " access-token)}
-                               :timeout (edn-in [:todo :timeout-ms])})
+                               :timeout (edn-in [:graph :timeout-ms])})
           {:keys [status body] :as all} @req]
       (if (= status 200)
         (let [{data :value} (json/parse-string body true)
@@ -121,7 +125,7 @@
     (let [req (client/request {:url     list-url
                                :method  :get
                                :headers {"Authorization" (str "Bearer " access-token)}
-                               :timeout (edn-in [:todo :timeout-ms])})
+                               :timeout (edn-in [:graph :timeout-ms])})
           {:keys [status body] :as all} @req]
       (if (= status 200)
         (let [{data :value} (json/parse-string body true)
@@ -133,7 +137,7 @@
       (log/warn (str "[todo-list-todo] failed because method failed: " (.getMessage e)))
       [])))
 
-(defn merge-to-db
+(defn merge-todo-to-db
   "将同步的数据整合到数据库，其中有很多重复数据，要小心处理"
   [tasks]
   (doseq [{:keys [title id] :as all} tasks]
@@ -144,7 +148,7 @@
       (catch Exception e
         (log/error "[todo-merge] insert into db error: " (.getMessage e))))))
 
-(defn sync-delete-id
+(defn todo-sync-delete-id
   "找到需要删除的数据库 Task ID 并执行删除"
   [tasks-server]
   (try
@@ -158,12 +162,12 @@
     (catch Exception e
       (log/error "[todo-sync] try fetch and delete outdated data failed: " (.getMessage e)))))
 
-(defn sync-server-to-db
+(defn todo-sync-server-to-db
   "将 MS Server 数据同步到数据库，并且删除最近 MS Server 中不存在，数据库存在的数据"
   [access-token]
   (let [tasks (list-todo access-token)]
-    (merge-to-db tasks)
-    (when-not (empty? tasks) (sync-delete-id tasks))))
+    (merge-todo-to-db tasks)
+    (when-not (empty? tasks) (todo-sync-delete-id tasks))))
 
 (defn todo-sync-routine []
   (let [{:keys [access-token refresh-token]} (fetch-cache)]
@@ -174,7 +178,24 @@
           (nil? access-token)
           (do (log/info "[todo-sync] not find at, use rt to refresh at")
               (refresh-code refresh-token))
-          :else (sync-server-to-db access-token))))
+          :else (todo-sync-server-to-db access-token))))
+
+(defn backend-todo-service []
+  (while true
+    (try
+      (let [sleep-sec (* 60 5)]
+        (future (news/news-push-routine))
+        (try
+          (log/debug "[todo-service] starting sync with ms-server...")
+          (todo-sync-routine)
+          (log/debug "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
+          (catch Exception e
+            (log/info "[todo-service] sync with ms-server failed: " (.getMessage e))))
+        (Thread/sleep (* 1000 sleep-sec)))
+      (catch Exception e
+        (log/info "[todo-service] todo-service routine failed: " (.getMessage e))))))
+
+;;;;;;;;;; TICKET SERVICE ;;;;;;;;
 
 (defn parse-rail-data
   "提取 12306 邮件的车票信息"
@@ -230,7 +251,7 @@
     (let [req (client/request {:url     outlook-rail-check-url
                                :method  :get
                                :headers {"Authorization" (str "Bearer " access-token)}
-                               :timeout (edn-in [:todo :timeout-ms])})
+                               :timeout (edn-in [:graph :timeout-ms])})
           {:keys [status body] :as all} @req]
       (if (= status 200)
         (let [{data :value} (json/parse-string body true)
@@ -249,22 +270,22 @@
       (log/warn "[12306] error because method failed: " (.getMessage e))
       [])))
 
-;TODO Token 和 RefreshToken 设置 Mail.read 权限
-;TODO 调用创建待办事项接口创建事项
-;https://learn.microsoft.com/zh-cn/graph/api/todotasklist-post-tasks?view=graph-rest-1.0&tabs=http
-;1. 获取所有列表，找到列表id
-;https://graph.microsoft.com/v1.0/me/to,do/lists
-;:value [{:id :displayName}]
-;2. 获取列表最近事项，查看是否存在
-;GET /me/to,do/lists/{todoTaskListId}/tasks
-;:value [{:title :id}]
-;3. 如果不存在，则创建
-;POST /me/to,do/lists/{todoTaskListId}/tasks
-;:title :categories ["Important"] :importance [:low :normal :high] :status
-;:completedDateTime :dueDateTime :createDateTime :lastModifiedDateTime :bodyLastModifiedDateTime :reminderDateTime
-;recurrence :id
-
-(defn mail-check-routine []
+(defn ticket-mail-check-routine
+  ;TODO Token 和 RefreshToken 设置 Mail.read 权限
+  ;TODO 调用创建待办事项接口创建事项
+  ;https://learn.microsoft.com/zh-cn/graph/api/todotasklist-post-tasks?view=graph-rest-1.0&tabs=http
+  ;1. 获取所有列表，找到列表id
+  ;https://graph.microsoft.com/v1.0/me/to,do/lists
+  ;:value [{:id :displayName}]
+  ;2. 获取列表最近事项，查看是否存在
+  ;GET /me/to,do/lists/{todoTaskListId}/tasks
+  ;:value [{:title :id}]
+  ;3. 如果不存在，则创建
+  ;POST /me/to,do/lists/{todoTaskListId}/tasks
+  ;:title :categories ["Important"] :importance [:low :normal :high] :status
+  ;:completedDateTime :dueDateTime :createDateTime :lastModifiedDateTime :bodyLastModifiedDateTime :reminderDateTime
+  ;recurrence :id
+  []
   (let [{:keys [access-token refresh-token]} (fetch-cache)]
     (cond (and (nil? access-token) (nil? refresh-token))
           (do
@@ -279,28 +300,13 @@
               (println "[mail-sync] saving tickets count " (count tickets))
               ((ticket/handle-set-tickets tickets) tickets))))))
 
-(defn backend-todo-service []
-  (while true
-    (try
-      (let [sleep-sec (* 60 5)]
-        (future (news/news-push-routine))
-        (try
-          (log/debug "[todo-service] starting sync with ms-server...")
-          (todo-sync-routine)
-          (log/debug "[todo-service] end sync with ms-server, try to sleep sec: " sleep-sec)
-          (catch Exception e
-            (log/info "[todo-service] sync with ms-server failed: " (.getMessage e))))
-        (Thread/sleep (* 1000 sleep-sec)))
-      (catch Exception e
-        (log/info "[todo-service] todo-service routine failed: " (.getMessage e))))))
-
-(defn backend-mail-tickets-service []
+(defn backend-ticket-mail-service []
   (while true
     (try
       (let [sleep-sec (* 60 60)]
         (try
           (log/debug "[graph-service] starting check mail tickets with ms-server...")
-          (mail-check-routine)
+          (ticket-mail-check-routine)
           (log/debug "[graph-service] end check mail tickets with ms-server, try to sleep sec: " sleep-sec)
           (catch Exception e
             (log/info "[graph-service] sync with check mail tickets with ms-server failed: " (.getMessage e))))
@@ -308,15 +314,29 @@
       (catch Exception e
         (log/info "[graph-service] mail-tickets-service routine failed: " (.getMessage e))))))
 
+;;;;;;;;;;; INTERNAL API ;;;;;;;;;
+
+(defn sort-todo
+  "对待办事项按照如下规则进行排序：是否完成（未完成优先）、列表、创建时间（较晚的优先）"
+  [todo-list]
+  (sort (fn [{s1 :status l1 :list c1 :create_at :as a1}
+             {s2 :status l2 :list c2 :create_at :as a2}]
+          (cond (= s1 s2)
+                (if (= l1 l2) (* -1 (compare c1 c2)) (compare l1 l2))
+                (= "completed" s1) 100
+                (= "completed" s2) -100
+                :else (compare a1 a2)))
+        todo-list))
+
 (defn handle-set-code [{:keys [code]}]
   (set-code code))
 
-(defn handle-focus-sync []
+(defn handle-focus-sync-todo []
   (todo-sync-routine)
   {:message "Sync Done." :status 1})
 
 (defn handle-focus-sync-mail-tickets []
-  (mail-check-routine)
+  (ticket-mail-check-routine)
   {:message "Sync Done." :status 1})
 
 (defn handle-today
@@ -334,7 +354,7 @@
       (log/info "[today] focusing to handle-today!!")
       (let [{:keys [access-token]} (fetch-cache)]
         (if-not (nil? access-token)
-          (sync-server-to-db access-token)
+          (todo-sync-server-to-db access-token)
           (log/warn "[todo-today] need focus but miss access-token, "
                     "may not enable by todologin or not refresh token frequently."))))
     (let [all (db/to-do-recent-day-2 {:day 15})
@@ -352,18 +372,6 @@
       {:starCount -1
        :tasks     []
        :message   (str "获取 Today 消息失败：" (.getMessage e))})))
-
-(defn sort-todo
-  "对待办事项按照如下规则进行排序：是否完成（未完成优先）、列表、创建时间（较晚的优先）"
-  [todo-list]
-  (sort (fn [{s1 :status l1 :list c1 :create_at :as a1}
-             {s2 :status l2 :list c2 :create_at :as a2}]
-          (cond (= s1 s2)
-                (if (= l1 l2) (* -1 (compare c1 c2)) (compare l1 l2))
-                (= "completed" s1) 100
-                (= "completed" s2) -100
-                :else (compare a1 a2)))
-        todo-list))
 
 (defn handle-recent
   "返回最近 n 天的 TODO 待办事项，按照天数进行分组"

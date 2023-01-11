@@ -10,7 +10,7 @@
  :slack {:pixel ""
          :server ""}
  ;https://learn.microsoft.com/zh-cn/graph/auth-v2-user
- :todo {:client-id "ms_client_id"
+ :graph {:client-id "ms_client_id"
         :scope "tasks.readWrite,offline_access,Mail.Read"
         :secret "secret_here"
         :timeout-ms 20000}

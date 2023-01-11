@@ -79,7 +79,7 @@
           (log/info "[ticket] saving new tickets count: "
                     (count need-store-tickets) " to db done.")))))
 
-(defn handle-fetch-today-tickets
+(defn handle-fetch-today-tickets []
   "获取当日的 Ticket，如果存在，则返回上述结构体列表"
   (let [origin (:tickets (fetch-ticket))
         today-str (.format (LocalDate/now) (DateTimeFormatter/ofPattern ldt-day-part-patten))

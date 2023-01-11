@@ -90,7 +90,7 @@
                   (when (contains? enable-services :ticket)
                     (future
                       (Thread/sleep 2000)
-                      (graph/backend-mail-tickets-service)))
+                      (graph/backend-ticket-mail-service)))
                   (when (contains? enable-services :express)
                     (future
                       (Thread/sleep 2000)

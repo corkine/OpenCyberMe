@@ -126,7 +126,7 @@
            :description "不应该直接调用此接口，此接口等同于内部线程自行同步更新方法调用。"
            :parameters  {:query (with-token)}
            :handler     (fn [{{_ :query} :parameters}]
-                          (hr/response (graph/handle-focus-sync)))}}]
+                          (hr/response (graph/handle-focus-sync-todo)))}}]
    ["/today"
     {:get {:summary     "Microsoft TODO 服务"
            :description "如果使用 focus，则始终先去 MS Server 获取数据并保存到数据库
