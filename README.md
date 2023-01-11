@@ -98,9 +98,15 @@ TODO: 后期实现数据库自动监听并调用 WebDriver 在服务器端完成
 
 后台定时从 Microsoft Graph API 获取 TODO 待办事项，和本地数据库进行交叉对比与同步，提供 API 进行展示和计分，此服务允许通过 OAuth 进行登录，用户凭证会自动刷新和维护。
 
-后端服务 `src/clj/cyberme/cyber/todo.clj`
+后端服务 `src/clj/cyberme/cyber/graph.clj`
 
 前端组件 `src/cljs/cyberme/dashboard/core.cljs` 提供 TODO 待办的展示。
+
+### 12306 车票追踪服务
+
+后台定时通过 Microsoft Graph API 获取 Outlook 中车票相关邮件，并保持数据库数据最新，以提供车票查询服务。车票信息在 iOS Widget 中展示。
+
+后端服务 `src/clj/cyberme/cyber/graph.clj, info/ticket.clj`
 
 ### 每日生活提醒和习惯保持服务
 
