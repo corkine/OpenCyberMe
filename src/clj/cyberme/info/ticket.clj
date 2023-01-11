@@ -33,7 +33,7 @@
   (.format (DateTimeFormatter/ofPattern ldt-patten) ldt))
 
 (defn- str->ldt [^String formatted-ldt]
-  (.parse (DateTimeFormatter/ofPattern ldt-patten) formatted-ldt))
+  (LocalDateTime/parse formatted-ldt (DateTimeFormatter/ofPattern ldt-patten)))
 
 (defn handle-set-ticket
   "持久化 ticket，结构：
@@ -68,22 +68,47 @@
         origin-map (reduce (fn [agg tk] (assoc agg (:id tk) tk))
                            {} origin)
         formatted-tickets (mapv (fn [{date :date :as ticket}]
-                                  (if date (assoc tickets :date (ldt->str date)) ticket))
+                                  (if date (assoc ticket :date (ldt->str date)) ticket))
                                 tickets)
         need-store-tickets (reduce (fn [col {id :id :as tk}]
                                      (if-not (get origin-map id) (conj col tk) col))
                                    [] formatted-tickets)]
     (if-not need-store-tickets
       (log/info "[ticket] no new ticket in db, skip saving...")
-      (do (set-ticket {:tickets (conj origin need-store-tickets)})
+      (do (set-ticket {:tickets (flatten (conj origin need-store-tickets))})
           (log/info "[ticket] saving new tickets count: "
                     (count need-store-tickets) " to db done.")))))
 
+(comment
+  (def origin (:tickets (fetch-ticket)))
+  (def origin-map (reduce (fn [agg tk] (assoc agg (:id tk) tk))
+                          {} (:tickets (fetch-ticket))))
+  (def formatted-tickets (mapv (fn [{date :date :as ticket}]
+                                 (if date (assoc ticket :date (ldt->str date)) ticket))
+                               tks))
+  (def need-store-tickets (reduce (fn [col {id :id :as tk}]
+                                    (if-not (get origin-map id) (conj col tk) col)) []
+                                  formatted-tickets)))
+
+(defn tickets-ldt-sorted []
+  (let [origin (:tickets (fetch-ticket))
+        tks-with-ldt (mapv (fn [{date :date :as tk}]
+                             (assoc tk :date (str->ldt date))) origin)
+        sorted-tks-by-date (sort (fn [{d1 :date} {d2 :date}]
+                                   (* -1 (.compareTo ^LocalDateTime d1 ^LocalDateTime d2))) tks-with-ldt)]
+    sorted-tks-by-date))
+
 (defn handle-fetch-today-tickets []
   "获取当日的 Ticket，如果存在，则返回上述结构体列表"
-  (let [origin (:tickets (fetch-ticket))
-        today-str (.format (LocalDate/now) (DateTimeFormatter/ofPattern ldt-day-part-patten))
-        today-ticket (filterv #(str/starts-with? (or (:date %)) today-str) origin)]
+  (let [tks (tickets-ldt-sorted)
+        today (LocalDate/now)
+        today-tks (filter #(.isEqual today (.toLocalDate (:date %))) tks)]
     {:message "获取成功"
-     :data    (if (empty? today-ticket) [] today-ticket)
+     :data    (vec today-tks)
      :status  1}))
+
+(defn handle-fetch-recent-tickets [{:keys [limit]}]
+  "获取最近的车票"
+  {:message "获取成功"
+   :data    (vec (take (or limit 10) (tickets-ldt-sorted)))
+   :status  1})

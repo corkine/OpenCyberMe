@@ -298,7 +298,7 @@
           (let [tickets (list-rail-tickets access-token)]
             (when-not (empty? tickets)
               (println "[mail-sync] saving tickets count " (count tickets))
-              ((ticket/handle-set-tickets tickets) tickets))))))
+              (ticket/handle-set-tickets tickets))))))
 
 (defn backend-ticket-mail-service []
   (while true
