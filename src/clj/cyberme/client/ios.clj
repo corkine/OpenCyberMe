@@ -84,7 +84,7 @@
                                    :isFinished (= "completed" (:status item))
                                    :create_at  (:create_at item)})
                                 (todo/sort-todo (:tasks todo))) [])
-     :tickets         tickets
+     :tickets         (:data tickets)
      :needDiaryReport (not (inspur/have-finish-daily-report-today?))
      :needPlantWater  true
      :updateAt        (int (/ (System/currentTimeMillis) 1000))}))

@@ -178,8 +178,8 @@
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (ticket/handle-fetch-today-tickets)))}}]
    ["/recent"
-    {:get {:summary     "获取今日车票"
-           :description "获取当日的车票信息"
+    {:get {:summary     "获取最近车票"
+           :description "获取最近的车票信息"
            :parameters  {:query (with-token :opt [:limit int?])}
            :handler     (fn [{{query :query} :parameters}]
                           (hr/response (ticket/handle-fetch-recent-tickets query)))}}]])
