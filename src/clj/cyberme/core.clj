@@ -17,7 +17,8 @@
     [cyberme.cyber.inspur :as inspur]
     [cyberme.config :refer [edn]]
     [cyberme.media.mini4k :as mini4k]
-    [cyberme.cyber.weather :as weather])
+    [cyberme.cyber.weather :as weather]
+    [promesa.exec.csp :as pc])
   (:gen-class)
   (:import (java.time LocalDateTime)
            (java.time.format DateTimeFormatter)))
@@ -84,31 +85,31 @@
                   (log/info "[backend] starting all backend service " enable-services)
                   (read-token)
                   (when (contains? enable-services :todo)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (graph/backend-todo-service)))
                   (when (contains? enable-services :ticket)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (graph/backend-ticket-mail-service)))
                   (when (contains? enable-services :express)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (express/backend-express-service)))
                   (when (contains? enable-services :movie)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (mini4k/backend-mini4k-routine)))
                   (when (contains? enable-services :task)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (task/backend-task-routine)))
                   (when (contains? enable-services :auto)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (inspur/backend-hcm-auto-check-service)))
                   (when (contains? enable-services :weather)
-                    (future
+                    (pc/go
                       (Thread/sleep 2000)
                       (weather/backend-weather-routine))))
                 :stop
