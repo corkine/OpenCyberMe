@@ -128,6 +128,7 @@
    ["/testSleep1"
     {:get (fn [_]
             (sp/go
+              (log/info "sleep1")
               (Thread/sleep 1000)
               {:status  200
                :headers {"content-type" "text/plain"}
@@ -135,6 +136,7 @@
    ["/testSleep2"
     {:get (fn [_]
             (sp/go
+              (log/info "sleep2")
               (Thread/sleep 2000)
               {:status  200
                :headers {"content-type" "text/plain"}
