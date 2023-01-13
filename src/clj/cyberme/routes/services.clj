@@ -1,5 +1,6 @@
 (ns cyberme.routes.services
   (:require
+    [cyberme.middleware :as middleware]
     [reitit.swagger :as swagger]
     [reitit.swagger-ui :as swagger-ui]
     [reitit.ring.coercion :as coercion]
@@ -39,7 +40,8 @@
                  coercion/coerce-request-middleware
                  ;; multipart
                  multipart/multipart-middleware
-                 auth/wrap-logged]}
+                 auth/wrap-logged
+                 middleware/wrap-as-async]}
 
    ;; swagger documentation
    ["" {:no-doc  true
