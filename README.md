@@ -12,6 +12,10 @@
 
 [1]: https://github.com/technomancy/leiningen
 
+支持 OpenJDK 19 vThread 虚拟线程。兼容低版本 JDK（需要 >= 1.8）。
+
+<img src="demos/screenshots/openjdk19.png" width="270px" alt="OpenJDK">
+
 ## Features
 
 - 使用 ClojureScript 基于 React(reagent) 和 re-frame 通过事件模型应对前端状态变化，将副作用从视图分离，实现响应式前端交互界面。
