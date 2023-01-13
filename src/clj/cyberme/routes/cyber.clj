@@ -125,22 +125,31 @@
               {:status  200
                :headers {"content-type" "text/plain"}
                :body    (format "now thread is %s" (Thread/currentThread))}))}]
+   ["/testSleep0"
+    {:get (fn [_]
+            (log/info "sleep1")
+            (Thread/sleep 1000)
+            {:status  200
+             :headers {"content-type" "text/plain"}
+             :body    (format "now thread is %s" (Thread/currentThread))})}]
    ["/testSleep1"
     {:get (fn [_]
             (sp/go
+              (.setName (Thread/currentThread) "sleep1")
               (log/info "sleep1")
               (Thread/sleep 1000)
               {:status  200
                :headers {"content-type" "text/plain"}
                :body    (format "now thread is %s" (Thread/currentThread))}))}]
    ["/testSleep2"
-    {:get (fn [_]
+    {:get (fn [_ resp _]
             (sp/go
+              (.setName (Thread/currentThread) "sleep2")
               (log/info "sleep2")
-              (Thread/sleep 2000)
-              {:status  200
-               :headers {"content-type" "text/plain"}
-               :body    (format "now thread is %s" (Thread/currentThread))}))}]
+              (Thread/sleep 1000)
+              (resp {:status  200
+                     :headers {"content-type" "text/plain"}
+                     :body    (format "now thread is %s" (Thread/currentThread))})))}]
    ["/testToday"
     {:get {:parameters  {:query (with-token :opt [:focus boolean? :showCompleted boolean?])}
            :handler     (fn [{{query :query} :parameters}]
