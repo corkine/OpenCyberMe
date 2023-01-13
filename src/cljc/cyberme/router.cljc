@@ -19,7 +19,8 @@
 
 (defn share-router []
   ["" #?(:clj {:middleware [middleware/wrap-csrf
-                            middleware/wrap-formats]
+                            middleware/wrap-formats
+                            middleware/wrap-as-async]
                :get        home/home-page})
    ["/"
     (merge {:name :dashboard}

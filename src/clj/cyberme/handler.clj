@@ -26,7 +26,7 @@
   :start
   (ring/ring-handler
     (ring/router
-      [(home-routes)
+      [#_(home-routes)
        (share/share-router)
        (service-routes)
        (cyber-routes)]
