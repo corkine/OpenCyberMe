@@ -125,6 +125,24 @@
               {:status  200
                :headers {"content-type" "text/plain"}
                :body    (format "now thread is %s" (Thread/currentThread))}))}]
+   ["/testSleep1"
+    {:get (fn [_]
+            (sp/go
+              (Thread/sleep 1000)
+              {:status  200
+               :headers {"content-type" "text/plain"}
+               :body    (format "now thread is %s" (Thread/currentThread))}))}]
+   ["/testSleep2"
+    {:get (fn [_]
+            (sp/go
+              (Thread/sleep 2000)
+              {:status  200
+               :headers {"content-type" "text/plain"}
+               :body    (format "now thread is %s" (Thread/currentThread))}))}]
+   ["/testToday"
+    {:get {:parameters  {:query (with-token :opt [:focus boolean? :showCompleted boolean?])}
+           :handler     (fn [{{query :query} :parameters}]
+                          (sp/go (hr/response (graph/handle-today query))))}}]
    ["/setcode"
     {:get {:summary     "登录并保存 XToken"
            :description "不应该直接调用此接口，而应该使用 mazhangjing.com/todologin 来

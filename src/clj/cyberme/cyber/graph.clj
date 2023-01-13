@@ -10,6 +10,7 @@
             [cyberme.info.ticket :as ticket]
             [cyberme.media.news :as news]
             [cyberme.tool :as tool]
+            [promesa.exec.csp :as pc]
             [org.httpkit.client :as client])
   (:import (java.time LocalDate LocalDateTime)
            (java.time.format DateTimeFormatter)))
@@ -184,7 +185,7 @@
   (while true
     (try
       (let [sleep-sec (* 60 5)]
-        (future (news/news-push-routine))
+        (pc/go (news/news-push-routine))
         (try
           (log/debug "[todo-service] starting sync with ms-server...")
           (todo-sync-routine)

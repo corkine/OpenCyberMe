@@ -86,30 +86,37 @@
                   (read-token)
                   (when (contains? enable-services :todo)
                     (pc/go
+                      (.setName (Thread/currentThread) "todo")
                       (Thread/sleep 2000)
                       (graph/backend-todo-service)))
                   (when (contains? enable-services :ticket)
                     (pc/go
+                      (.setName (Thread/currentThread) "ticket")
                       (Thread/sleep 2000)
                       (graph/backend-ticket-mail-service)))
                   (when (contains? enable-services :express)
                     (pc/go
+                      (.setName (Thread/currentThread) "express")
                       (Thread/sleep 2000)
                       (express/backend-express-service)))
                   (when (contains? enable-services :movie)
                     (pc/go
+                      (.setName (Thread/currentThread) "mini4k")
                       (Thread/sleep 2000)
                       (mini4k/backend-mini4k-routine)))
                   (when (contains? enable-services :task)
                     (pc/go
+                      (.setName (Thread/currentThread) "task")
                       (Thread/sleep 2000)
                       (task/backend-task-routine)))
                   (when (contains? enable-services :auto)
                     (pc/go
+                      (.setName (Thread/currentThread) "auto")
                       (Thread/sleep 2000)
                       (inspur/backend-hcm-auto-check-service)))
                   (when (contains? enable-services :weather)
                     (pc/go
+                      (.setName (Thread/currentThread) "weather")
                       (Thread/sleep 2000)
                       (weather/backend-weather-routine))))
                 :stop
