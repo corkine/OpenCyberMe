@@ -11,21 +11,28 @@
     [ring.middleware.content-type :refer [wrap-content-type]]
     [ring.middleware.webjars :refer [wrap-webjars]]
     [cyberme.env :refer [defaults]]
-    [mount.core :as mount]))
+    [mount.core :as mount]
+    [reitit.ring.middleware.dev :as r-dev]))
 
 (mount/defstate init-app
   :start ((or (:init defaults) (fn [])))
   :stop  ((or (:stop defaults) (fn []))))
 
+(defn- async-aware-default-handler
+  ([_] nil)
+  ([_ respond _] (respond nil)))
+
 (mount/defstate app-routes
   :start
   (ring/ring-handler
     (ring/router
-      [#_(home-routes)
+      [(home-routes)
        (share/share-router)
        (service-routes)
        (cyber-routes)]
-      {:conflict nil})
+      {:conflict nil
+       ;:reitit.middleware/transform r-dev/print-request-diffs
+       })
     (ring/routes
       (swagger-ui/create-swagger-ui-handler
         {:path   "/swagger-ui"
@@ -34,8 +41,7 @@
       (ring/create-resource-handler
         {:path "/"})
       (wrap-content-type
-        (wrap-webjars (constantly nil)))
-
+        (wrap-webjars async-aware-default-handler))
       (ring/create-default-handler
         {:not-found
          (constantly (error-page {:status 404, :title "404 - Page not found"}))

@@ -14,18 +14,31 @@
       (get-in [:data :auth/logged] false)))
 
 (defn wrap-logged [handler]
-  (fn [req]
-    (if (get-logs-from-match req)
-      (try
-        #_(log/info req)
-        (db/add-log {:api (:uri req) :info (select-keys req [:request-method
-                                                             :scheme
-                                                             :remote-addr
-                                                             :server-name
-                                                             :server-port
-                                                             :session/key])})
-        (catch Exception e (log/error "log req error: " (str e)))))
-    (handler req)))
+  (fn
+    ([req]
+     (if (get-logs-from-match req)
+       (try
+         #_(log/info req)
+         (db/add-log {:api (:uri req) :info (select-keys req [:request-method
+                                                              :scheme
+                                                              :remote-addr
+                                                              :server-name
+                                                              :server-port
+                                                              :session/key])})
+         (catch Exception e (log/error "log req error: " (str e)))))
+     (handler req))
+    ([req response raise]
+     (if (get-logs-from-match req)
+       (try
+         #_(log/info req)
+         (db/add-log {:api (:uri req) :info (select-keys req [:request-method
+                                                              :scheme
+                                                              :remote-addr
+                                                              :server-name
+                                                              :server-port
+                                                              :session/key])})
+         (catch Exception e (log/error "log req error: " (str e)))))
+     (handler req response raise))))
 
 #_(defn authenticated? [name pass]
     (let [n (:auth-user env)
@@ -132,22 +145,40 @@
 
 (defn wrap-basic-authentication
   [app authenticate & [realm denied-response]]
-  (fn [{:keys [request-method] :as req}]
-    (let [auth-req (basic-authentication-request req authenticate)]
-      (if (or (:basic-authentication auth-req)
-              (auth-in-query (:query-params req))
-              (is-allowed req)
-              (is-task-authed req))
-        (app auth-req)
-        (if (is-swagger req)
-          (authentication-failure-401 realm
-                                      (into denied-response
-                                            (when (= request-method :head)
-                                              {:body nil})))
-          (authentication-failure realm
-                                  (into denied-response
-                                        (when (= request-method :head)
-                                          {:body nil}))))))))
+  (fn
+    ([{:keys [request-method] :as req}]
+     (let [auth-req (basic-authentication-request req authenticate)]
+       (if (or (:basic-authentication auth-req)
+               (auth-in-query (:query-params req))
+               (is-allowed req)
+               (is-task-authed req))
+         (app auth-req)
+         (if (is-swagger req)
+           (authentication-failure-401 realm
+                                       (into denied-response
+                                             (when (= request-method :head)
+                                               {:body nil})))
+           (authentication-failure realm
+                                   (into denied-response
+                                         (when (= request-method :head)
+                                           {:body nil})))))))
+    ([{:keys [request-method] :as req} respond raise]
+     (let [auth-req (basic-authentication-request req authenticate)]
+       (if (or (:basic-authentication auth-req)
+               (auth-in-query (:query-params req))
+               (is-allowed req)
+               (is-task-authed req))
+         (app req respond raise)
+         (respond
+           (if (is-swagger req)
+             (authentication-failure-401 realm
+                                         (into denied-response
+                                               (when (= request-method :head)
+                                                 {:body nil})))
+             (authentication-failure realm
+                                     (into denied-response
+                                           (when (= request-method :head)
+                                             {:body nil}))))))))))
 
 (defn wrap-basic-auth [handler]
   (wrap-basic-authentication handler #(authenticated? %1 %2 nil)))

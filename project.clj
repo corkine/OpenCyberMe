@@ -15,8 +15,9 @@
                  [cprop "0.1.17"]
                  [day8.re-frame/http-fx "0.2.2"]
                  [expound "0.8.7"]
+                 [funcool/promesa "10.0.594"]
                  [funcool/struct "1.4.0"]
-                 [luminus-http-kit "0.1.9"]
+                 [luminus-http-kit "0.2.0"]
                  [luminus-migrations "0.7.1"]
                  [luminus-transit "0.1.2"]
                  [luminus/ring-ttl-session "0.3.3"]
@@ -108,7 +109,7 @@
    :dev           [:project/dev :profiles/dev]
    :test          [:project/dev :project/test :profiles/test]
 
-   :project/dev   {:jvm-opts       ["-Dconf=dev-config.edn"]
+   :project/dev   {:jvm-opts       ["-Dconf=dev-config.edn" "--enable-preview"]
                    :dependencies   [[binaryage/devtools "1.0.2"]
                                     [cider/piggieback "0.5.2"]
                                     [pjstadig/humane-test-output "0.10.0"]
@@ -126,7 +127,7 @@
                                     :timeout 120000}
                    :injections     [(require 'pjstadig.humane-test-output)
                                     (pjstadig.humane-test-output/activate!)]}
-   :project/test  {:jvm-opts       ["-Dconf=test-config.edn"]
+   :project/test  {:jvm-opts       ["-Dconf=test-config.edn" "--enable-preview"]
                    :resource-paths ["env/test/resources"]}
 
 

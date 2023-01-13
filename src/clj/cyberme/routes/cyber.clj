@@ -24,6 +24,7 @@
     [cyberme.media.disk :as disk]
     [cyberme.media.yyets :as yyets]
     [cyberme.auto.hcm :as auto]
+    [cyberme.middleware :as middleware]
     [cyberme.middleware.formats :as formats]
     [reitit.coercion.spec :as spec-coercion]
     [reitit.ring.coercion :as coercion]
@@ -34,7 +35,9 @@
     [reitit.swagger :as swagger]
     [reitit.swagger-ui :as swagger-ui]
     [ring.util.http-response :refer :all]
-    [ring.util.response :as hr])
+    [ring.util.response :as hr]
+    [promesa.core :as p]
+    [promesa.exec.csp :as sp])
   (:import (java.time LocalDate)))
 
 (defn- with-token
@@ -79,7 +82,8 @@
    {:coercion   spec-coercion/coercion
     :muuntaja   formats/instance
     :swagger    {:id ::cyber}
-    :middleware [auth/wrap-basic-auth
+    :middleware [
+                 auth/wrap-basic-auth
                  ;; query-params & form-params
                  parameters/parameters-middleware
                  ;; content-negotiation
@@ -96,7 +100,8 @@
                  coercion/coerce-request-middleware
                  ;; multipart
                  multipart/multipart-middleware
-                 auth/wrap-logged]}
+                 auth/wrap-logged
+                 middleware/wrap-as-async]}
 
    ;; swagger documentation
    ["" {:no-doc  true
@@ -114,6 +119,12 @@
 (def to-do-route
   ["/todo"
    {:tags #{"微软待办"}}
+   ["/checkVirtual"
+    {:get (fn [_]
+            (sp/go
+              {:status  200
+               :headers {"content-type" "text/plain"}
+               :body    (format "now thread is %s" (Thread/currentThread))}))}]
    ["/setcode"
     {:get {:summary     "登录并保存 XToken"
            :description "不应该直接调用此接口，而应该使用 mazhangjing.com/todologin 来
